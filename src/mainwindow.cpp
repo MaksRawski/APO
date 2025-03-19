@@ -47,8 +47,8 @@ void MainWindow::openImage() {
 void MainWindow::setupMenuBar() {
   QMenu *fileMenu = menuBar()->addMenu("&File");
   QAction *openAction = fileMenu->addAction("&Open...");
-  QMenu *imageMenu = menuBar()->addMenu("&Image");
-  QAction *histAction = imageMenu->addAction("&Histogram");
+  // QMenu *imageMenu = menuBar()->addMenu("&Image");
+  // QAction *histAction = imageMenu->addAction("&Histogram");
 
   connect(openAction, &QAction::triggered, this, &MainWindow::openImage);
 }
