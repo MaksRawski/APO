@@ -1,4 +1,4 @@
-PROGRAM_NAME := QtQuickApp # MUST have the same value as in CMakelists.txt
+PROGRAM_NAME := APO # MUST have the same value as in CMakelists.txt
 
 LINUX_BUILD_DIR := build
 WINDOWS_BUILD_DIR := build-windows

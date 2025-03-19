@@ -1,10 +1,19 @@
 cmake_minimum_required(VERSION 3.16)
-project(QtQuickApp LANGUAGES CXX)
+project(APO LANGUAGES CXX)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Quick)
+find_package(Qt6 REQUIRED COMPONENTS Gui Widgets)
 
-add_executable(QtQuickApp main.cpp resources.qrc)
-target_link_libraries(QtQuickApp PRIVATE Qt6::Quick)
+add_executable(APO
+  src/main.cpp
+  src/mainwindow.h
+  src/mainwindow.cpp
+  src/mainwindow.ui
+  src/ImageProcessor.h
+  src/ImageProcessor.cpp
+)
+
+target_link_libraries(APO PRIVATE Qt6::Gui Qt6::Widgets)
