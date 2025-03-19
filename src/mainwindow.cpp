@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "tab.h"
 #include <QAction>
 #include <QFileDialog>
 #include <QLabel>
@@ -6,36 +7,52 @@
 #include <QMenuBar>
 #include <QPixmap>
 #include <QScrollArea>
+#include <qdebug.h>
+#include <qfileinfo.h>
+#include <qtabwidget.h>
+#include <qwidget.h>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
-  QMenu *fileMenu = menuBar()->addMenu("&File");
-  QAction *openAction = fileMenu->addAction("&Open...");
+  setupMenuBar();
 
-  connect(openAction, &QAction::triggered, this, &MainWindow::openImage);
+  tabWidget = new QTabWidget(this);
+  tabWidget->setTabsClosable(true);
+  connect(tabWidget, &QTabWidget::tabCloseRequested, this, &MainWindow::closeTab);
+  tabs.reserve(3);
 
-  // Initial setup for displaying the image
-  scrollArea = new QScrollArea(this);
-  imageLabel = new QLabel(scrollArea);
-
-  imageLabel->setAlignment(Qt::AlignCenter);
-  scrollArea->setWidget(imageLabel);
-
-  setCentralWidget(scrollArea);
+  setCentralWidget(tabWidget);
 }
 
 void MainWindow::openImage() {
-  QString fileName = QFileDialog::getOpenFileName(
+  QString filePath = QFileDialog::getOpenFileName(
       this, tr("Open Image"), "", tr("Image Files (*.png *.jpg *.bmp)"));
 
-  if (!fileName.isEmpty()) {
-    QPixmap pixmap(fileName);
+  if (!filePath.isEmpty()) {
+    QPixmap pixmap(filePath);
+
     if (!pixmap.isNull()) {
-      imageLabel->setPixmap(pixmap);
-      scrollArea->setVisible(true);
-      imageLabel->adjustSize();
+      // create a tab with that image
+      // QWidget *imageTab = createImageTab(pixmap);
+      QString fileName = QFileInfo(filePath).fileName();
+      Tab *tab = new Tab(fileName, pixmap, tabWidget);
+      tabs.push_back(*tab);
     } else {
       // Handle image load error (e.g., show a message box)
-      qDebug() << "Failed to load image: " << fileName;
+      qDebug() << "Failed to load image: " << filePath;
     }
   }
+  //
+}
+
+void MainWindow::setupMenuBar() {
+  QMenu *fileMenu = menuBar()->addMenu("&File");
+  QAction *openAction = fileMenu->addAction("&Open...");
+  QMenu *imageMenu = menuBar()->addMenu("&Image");
+  QAction *histAction = imageMenu->addAction("&Histogram");
+
+  connect(openAction, &QAction::triggered, this, &MainWindow::openImage);
+}
+
+void MainWindow::closeTab(int index) {
+    tabWidget->removeTab(index);
 }

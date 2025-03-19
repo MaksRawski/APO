@@ -1,16 +1,16 @@
 #include "ImageProcessor.h"
 
-// LUT histogram(const QImage &image) {
-//     std::vector<int> lut;
-//     lut.resize(M);
+LUT histogram(const QImage &image) {
+    std::vector<int> lut;
+    lut.resize(M);
 
-//     for (int r = 0; r < image.height(); ++r) {
-//         for (int c = 0; c < image.width(); ++c) {
-//             ++lut[image.pixelColor(r, c).lightness()];
-//         }
-//     }
-//     return lut;
-// }
+    for (int r = 0; r < image.height(); ++r) {
+        for (int c = 0; c < image.width(); ++c) {
+            ++lut[image.pixelColor(r, c).lightness()];
+        }
+    }
+    return lut;
+}
 
 LUT negate() {
 	LUT lut;
@@ -45,4 +45,5 @@ LUT posterize(int n) {
 	for (int i = 0; i <= M; ++i) {
 		lut[i] = colors[i / n];
 	}
+	return lut;
 }

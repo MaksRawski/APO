@@ -1,17 +1,27 @@
 #pragma once
 
+#include "tab.h"
+#include <QLabel>
 #include <QMainWindow>
-#include <qlabel.h>
-#include <qscrollarea.h>
+#include <QScrollArea>
+#include <qimage.h>
+#include <qpixmap.h>
+#include <qtabwidget.h>
 
 class MainWindow : public QMainWindow {
-    Q_OBJECT
+  Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
-    void openImage();
+  explicit MainWindow(QWidget *parent = nullptr);
 
 private:
-    QLabel *imageLabel;
-    QScrollArea *scrollArea;
+  std::vector<Tab> tabs;
+  QTabWidget *tabWidget;
+
+  // setup functions
+  void setupMenuBar();
+
+  // connections
+  void openImage();
+  void closeTab(int index);
 };
