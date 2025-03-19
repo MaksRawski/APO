@@ -1,18 +1,17 @@
 #pragma once
 
 #include <QMainWindow>
-
-QT_BEGIN_NAMESPACE
-namespace Ui { class MainWindow; }
-QT_END_NAMESPACE
+#include <qlabel.h>
+#include <qscrollarea.h>
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+    void openImage();
 
 private:
-    Ui::MainWindow *ui;
+    QLabel *imageLabel;
+    QScrollArea *scrollArea;
 };

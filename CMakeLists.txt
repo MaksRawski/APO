@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.16)
 project(APO LANGUAGES CXX)
 
 set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Gui Widgets)
 
@@ -11,7 +9,6 @@ add_executable(APO
   src/main.cpp
   src/mainwindow.h
   src/mainwindow.cpp
-  src/mainwindow.ui
   src/ImageProcessor.h
   src/ImageProcessor.cpp
 )
