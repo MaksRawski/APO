@@ -7,9 +7,14 @@ find_package(Qt6 REQUIRED COMPONENTS Gui Widgets)
 
 add_executable(APO
   src/main.cpp
-  src/mainwindow.h               src/mainwindow.cpp
-  src/ImageProcessor.h           src/ImageProcessor.cpp
-  src/tab.h                      src/tab.cpp
+
+  # UI
+  src/mainwindow.hpp               src/mainwindow.cpp
+  src/tab.hpp                      src/tab.cpp
+  src/imageLabel.hpp               src/imageLabel.cpp
+
+  # Processing
+  src/ImageProcessor.hpp           src/ImageProcessor.cpp
 )
 
 target_link_libraries(APO PRIVATE Qt6::Gui Qt6::Widgets)

@@ -1,5 +1,5 @@
-#include "mainwindow.h"
-#include "tab.h"
+#include "mainwindow.hpp"
+#include "tab.hpp"
 #include <QAction>
 #include <QFileDialog>
 #include <QLabel>
@@ -9,16 +9,13 @@
 #include <QScrollArea>
 #include <qdebug.h>
 #include <qfileinfo.h>
+#include <qkeysequence.h>
 #include <qtabwidget.h>
 #include <qwidget.h>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   setupMenuBar();
-
-  tabWidget = new QTabWidget(this);
-  tabWidget->setTabsClosable(true);
-  connect(tabWidget, &QTabWidget::tabCloseRequested, this, &MainWindow::closeTab);
-  tabs.reserve(3);
+  setupTabs();
 
   setCentralWidget(tabWidget);
 }
@@ -31,11 +28,10 @@ void MainWindow::openImage() {
     QPixmap pixmap(filePath);
 
     if (!pixmap.isNull()) {
-      // create a tab with that image
-      // QWidget *imageTab = createImageTab(pixmap);
       QString fileName = QFileInfo(filePath).fileName();
       Tab *tab = new Tab(fileName, pixmap, tabWidget);
       tabs.push_back(*tab);
+      adjustSizeToImage(pixmap);
     } else {
       // Handle image load error (e.g., show a message box)
       qDebug() << "Failed to load image: " << filePath;
@@ -44,15 +40,28 @@ void MainWindow::openImage() {
   //
 }
 
+void MainWindow::adjustSizeToImage(const QPixmap &pixmap) {
+  resize(pixmap.width() + 20, pixmap.height() + menuBar()->height() + 40);
+}
+
 void MainWindow::setupMenuBar() {
   QMenu *fileMenu = menuBar()->addMenu("&File");
   QAction *openAction = fileMenu->addAction("&Open...");
+  openAction->setShortcut(QKeySequence::Open);
   // QMenu *imageMenu = menuBar()->addMenu("&Image");
   // QAction *histAction = imageMenu->addAction("&Histogram");
 
   connect(openAction, &QAction::triggered, this, &MainWindow::openImage);
 }
 
-void MainWindow::closeTab(int index) {
-    tabWidget->removeTab(index);
+void MainWindow::setupTabs() {
+  tabs.reserve(3);
+  tabWidget = new QTabWidget(this);
+  tabWidget->setTabsClosable(true);
+  resize(INITIAL_WIDTH, INITIAL_HEIGHT);
+
+  connect(tabWidget, &QTabWidget::tabCloseRequested, this,
+          &MainWindow::closeTab);
 }
+
+void MainWindow::closeTab(int index) { tabWidget->removeTab(index); }

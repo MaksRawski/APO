@@ -1,12 +1,15 @@
 #pragma once
 
-#include "tab.h"
+#include "tab.hpp"
 #include <QLabel>
 #include <QMainWindow>
 #include <QScrollArea>
 #include <qimage.h>
 #include <qpixmap.h>
 #include <qtabwidget.h>
+
+const int INITIAL_WIDTH = 400;
+const int INITIAL_HEIGHT = 400;
 
 class MainWindow : public QMainWindow {
   Q_OBJECT
@@ -20,6 +23,8 @@ private:
 
   // setup functions
   void setupMenuBar();
+  void setupTabs();
+  void adjustSizeToImage(const QPixmap &pixmap);
 
   // connections
   void openImage();

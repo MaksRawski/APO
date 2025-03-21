@@ -1,4 +1,4 @@
-#include "ImageProcessor.h"
+#include "ImageProcessor.hpp"
 
 LUT histogram(const QImage &image) {
     std::vector<int> lut;
