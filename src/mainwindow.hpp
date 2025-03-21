@@ -18,13 +18,13 @@ public:
   explicit MainWindow(QWidget *parent = nullptr);
 
 private:
+  // keeping their references so that the objects don't drop
   std::vector<Tab> tabs;
   QTabWidget *tabWidget;
 
   // setup functions
   void setupMenuBar();
   void setupTabs();
-  void adjustSizeToImage(const QPixmap &pixmap);
 
   // connections
   void openImage();

@@ -1,23 +1,16 @@
 #pragma once
 
 #include "imageLabel.hpp"
+#include <qmainwindow.h>
 #include <qpixmap.h>
 #include <qscrollarea.h>
 #include <qtabwidget.h>
+#include <qwidget.h>
+#include <QDockWidget>
 
 class Tab {
 public:
-  Tab(QString name, QPixmap pixmap, QTabWidget *tabWidget) {
-    root = new QScrollArea();
-    imageLabel = new ImageLabel(root);
-
-    imageLabel->setImage(pixmap);
-
-    root->setWidget(imageLabel);
-    root->setWidgetResizable(true);
-
-    tabWidget->addTab(root, name);
-  }
+  Tab(QString name, QPixmap pixmap, QTabWidget *tabWidget);
 
 private:
   QScrollArea *root;

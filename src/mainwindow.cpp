@@ -31,7 +31,6 @@ void MainWindow::openImage() {
       QString fileName = QFileInfo(filePath).fileName();
       Tab *tab = new Tab(fileName, pixmap, tabWidget);
       tabs.push_back(*tab);
-      adjustSizeToImage(pixmap);
     } else {
       // Handle image load error (e.g., show a message box)
       qDebug() << "Failed to load image: " << filePath;
@@ -40,16 +39,10 @@ void MainWindow::openImage() {
   //
 }
 
-void MainWindow::adjustSizeToImage(const QPixmap &pixmap) {
-  resize(pixmap.width() + 20, pixmap.height() + menuBar()->height() + 40);
-}
-
 void MainWindow::setupMenuBar() {
   QMenu *fileMenu = menuBar()->addMenu("&File");
   QAction *openAction = fileMenu->addAction("&Open...");
   openAction->setShortcut(QKeySequence::Open);
-  // QMenu *imageMenu = menuBar()->addMenu("&Image");
-  // QAction *histAction = imageMenu->addAction("&Histogram");
 
   connect(openAction, &QAction::triggered, this, &MainWindow::openImage);
 }
