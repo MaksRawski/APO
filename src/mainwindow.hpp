@@ -1,12 +1,13 @@
 #pragma once
 
-#include "tab.hpp"
 #include <QLabel>
 #include <QMainWindow>
 #include <QScrollArea>
+#include <qdockwidget.h>
 #include <qimage.h>
 #include <qpixmap.h>
 #include <qtabwidget.h>
+#include <QMdiArea>
 
 const int INITIAL_WIDTH = 400;
 const int INITIAL_HEIGHT = 400;
@@ -18,13 +19,15 @@ public:
   explicit MainWindow(QWidget *parent = nullptr);
 
 private:
-  // keeping their references so that the objects don't drop
-  std::vector<Tab> tabs;
-  QTabWidget *tabWidget;
+  QMdiArea *mdiArea;
+  QDockWidget *histogramDock;
 
   // setup functions
   void setupMenuBar();
-  void setupTabs();
+  void setupUI();
+
+  // utils
+  void openPixmap(QPixmap *pixmap);
 
   // connections
   void openImage();

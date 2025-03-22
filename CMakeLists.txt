@@ -10,7 +10,7 @@ add_executable(APO
 
   # UI
   src/mainwindow.hpp               src/mainwindow.cpp
-  src/tab.hpp                      src/tab.cpp
+  src/mdiChild.hpp                 src/mdiChild.cpp
   src/imageLabel.hpp               src/imageLabel.cpp
 
   # Processing
