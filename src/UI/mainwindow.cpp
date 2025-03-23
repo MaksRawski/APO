@@ -9,7 +9,8 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QPixmap>
-#include <QTextEdit>
+#include <QSplitter>
+#include <qpixmap.h>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   setupMenuBar();
@@ -31,9 +32,11 @@ void MainWindow::setupUI() {
   mdiArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
   setCentralWidget(mdiArea);
 
-  // create a dock widget
-  dock = new QDockWidget(this);
-  histogramWidget = new HistogramWidget(dock);
+  // create dock
+  QDockWidget *dock = new QDockWidget;
+
+  // for now using just HistogramWidget as the entire dock
+  histogramWidget = new HistogramWidget;
   dock->setWidget(histogramWidget);
 
   addDockWidget(Qt::RightDockWidgetArea, dock);
@@ -49,10 +52,14 @@ void MainWindow::openImage() {
     return;
   }
 
-  // create a new window
-  MdiChild *mdiChild = new MdiChild();
+  // create new window
+  MdiChild *mdiChild = new MdiChild;
+
+  // NOTE: mdiChild(ren) will emit signals anytime an image changes so technically we could have a non-active
+  // image trigger this and overwrite the histogram output. For now I assume that for image to change
+  // it must be first active, so the histogram should always match the active image.
   connect(mdiChild, &MdiChild::pixmapUpdated, histogramWidget, &HistogramWidget::updateHistogram);
-  mdiChild->updatePixmap(*pixmap);
+  mdiChild->updatePixmap(*pixmap); // set the pixmap. will also emit the appropriate signal
 
   mdiArea->addSubWindow(mdiChild);
   mdiChild->show();

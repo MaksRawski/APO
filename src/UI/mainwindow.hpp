@@ -21,7 +21,7 @@ public:
 
 private:
   QMdiArea *mdiArea;
-  QDockWidget *dock;
+  // necessary to store, to allow for communication
   HistogramWidget *histogramWidget;
 
   // setup functions

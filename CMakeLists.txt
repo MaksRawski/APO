@@ -8,11 +8,10 @@ find_package(Qt6 REQUIRED COMPONENTS Gui Widgets)
 add_executable(APO
   src/main.cpp
 
-  # UI
-  src/mainwindow.hpp               src/mainwindow.cpp
-  src/mdiChild.hpp                 src/mdiChild.cpp
-  src/imageLabel.hpp               src/imageLabel.cpp
-  src/histogramWidget.hpp          src/histogramWidget.cpp
+  src/UI/mainwindow.hpp               src/UI/mainwindow.cpp
+  src/UI/mdiChild.hpp                 src/UI/mdiChild.cpp
+  src/UI/imageLabel.hpp               src/UI/imageLabel.cpp
+  src/UI/histogramWidget.hpp          src/UI/histogramWidget.cpp
 
   # Processing
   src/imageProcessor.hpp           src/imageProcessor.cpp
