@@ -28,7 +28,6 @@ private:
   void setupMenuBar();
   void setupUI();
 
-  // connections
+private slots:
   void openImage();
-  void closeTab(int index);
 };

@@ -8,7 +8,7 @@
 class MdiChild : public QScrollArea{
 	Q_OBJECT
 public:
-	MdiChild(QPixmap pixmap);
+	MdiChild();
 	void updatePixmap(QPixmap pixmap);
 
 signals:

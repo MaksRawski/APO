@@ -33,12 +33,11 @@ void MainWindow::setupUI() {
 
   // create a dock widget
   dock = new QDockWidget(this);
-  histogramWidget = new HistogramWidget;
+  histogramWidget = new HistogramWidget(dock);
   dock->setWidget(histogramWidget);
 
   addDockWidget(Qt::RightDockWidgetArea, dock);
 }
-
 
 void MainWindow::openImage() {
   QString filePath = QFileDialog::getOpenFileName(
@@ -51,8 +50,9 @@ void MainWindow::openImage() {
   }
 
   // create a new window
-  MdiChild *mdiChild = new MdiChild(*pixmap);
-  connect(mdiChild, &MdiChild::pixmapUpdated, histogramWidget, &HistogramWidget::update);
+  MdiChild *mdiChild = new MdiChild();
+  connect(mdiChild, &MdiChild::pixmapUpdated, histogramWidget, &HistogramWidget::updateHistogram);
+  mdiChild->updatePixmap(*pixmap);
 
   mdiArea->addSubWindow(mdiChild);
   mdiChild->show();

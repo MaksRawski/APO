@@ -13,7 +13,7 @@ public:
     explicit HistogramWidget(QWidget *parent = nullptr);
 
 public slots:
-    void update(const QPixmap pixmap);
+    void updateHistogram(QPixmap pixmap);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -21,4 +21,5 @@ protected:
 private:
     QPixmap pixmap;
     imageProcessor::LUT lut;
+    int maxLutValue;
 };

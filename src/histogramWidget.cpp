@@ -1,38 +1,32 @@
 #include "histogramWidget.hpp"
 #include "imageProcessor.hpp"
+#include <algorithm>
 #include <qpixmap.h>
 
 HistogramWidget::HistogramWidget(QWidget *parent) : QWidget(parent) {
-    setMinimumSize(200, 100);
+    setMinimumSize(256, 100);
 }
 
-void HistogramWidget::update(QPixmap pixmap) {
-	qDebug() << "histogramWidget: update";
+void HistogramWidget::updateHistogram(QPixmap pixmap) {
     this->pixmap = pixmap;
     lut = imageProcessor::histogram(pixmap.toImage());
-    update(pixmap);
+	maxLutValue = *std::max_element(std::begin(lut), std::end(lut));
 }
 
 void HistogramWidget::paintEvent(QPaintEvent *event) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
-	qDebug() << "paintEvent";
 
 	int lut_size = (int)lut.size();
 	if (lut_size <= 0) return;
 
-	int w = pixmap.width();
-	int h = pixmap.height();
-	int numOfPixels = w * h;
-
-    int barWidth = width() / lut_size;
-    int maxHeight = height() - 10;
-
-	// taking a reciprocal here to multiply instead of dividing later in the loop
-	double maxLutHeight = 1.0 / (static_cast<double>(numOfPixels) * maxHeight);
+	int w = width();
+	int h = height();
+    int barWidth = w / lut_size;
+    int maxHeight = h - 10;
 
     for (int i = 0; i < lut.size(); ++i) {
-        int barHeight = double(lut[i]) * maxLutHeight;
+        int barHeight = int((float)lut[i] / (float)maxLutValue * (float)maxHeight);
         QPoint topLeft(i * barWidth, height() - barHeight);
         QPoint bottomRight((i + 1) * barWidth, height());
 
