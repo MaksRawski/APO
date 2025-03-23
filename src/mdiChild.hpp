@@ -9,6 +9,10 @@ class MdiChild : public QScrollArea{
 	Q_OBJECT
 public:
 	MdiChild(QPixmap pixmap);
+	void updatePixmap(QPixmap pixmap);
+
+signals:
+	void pixmapUpdated(QPixmap pixmap);
 
 private:
 	ImageLabel *imageLabel;

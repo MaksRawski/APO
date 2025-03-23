@@ -12,9 +12,10 @@ add_executable(APO
   src/mainwindow.hpp               src/mainwindow.cpp
   src/mdiChild.hpp                 src/mdiChild.cpp
   src/imageLabel.hpp               src/imageLabel.cpp
+  src/histogramWidget.hpp          src/histogramWidget.cpp
 
   # Processing
-  src/ImageProcessor.hpp           src/ImageProcessor.cpp
+  src/imageProcessor.hpp           src/imageProcessor.cpp
 )
 
 target_link_libraries(APO PRIVATE Qt6::Gui Qt6::Widgets)

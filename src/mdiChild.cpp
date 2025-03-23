@@ -6,4 +6,14 @@ MdiChild::MdiChild(QPixmap pixmap) {
   imageLabel->setImage(pixmap);
   setWidget(imageLabel);
   setWidgetResizable(true);
+
+  // emit the signal after the initial setup
+  emit pixmapUpdated(pixmap);
+  qDebug() << "mdiChild: updated pixmap";
+}
+
+void MdiChild::updatePixmap(QPixmap pixmap) {
+  imageLabel->setImage(pixmap);
+  emit pixmapUpdated(pixmap);
+  qDebug() << "mdiChild: updated pixmap";
 }

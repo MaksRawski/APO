@@ -1,5 +1,6 @@
 #pragma once
 
+#include "histogramWidget.hpp"
 #include <QLabel>
 #include <QMainWindow>
 #include <QScrollArea>
@@ -20,14 +21,12 @@ public:
 
 private:
   QMdiArea *mdiArea;
-  QDockWidget *histogramDock;
+  QDockWidget *dock;
+  HistogramWidget *histogramWidget;
 
   // setup functions
   void setupMenuBar();
   void setupUI();
-
-  // utils
-  void openPixmap(QPixmap *pixmap);
 
   // connections
   void openImage();
