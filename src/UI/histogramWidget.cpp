@@ -2,6 +2,7 @@
 #include "../imageProcessor.hpp"
 #include <QListWidget>
 #include <algorithm>
+#include <qbrush.h>
 #include <qlabel.h>
 #include <qnamespace.h>
 #include <qpixmap.h>
@@ -27,9 +28,9 @@ void HistogramPlot::paintEvent(QPaintEvent *event) {
 
   int w = width();
   int h = height();
-  int maxHeight = h - 10;
-
-  int maxLutValue = *std::max_element(lut.begin(), lut.end());
+  int gradientHeight = 50;
+  int spacing = 20;
+  int maxHeight = height() - gradientHeight;
 
   if (maxLutValue == 0)
     return;
@@ -46,6 +47,22 @@ void HistogramPlot::paintEvent(QPaintEvent *event) {
     painter.setBrush(Qt::gray);
     painter.drawRect(x, y, barWidth, barHeight);
   }
+
+  // gradient
+  QLinearGradient gradient(0, maxHeight + spacing, w,
+                           maxHeight + spacing + gradientHeight);
+  for (size_t i = 0; i < lut.size(); ++i) {
+    float intensity =
+        static_cast<float>(i) / static_cast<float>(lut.size() - 1); // normalize
+    float position = intensity;
+
+    QColor color =
+        QColor::fromRgbF(intensity, intensity, intensity); // grayscale
+
+    gradient.setColorAt(position, color);
+  }
+
+  painter.fillRect(0, maxHeight + spacing, w, gradientHeight, gradient);
 }
 
 HistogramWidget::HistogramWidget(QWidget *parent)
