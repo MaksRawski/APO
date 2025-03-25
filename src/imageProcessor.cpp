@@ -5,9 +5,9 @@ LUT histogram(const QImage &image) {
   std::vector<int> lut;
   lut.resize(M);
 
-  for (int r = 0; r < image.height(); ++r) {
-    for (int c = 0; c < image.width(); ++c) {
-      ++lut[image.pixelColor(r, c).lightness()];
+  for (int y = 0; y < image.height(); ++y) {
+    for (int x = 0; x < image.width(); ++x) {
+      ++lut[image.pixelColor(x, y).lightness()];
     }
   }
   return lut;
