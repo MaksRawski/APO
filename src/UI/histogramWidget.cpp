@@ -35,11 +35,11 @@ void HistogramPlot::paintEvent(QPaintEvent *event) {
   if (maxLutValue == 0)
     return;
 
-  float barWidth = fmax(1.0f, static_cast<float>(w) / static_cast<float>(lut_size));
+  double barWidth = fmax(1.0f, static_cast<double>(w) / static_cast<double>(lut_size));
 
   for (int i = 0; i < lut_size; ++i) {
     int barHeight = static_cast<int>(
-        (static_cast<float>(lut[i]) / maxLutValue) * maxHeight);
+        (static_cast<double>(lut[i]) / maxLutValue) * maxHeight);
     int x = i * barWidth;
     int y = h - barHeight;
 
@@ -52,9 +52,9 @@ void HistogramPlot::paintEvent(QPaintEvent *event) {
   QLinearGradient gradient(0, maxHeight + spacing, w,
                            maxHeight + spacing + gradientHeight);
   for (size_t i = 0; i < lut.size(); ++i) {
-    float intensity =
-        static_cast<float>(i) / static_cast<float>(lut.size() - 1); // normalize
-    float position = intensity;
+    double intensity =
+        static_cast<double>(i) / static_cast<double>(lut.size() - 1); // normalize
+    double position = intensity;
 
     QColor color =
         QColor::fromRgbF(intensity, intensity, intensity); // grayscale
@@ -104,7 +104,7 @@ void HistogramWidget::updateHistogram(QPixmap pixmap) {
     // could use some compiler optimization magic?
     lutList->addItem(QString("%1: %2").arg(i).arg(l));
   }
-  average = static_cast<float>(sum) / lut.size();
+  average = static_cast<double>(sum) / lut.size();
 
   statsLabel->setText(QString("Min: %1  Max: %2  Avg: %3")
                           .arg(min)

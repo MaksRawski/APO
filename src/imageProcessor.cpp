@@ -25,7 +25,7 @@ LUT negate() {
 LUT stretch(int p1, int p2, int q3, int q4) {
   LUT lut;
   lut.resize(M);
-  float div = 1.0f / float(p2 - p1);
+  double div = 1.0f / static_cast<double>(p2 - p1);
   for (int i = 0; i < M; ++i) {
     if (i < p1)
       lut[i] = q3;

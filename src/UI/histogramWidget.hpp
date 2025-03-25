@@ -50,5 +50,5 @@ private:
 
   imageProcessor::LUT lut;
   int min, max;
-  float average;
+  double average;
 };
