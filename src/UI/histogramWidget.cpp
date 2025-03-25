@@ -113,3 +113,10 @@ void HistogramWidget::updateHistogram(QPixmap pixmap) {
 
   emit updateLUT(lut, max);
 }
+
+void HistogramWidget::reset() {
+  lut.clear();
+  lutList->clear();
+  plot->updateLUT(lut, 0);
+  statsLabel->setText(QString("Min: -- Max: -- Avg: --"));
+}

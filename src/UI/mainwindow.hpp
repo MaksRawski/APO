@@ -3,12 +3,13 @@
 #include "histogramWidget.hpp"
 #include <QLabel>
 #include <QMainWindow>
+#include <QMdiArea>
 #include <QScrollArea>
 #include <qdockwidget.h>
 #include <qimage.h>
+#include <qmdisubwindow.h>
 #include <qpixmap.h>
 #include <qtabwidget.h>
-#include <QMdiArea>
 
 const int INITIAL_WIDTH = 400;
 const int INITIAL_HEIGHT = 400;
@@ -30,4 +31,5 @@ private:
 
 private slots:
   void openImage();
+  void mdiSubWindowActivated(QMdiSubWindow *window);
 };

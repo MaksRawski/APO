@@ -12,7 +12,6 @@
 #include <qsplitter.h>
 #include <qwidget.h>
 
-
 class HistogramPlot : public QWidget {
   Q_OBJECT
 
@@ -36,6 +35,7 @@ class HistogramWidget : public QSplitter {
 
 public:
   explicit HistogramWidget(QWidget *parent = nullptr);
+  void reset();
 
 public slots:
   void updateHistogram(QPixmap pixmap);

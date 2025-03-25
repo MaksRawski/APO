@@ -10,6 +10,9 @@
 #include <QMenuBar>
 #include <QPixmap>
 #include <QSplitter>
+#include <qmdiarea.h>
+#include <qmdisubwindow.h>
+#include <qobject.h>
 #include <qpixmap.h>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
@@ -30,6 +33,7 @@ void MainWindow::setupUI() {
   mdiArea = new QMdiArea(this);
   mdiArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
   mdiArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  connect(mdiArea, &QMdiArea::subWindowActivated, this, &MainWindow::mdiSubWindowActivated);
   setCentralWidget(mdiArea);
 
   // create dock
@@ -63,4 +67,16 @@ void MainWindow::openImage() {
 
   mdiArea->addSubWindow(mdiChild);
   mdiChild->show();
+}
+
+void MainWindow::mdiSubWindowActivated(QMdiSubWindow *window) {
+  if (window == nullptr) {
+    histogramWidget->reset();
+    return;
+  }
+  MdiChild *mdiChild = qobject_cast<MdiChild*>(window);
+
+  if (mdiChild) {
+    histogramWidget->updateHistogram(mdiChild->getPixmap());
+  }
 }

@@ -1,4 +1,5 @@
 #include "imageLabel.hpp"
+#include <qpixmap.h>
 
 ImageLabel::ImageLabel(QWidget *parent) : QLabel(parent), scaleFactor(1.0) {
   setAlignment(Qt::AlignCenter);
@@ -20,6 +21,10 @@ void ImageLabel::setImage(const QPixmap &pixmap) {
   originalPixmap = pixmap;
   scaleFactor = 1.0;
   updateImageSize();
+}
+
+QPixmap ImageLabel::getImage() const {
+  return originalPixmap;
 }
 
 void ImageLabel::updateImageSize() {

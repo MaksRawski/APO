@@ -12,6 +12,7 @@ public:
   explicit ImageLabel(QWidget *parent = nullptr);
 
   void setImage(const QPixmap &pixmap);
+  QPixmap getImage() const;
 
 protected:
   void wheelEvent(QWheelEvent *event) override;
