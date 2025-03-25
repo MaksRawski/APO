@@ -35,7 +35,7 @@ void HistogramPlot::paintEvent(QPaintEvent *event) {
   if (maxLutValue == 0)
     return;
 
-  int barWidth = std::max(1, w / lut_size);
+  float barWidth = fmax(1.0f, static_cast<float>(w) / static_cast<float>(lut_size));
 
   for (int i = 0; i < lut_size; ++i) {
     int barHeight = static_cast<int>(
@@ -43,7 +43,7 @@ void HistogramPlot::paintEvent(QPaintEvent *event) {
     int x = i * barWidth;
     int y = h - barHeight;
 
-    painter.setPen(Qt::black);
+    painter.setPen(Qt::gray);
     painter.setBrush(Qt::gray);
     painter.drawRect(x, y, barWidth, barHeight);
   }
