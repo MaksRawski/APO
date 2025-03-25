@@ -12,14 +12,15 @@ public:
   explicit ImageLabel(QWidget *parent = nullptr);
 
   void setImage(const QPixmap &pixmap);
+  void setImageScale(double scale);
+
+  double getImageScale() const;
   QPixmap getImage() const;
 
 protected:
   void wheelEvent(QWheelEvent *event) override;
 
 private:
-  void updateImageSize();
-
   QPixmap originalPixmap;
   double scaleFactor;
 };

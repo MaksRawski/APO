@@ -13,6 +13,10 @@ void MdiChild::updatePixmap(QPixmap pixmap) {
   emit pixmapUpdated(pixmap);
 }
 
+void MdiChild::setImageScale(double zoom) {
+  imageLabel->setImageScale(zoom);
+}
+
 QPixmap MdiChild::getPixmap() const{
   return imageLabel->getImage();
 }

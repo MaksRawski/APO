@@ -9,30 +9,31 @@ void ImageLabel::wheelEvent(QWheelEvent *event) {
   double factor = (event->angleDelta().y() > 0) ? 1.1 : 0.9;
   double newScale = scaleFactor * factor;
 
-  // Prevent extreme zoom levels
   if (newScale < 0.1 || newScale > 10.0)
     return;
 
-  scaleFactor = newScale;
-  updateImageSize();
+  setImageScale(newScale);
 }
 
 void ImageLabel::setImage(const QPixmap &pixmap) {
   originalPixmap = pixmap;
-  scaleFactor = 1.0;
-  updateImageSize();
+  setImageScale(1.0);
+}
+void ImageLabel::setImageScale(double scale) {
+  scaleFactor = scale;
+  if (!originalPixmap.isNull()) {
+    Qt::TransformationMode mode = (scale > 2.0)
+                                      ? Qt::FastTransformation
+                                      : Qt::SmoothTransformation;
+    setPixmap(originalPixmap.scaled(originalPixmap.size() * scale,
+                                    Qt::KeepAspectRatio, mode));
+  }
 }
 
 QPixmap ImageLabel::getImage() const {
   return originalPixmap;
 }
 
-void ImageLabel::updateImageSize() {
-  if (!originalPixmap.isNull()) {
-    Qt::TransformationMode mode = (scaleFactor > 2.0)
-                                      ? Qt::FastTransformation
-                                      : Qt::SmoothTransformation;
-    setPixmap(originalPixmap.scaled(originalPixmap.size() * scaleFactor,
-                                    Qt::KeepAspectRatio, mode));
-  }
+double ImageLabel::getImageScale() const {
+  return scaleFactor;
 }

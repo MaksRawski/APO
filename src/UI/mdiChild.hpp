@@ -11,6 +11,7 @@ class MdiChild : public QMdiSubWindow {
 public:
 	MdiChild();
 	void updatePixmap(QPixmap pixmap);
+	void setImageScale(double zoom);
 	QPixmap getPixmap() const;
 
 signals:
