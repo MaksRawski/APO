@@ -50,8 +50,10 @@ void MainWindow::setupUI() {
 void MainWindow::openImage() {
   QString filePath = QFileDialog::getOpenFileName(
       this, tr("Open Image"), "", tr("Image Files (*.png *.jpg *.bmp)"));
+  QString fileName = QFileInfo(filePath).fileName();
 
   QPixmap *pixmap = new QPixmap(filePath);
+
   if (pixmap->isNull()) {
     // TODO: display error message box
     return;
@@ -65,6 +67,7 @@ void MainWindow::openImage() {
   // it must be first active, so the histogram should always match the active image.
   connect(mdiChild, &MdiChild::pixmapUpdated, histogramWidget, &HistogramWidget::updateHistogram);
   mdiChild->updatePixmap(*pixmap); // set the pixmap. will also emit the appropriate signal
+  mdiChild->setWindowTitle(fileName);
 
   // scale the image so that it takes at max 70% of the window
   QSize size = pixmap->size();

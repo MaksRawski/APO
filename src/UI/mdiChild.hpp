@@ -6,6 +6,12 @@
 #include <qpixmap.h>
 #include <QScrollArea>
 
+enum ImageType {
+  Binary,
+  GrayScale,
+  RGB,
+};
+
 class MdiChild : public QMdiSubWindow {
 	Q_OBJECT
 public:
@@ -19,4 +25,5 @@ signals:
 
 private:
 	ImageLabel *imageLabel;
+	ImageType imageType;
 };

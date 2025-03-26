@@ -10,6 +10,12 @@ MdiChild::MdiChild() {
 
 void MdiChild::updatePixmap(QPixmap pixmap) {
   imageLabel->setImage(pixmap);
+  if (pixmap.toImage().allGray()) {
+    imageType = GrayScale;
+  } else {
+    imageType = RGB;
+  }
+
   emit pixmapUpdated(pixmap);
 }
 
