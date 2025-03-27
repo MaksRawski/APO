@@ -66,8 +66,7 @@ void MainWindow::openImage() {
   // image trigger this and overwrite the histogram output. For now I assume that for image to change
   // it must be first active, so the histogram should always match the active image.
   connect(mdiChild, &MdiChild::pixmapUpdated, histogramWidget, &HistogramWidget::updateHistogram);
-  mdiChild->updatePixmap(*pixmap); // set the pixmap. will also emit the appropriate signal
-  mdiChild->setWindowTitle(fileName);
+  mdiChild->updatePixmap(*pixmap, fileName); // set the pixmap. will also emit the appropriate signal
 
   // scale the image so that it takes at max 70% of the window
   QSize size = pixmap->size();

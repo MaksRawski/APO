@@ -10,17 +10,18 @@ MdiChild::MdiChild() {
 
 void MdiChild::updatePixmap(QPixmap pixmap) {
   imageLabel->setImage(pixmap);
-  if (pixmap.toImage().allGray()) {
-    imageType = GrayScale;
+  QImage im = pixmap.toImage();
+  if (im.allGray()) {
+    imageType = ImageType::GrayScale;
   } else {
-    imageType = RGB;
+    imageType = ImageType::RGB;
   }
 
   emit pixmapUpdated(pixmap);
 }
-
-void MdiChild::setImageScale(double zoom) {
-  imageLabel->setImageScale(zoom);
+void MdiChild::updatePixmap(QPixmap pixmap, QString pixmapName) {
+  updatePixmap(pixmap);
+  setWindowTitle(QString("[%1] %2").arg(toString(imageType)).arg(pixmapName));
 }
 
 QPixmap MdiChild::getPixmap() const{
