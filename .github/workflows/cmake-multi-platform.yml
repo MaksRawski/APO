@@ -46,6 +46,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - uses: Dovyski/setup-opencv-action@v1.1
+      with:
+        opencv-version: '4.11.0'
     - name: Install Qt
       uses: jurplel/install-qt-action@v4.1.1
       with:
