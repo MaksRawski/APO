@@ -1,4 +1,6 @@
 #include "imageProcessor.hpp"
+#include <qimage.h>
+#include <QColorSpace>
 
 namespace imageProcessor {
 LUT histogram(const QImage &image) {
@@ -51,4 +53,8 @@ LUT posterize(int n) {
   }
   return lut;
 }
+
+  QImage toGrayScale(const QImage &image){
+    return image.convertToFormat(QImage::Format_Grayscale8);
+  }
 } // namespace imageProcessor

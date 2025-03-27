@@ -1,7 +1,9 @@
 #include "mdiChild.hpp"
+#include "../imageProcessor.hpp"
 #include <QPixmap>
-#include <qnamespace.h>
 #include <QVBoxLayout>
+#include <qnamespace.h>
+#include <qpixmap.h>
 
 MdiChild::MdiChild() {
   QScrollArea *scrollArea = new QScrollArea;
@@ -27,9 +29,18 @@ void MdiChild::updatePixmap(QPixmap pixmap) {
 
 void MdiChild::setImageScale(double zoom) { imageLabel->setImageScale(zoom); }
 
-void MdiChild::updatePixmap(QPixmap pixmap, QString pixmapName) {
-  updatePixmap(pixmap);
-  setWindowTitle(QString("[%1] %2").arg(toString(imageType)).arg(pixmapName));
+void MdiChild::updateImageName(QString name) {
+  imageName = name;
+  setWindowTitle(QString("[%1] %2").arg(toString(imageType)).arg(name));
 }
 
 QPixmap MdiChild::getPixmap() const { return imageLabel->getImage(); }
+
+void MdiChild::toGrayscale() {
+  imageType = ImageType::GrayScale;
+
+  const QImage image = getPixmap().toImage();
+  updatePixmap(QPixmap::fromImage(imageProcessor::toGrayScale(image)));
+  // update the image type in the window title
+  updateImageName(imageName);
+}

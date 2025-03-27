@@ -10,6 +10,7 @@
 #include <QMenuBar>
 #include <QPixmap>
 #include <QSplitter>
+#include <qaction.h>
 #include <qmdiarea.h>
 #include <qmdisubwindow.h>
 #include <qnamespace.h>
@@ -26,7 +27,17 @@ void MainWindow::setupMenuBar() {
   QAction *openAction = fileMenu->addAction("&Open...");
   openAction->setShortcut(QKeySequence::Open);
 
+  QAction *saveAction = fileMenu->addAction("&Save");
+  saveAction->setEnabled(false);
+  saveAction->setShortcut(QKeySequence::Save);
+
+  QMenu *imageMenu = menuBar()->addMenu("&Image");
+  QMenu *imageTypeMenu = imageMenu->addMenu("&Type");
+  toGrayscaleAction = imageTypeMenu->addAction("&Grayscale");
+  toGrayscaleAction->setEnabled(false);
+
   connect(openAction, &QAction::triggered, this, &MainWindow::openImage);
+  // connect(saveAction, &QAction::triggered, this, &MainWindow::openImage);
 }
 
 void MainWindow::setupUI() {
@@ -66,13 +77,19 @@ void MainWindow::openImage() {
   // image trigger this and overwrite the histogram output. For now I assume that for image to change
   // it must be first active, so the histogram should always match the active image.
   connect(mdiChild, &MdiChild::pixmapUpdated, histogramWidget, &HistogramWidget::updateHistogram);
-  mdiChild->updatePixmap(*pixmap, fileName); // set the pixmap. will also emit the appropriate signal
+  mdiChild->updatePixmap(*pixmap); // set the pixmap. will also emit the appropriate signal
+  mdiChild->updateImageName(fileName);
+
+  // connect all the actions that operate on the image
+  connect(toGrayscaleAction, &QAction::triggered, mdiChild, &MdiChild::toGrayscale);
+  toGrayscaleAction->setEnabled(true);
 
   // scale the image so that it takes at max 70% of the window
   QSize size = pixmap->size();
   QSize windowSize = this->size();
   QSize scaledSize = size.scaled(windowSize * 0.7, Qt::KeepAspectRatio);
   double scaleFactor = static_cast<float>(scaledSize.width()) / static_cast<float>(size.width());
+
   // prevent upscaling
   if (scaleFactor < 1.0)
     mdiChild->setImageScale(scaleFactor);

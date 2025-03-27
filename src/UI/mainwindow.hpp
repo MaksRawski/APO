@@ -25,6 +25,9 @@ private:
   // necessary to store, to allow for communication
   HistogramWidget *histogramWidget;
 
+  // actions
+  QAction *toGrayscaleAction;
+
   // setup functions
   void setupMenuBar();
   void setupUI();

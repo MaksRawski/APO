@@ -30,14 +30,18 @@ class MdiChild : public QMdiSubWindow {
 public:
 	MdiChild();
 	void updatePixmap(QPixmap pixmap);
-	void updatePixmap(QPixmap pixmap, QString pixmapName);
+	void updateImageName(QString name);
 	void setImageScale(double zoom);
 	QPixmap getPixmap() const;
 
 signals:
 	void pixmapUpdated(QPixmap pixmap);
 
+public slots:
+	void toGrayscale();
+
 private:
 	ImageLabel *imageLabel;
 	ImageType imageType;
+	QString imageName;
 };
