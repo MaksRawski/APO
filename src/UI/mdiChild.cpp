@@ -1,11 +1,16 @@
 #include "mdiChild.hpp"
 #include <QPixmap>
 #include <qnamespace.h>
+#include <QVBoxLayout>
 
 MdiChild::MdiChild() {
-  imageLabel = new ImageLabel(this);
+  QScrollArea *scrollArea = new QScrollArea;
+  scrollArea->setWidgetResizable(true);
+  imageLabel = new ImageLabel(scrollArea);
+  scrollArea->setWidget(imageLabel);
+
   setAttribute(Qt::WA_DeleteOnClose);
-  setWidget(imageLabel);
+  setWidget(scrollArea);
 }
 
 void MdiChild::updatePixmap(QPixmap pixmap) {
@@ -19,11 +24,12 @@ void MdiChild::updatePixmap(QPixmap pixmap) {
 
   emit pixmapUpdated(pixmap);
 }
+
+void MdiChild::setImageScale(double zoom) { imageLabel->setImageScale(zoom); }
+
 void MdiChild::updatePixmap(QPixmap pixmap, QString pixmapName) {
   updatePixmap(pixmap);
   setWindowTitle(QString("[%1] %2").arg(toString(imageType)).arg(pixmapName));
 }
 
-QPixmap MdiChild::getPixmap() const{
-  return imageLabel->getImage();
-}
+QPixmap MdiChild::getPixmap() const { return imageLabel->getImage(); }
