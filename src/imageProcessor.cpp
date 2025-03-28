@@ -1,16 +1,16 @@
 #include "imageProcessor.hpp"
+#include "imageWrapper.hpp"
 #include <qimage.h>
 #include <QColorSpace>
 
 namespace imageProcessor {
-LUT histogram(const QImage &image) {
+LUT histogram(const ImageWrapper &image) {
+  auto data = image.getRawData();
   std::vector<int> lut;
   lut.resize(M);
 
-  for (int y = 0; y < image.height(); ++y) {
-    for (int x = 0; x < image.width(); ++x) {
-      ++lut[image.pixelColor(x, y).lightness()];
-    }
+  for (uchar v : data) {
+      ++lut[v];
   }
   return lut;
 }

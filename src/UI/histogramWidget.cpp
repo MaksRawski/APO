@@ -1,7 +1,7 @@
 #include "histogramWidget.hpp"
 #include "../imageProcessor.hpp"
+#include "mdiChild.hpp"
 #include <QListWidget>
-#include <algorithm>
 #include <qbrush.h>
 #include <qlabel.h>
 #include <qnamespace.h>
@@ -86,8 +86,8 @@ HistogramWidget::HistogramWidget(QWidget *parent)
   connect(this, &HistogramWidget::updateLUT, plot, &HistogramPlot::updateLUT);
 }
 
-void HistogramWidget::updateHistogram(QPixmap pixmap) {
-  lut = imageProcessor::histogram(pixmap.toImage());
+void HistogramWidget::updateHistogram(ImageWrapper image) {
+  lut = imageProcessor::histogram(image);
   min = lut[0];
   max = lut[0];
 

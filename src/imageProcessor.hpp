@@ -1,5 +1,6 @@
 #pragma once
 
+#include "imageWrapper.hpp"
 #include <QImage>
 #include <vector>
 
@@ -10,7 +11,7 @@ const int LMIN = 0;
 const int LMAX = 256;
 const int M = LMAX - LMIN;
 
-LUT histogram(const QImage &image);
+LUT histogram(const ImageWrapper &image);
 LUT negate();
 LUT stretch(int p1, int p2, int q3, int q4);
 LUT posterize(int n);
