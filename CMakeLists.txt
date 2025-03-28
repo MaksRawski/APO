@@ -30,7 +30,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 # target_link_libraries(APO PRIVATE ${Qt6_LIBS} ${OpenCV_LIBS})
 
-option(BUILD_TESTS "Build unit tests" ON)
+option(BUILD_TESTS "Build unit tests" OFF)
 if(BUILD_TESTS)
   # Google Test configuration with FetchContent
   include(FetchContent)
