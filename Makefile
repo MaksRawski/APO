@@ -67,4 +67,4 @@ ${WINDOWS_PACKAGE_ZIP}: windows-release
 clean:
 	rm -rf ${LINUX_BUILD_DIR} ${WINDOWS_BUILD_DIR}
 
-.PHONY: linux-debug linux-release windows-debug windows-release windows-package clean
+.PHONY: linux-debug linux-release tests windows-debug windows-release windows-package clean
