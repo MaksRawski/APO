@@ -1,3 +1,5 @@
+# this Makefile serves as a simple runner for some of common (for me) CMake operations
+
 CXX=g++
 # MUST have the same value as in CMakelists.txt
 PROGRAM_NAME := APO
@@ -19,6 +21,7 @@ WINDOWS_PACKAGE_ZIP := ${WINDOWS_PACKAGE_DIR}/${PROGRAM_NAME}.zip
 # - windows-debug
 # - windows-release
 # - windows-package
+# - tests
 
 
 linux-debug: ${LINUX_DEBUG_BUILD_DIR}
@@ -34,6 +37,8 @@ ${LINUX_DEBUG_BUILD_DIR}:
 ${LINUX_RELEASE_BUILD_DIR}:
 	CXX=${CXX} cmake -B${LINUX_RELEASE_BUILD_DIR} -DCMAKE_BUILD_TYPE=Release
 
+tests: linux-debug
+	cd ${LINUX_DEBUG_BUILD_DIR} && ctest --output-on-failure
 
 windows-debug: ${WINDOWS_DEBUG_BUILD_DIR}
 	$(MAKE) -C${WINDOWS_DEBUG_BUILD_DIR}
