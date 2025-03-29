@@ -1,118 +1,90 @@
 #pragma once
 
 #include <QImage>
-#include <cstdint>
 #include <opencv2/opencv.hpp>
-#include <optional>
-#include <vector>
+#include <qimage.h>
+#include <stdexcept>
+#include <string>
 
-enum class ImageType {
+// For internal storage in ImageWrapper.
+enum class PixelFormat {
+  // 8-bits per pixel, either all 0s or 1s
   Binary,
-  GrayScale,
-  RGB,
-  HSV,
-  Lab,
-  ARGB,
+  // 8-bits per pixel
+  Grayscale8,
+  // 24-bits per pixel (0xBBGGRR)
+  BGR24,
+  // 24-bits per pixel (0xHHSSVV)
+  HSV24,
+  // 24-bits per pixel (0xLLaabb)
+  Lab24,
+  // 32-bits per pixel (0xBBGGRRAA)
+  BGRA32,
 };
 
-constexpr std::optional<ImageType>
-imageTypeFromQImageFormat(QImage::Format format) {
-  switch (format) {
-  case QImage::Format_Mono:
-    return ImageType::Binary;
-  case QImage::Format_Grayscale8:
-    return ImageType::GrayScale;
-  case QImage::Format_RGB888:
-    return ImageType::RGB; // ARGB maps to RGB in qimageFormat()
+constexpr PixelFormat pixelFormatFromChannelsNumber(int channels) {
+  switch (channels) {
+  case 1:
+    return PixelFormat::Grayscale8;
+  case 3:
+    return PixelFormat::BGR24;
+  case 4:
+    return PixelFormat::BGRA32;
   default:
-    return std::nullopt; // unknown format or unsupported
+    throw std::runtime_error("Unsupported image format");
   }
 }
 
-constexpr const char *toString(ImageType type) {
-  switch (type) {
-  case ImageType::Binary:
-    return "binary";
-  case ImageType::GrayScale:
-    return "grayscale";
-  case ImageType::RGB:
-    return "RGB";
-  case ImageType::HSV:
-    return "HSV";
-  case ImageType::Lab:
-    return "Lab";
-  case ImageType::ARGB:
-    return "ARGB";
-  }
-}
-
-constexpr uint8_t bitsPerPixel(ImageType type) {
-  switch (type) {
-  case ImageType::Binary:
-    return 1;
-  case ImageType::GrayScale:
-    return 8;
-  case ImageType::RGB:
-  case ImageType::HSV:
-  case ImageType::Lab:
-    return 3 * 8;
-  case ImageType::ARGB:
-    return 4 * 8;
-  }
-}
-
-// Returns a matching QImage::Format or nullopt if there isn't one.
-constexpr std::optional<QImage::Format> qimageFormat(ImageType type) {
-  switch (type) {
-  case ImageType::Binary:
-    return QImage::Format_Mono;
-  case ImageType::GrayScale:
-    return QImage::Format_Grayscale8;
-  case ImageType::RGB:
-    return QImage::Format_RGB888;
-  case ImageType::ARGB:
-    return QImage::Format_RGB888;
-  case ImageType::HSV:
-  case ImageType::Lab:
-    return std::nullopt;
-  }
-}
-
-constexpr int cvImageType(ImageType type) {
-  switch (type) {
-  case ImageType::Binary:
-  case ImageType::GrayScale:
+constexpr int pixelFormatToCvType(PixelFormat format) {
+  switch (format) {
+  case PixelFormat::Binary:
+  case PixelFormat::Grayscale8:
     return CV_8UC1;
-  case ImageType::RGB:
-  case ImageType::HSV:
-  case ImageType::Lab:
+  case PixelFormat::BGR24:
+  case PixelFormat::HSV24:
+  case PixelFormat::Lab24:
     return CV_8UC3;
-  case ImageType::ARGB:
+  case PixelFormat::BGRA32:
     return CV_8UC4;
+  }
+}
+
+constexpr const char *pixelFormatToString(PixelFormat format) {
+  switch (format) {
+  case PixelFormat::Binary:
+    return "Binary";
+  case PixelFormat::Grayscale8:
+    return "8-bit Grayscale";
+  case PixelFormat::BGR24:
+    // we will always have to convert BGR to RGB for display,
+    // so it's fine to call this format just RGB
+    return "RGB";
+  case PixelFormat::HSV24:
+    return "HSV";
+  case PixelFormat::Lab24:
+    return "Lab";
+  case PixelFormat::BGRA32:
+    // we will always have to convert BGRA to RGBA for display,
+    // so it's fine to call this format just RGBA
+    return "RGBA";
   }
 }
 
 class ImageWrapper {
 public:
-  ImageWrapper(std::vector<uchar> data, int width, int height, ImageType type);
-  ImageWrapper(QImage image);
-  // ImageWrapper(cv::Mat mat);
+  ImageWrapper(QString filePath);
+  ImageWrapper(cv::Mat mat);
 
-  const QImage &getQImage() const { return qimage_; };
-  const cv::Mat &getCvMat() const { return mat_; };
-  const std::vector<uchar> &getRawData() const { return data_; }
+  const cv::Mat &getMat() const { return mat_; }
+  int getWidth() const { return mat_.cols; }
+  int getHeight() const { return mat_.rows; }
+  PixelFormat getFormat() const { return format_; }
+  QImage generateQImage() const;
 
-  int getWidth() const { return width_; }
-  int getHeight() const { return height_; }
-  ImageType getType() const { return type_; }
-
-// signals:
-//   void dataChanged();
+signals:
+  void dataChanged(QPixmap pixmap);
 
 private:
-  int width_, height_;
-  std::vector<uchar> data_;
-  ImageType type_;
+  PixelFormat format_;
   cv::Mat mat_;
-  QImage qimage_;
 };

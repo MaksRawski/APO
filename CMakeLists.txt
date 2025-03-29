@@ -10,25 +10,25 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-# qt6_wrap_cpp(MOC_SOURCES
-#   src/UI/mainwindow.hpp
-#   src/UI/mdiChild.hpp
-#   src/UI/imageLabel.hpp
-#   src/UI/histogramWidget.hpp
-# )
+qt6_wrap_cpp(MOC_SOURCES
+  src/UI/mainwindow.hpp
+  src/UI/mdiChild.hpp
+  src/UI/imageLabel.hpp
+  src/UI/histogramWidget.hpp
+)
 
-# add_executable(APO
-#   src/main.cpp
-#   src/UI/mainwindow.cpp
-#   src/UI/mdiChild.cpp
-#   src/UI/imageLabel.cpp
-#   src/UI/histogramWidget.cpp
-#   src/imageProcessor.cpp
-#   src/imageWrapper.cpp
-#   ${MOC_SOURCES}
-# )
+add_executable(APO
+  src/main.cpp
+  src/UI/mainwindow.cpp
+  src/UI/mdiChild.cpp
+  src/UI/imageLabel.cpp
+  src/UI/histogramWidget.cpp
+  src/imageProcessor.cpp
+  src/imageWrapper.cpp
+  ${MOC_SOURCES}
+)
 
-# target_link_libraries(APO PRIVATE ${Qt6_LIBS} ${OpenCV_LIBS})
+target_link_libraries(APO PRIVATE ${Qt6_LIBS} ${OpenCV_LIBS})
 
 option(BUILD_TESTS "Build unit tests" OFF)
 if(BUILD_TESTS)

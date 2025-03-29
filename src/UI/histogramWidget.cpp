@@ -1,6 +1,5 @@
 #include "histogramWidget.hpp"
 #include "../imageProcessor.hpp"
-#include "mdiChild.hpp"
 #include <QListWidget>
 #include <qbrush.h>
 #include <qlabel.h>
@@ -35,7 +34,8 @@ void HistogramPlot::paintEvent(QPaintEvent *event) {
   if (maxLutValue == 0)
     return;
 
-  double barWidth = fmax(1.0f, static_cast<double>(w) / static_cast<double>(lut_size));
+  double barWidth =
+      fmax(1.0f, static_cast<double>(w) / static_cast<double>(lut_size));
 
   for (int i = 0; i < lut_size; ++i) {
     int barHeight = static_cast<int>(
@@ -52,8 +52,8 @@ void HistogramPlot::paintEvent(QPaintEvent *event) {
   QLinearGradient gradient(0, maxHeight + spacing, w,
                            maxHeight + spacing + gradientHeight);
   for (size_t i = 0; i < lut.size(); ++i) {
-    double intensity =
-        static_cast<double>(i) / static_cast<double>(lut.size() - 1); // normalize
+    double intensity = static_cast<double>(i) /
+                       static_cast<double>(lut.size() - 1); // normalize
     double position = intensity;
 
     QColor color =
@@ -86,8 +86,10 @@ HistogramWidget::HistogramWidget(QWidget *parent)
   connect(this, &HistogramWidget::updateLUT, plot, &HistogramPlot::updateLUT);
 }
 
-void HistogramWidget::updateHistogram(ImageWrapper image) {
+void HistogramWidget::updateHistogram(const ImageWrapper &image) {
   lut = imageProcessor::histogram(image);
+  if (lut.empty())
+    return;
   min = lut[0];
   max = lut[0];
 

@@ -1,9 +1,10 @@
 #include "mdiChild.hpp"
-#include "../imageProcessor.hpp"
 #include <QPixmap>
 #include <QVBoxLayout>
+#include <qfileinfo.h>
 #include <qnamespace.h>
 #include <qpixmap.h>
+#include <stdexcept>
 
 MdiChild::MdiChild() {
   QScrollArea *scrollArea = new QScrollArea;
@@ -15,32 +16,24 @@ MdiChild::MdiChild() {
   setWidget(scrollArea);
 }
 
-void MdiChild::updatePixmap(QPixmap pixmap) {
+void MdiChild::loadImage(QString filePath) {
+  QString fileName = QFileInfo(filePath).fileName();
+  imageWrapper = new ImageWrapper(filePath);
+
+  QImage image = imageWrapper->generateQImage();
+  if (image.isNull())
+    throw new std::runtime_error("Failed to generate a QImage!");
+
+  QPixmap pixmap = QPixmap::fromImage(image);
   imageLabel->setImage(pixmap);
-  QImage im = pixmap.toImage();
-  if (im.allGray()) {
-    imageType = ImageType::GrayScale;
-  } else {
-    imageType = ImageType::RGB;
-  }
+  updateImageName(fileName);
 
-  emit pixmapUpdated(pixmap);
+  emit imageUpdated(*imageWrapper);
 }
-
 void MdiChild::setImageScale(double zoom) { imageLabel->setImageScale(zoom); }
 
 void MdiChild::updateImageName(QString name) {
   imageName = name;
-  setWindowTitle(QString("[%1] %2").arg(toString(imageType)).arg(name));
-}
-
-QPixmap MdiChild::getPixmap() const { return imageLabel->getImage(); }
-
-void MdiChild::toGrayscale() {
-  imageType = ImageType::GrayScale;
-
-  const QImage image = getPixmap().toImage();
-  updatePixmap(QPixmap::fromImage(imageProcessor::toGrayScale(image)));
-  // update the image type in the window title
-  updateImageName(imageName);
+  auto imageFormat = pixelFormatToString(imageWrapper->getFormat());
+  setWindowTitle(QString("[%1] %2").arg(imageFormat).arg(name));
 }

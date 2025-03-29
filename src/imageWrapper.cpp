@@ -1,22 +1,59 @@
 #include "imageWrapper.hpp"
-#include <vector>
+#include <opencv2/imgcodecs.hpp>
+#include <QImage>
 
-ImageWrapper::ImageWrapper(std::vector<uchar> data, int width, int height,
-                           ImageType type)
-    : width_(width), height_(height), data_(data), type_(type) {
+ImageWrapper::ImageWrapper(QString filePath)
+    : ImageWrapper(cv::imread(filePath.toStdString(), cv::IMREAD_ANYCOLOR)) {}
 
-  mat_ = cv::Mat(height_, width_, cvImageType(type), data.data());
+ImageWrapper::ImageWrapper(cv::Mat mat) : mat_(std::move(mat)) {
+  format_ = pixelFormatFromChannelsNumber(mat_.channels());
 }
 
-ImageWrapper::ImageWrapper(QImage image) : qimage_(image) {
-  width_ = image.width();
-  height_ = image.height();
-  auto type = imageTypeFromQImageFormat(image.format());
-  if (!type.has_value()) {
-    throw std::runtime_error("Unsupported QImage format: " +
-                             std::to_string(static_cast<int>(image.format())));
+QImage ImageWrapper::generateQImage() const {
+  QImage img;
+  switch (format_) {
+  case PixelFormat::Binary:
+  case PixelFormat::Grayscale8: {
+    CV_Assert(mat_.type() == CV_8UC1);
+    img = QImage(mat_.data, mat_.cols, mat_.rows, mat_.step,
+                 QImage::Format_Grayscale8);
+    break;
+  }
+  case PixelFormat::BGR24: {
+    CV_Assert(mat_.type() == CV_8UC3);
+    cv::Mat rgbMat;
+    cv::cvtColor(mat_, rgbMat, cv::COLOR_BGR2RGB);
+    img = QImage(rgbMat.data, rgbMat.cols, rgbMat.rows, rgbMat.step,
+                 QImage::Format_RGB888);
+    break;
   }
 
-  type_ = type.value();
-  mat_ = cv::Mat(height_, width_, cvImageType(type_), qimage_.bits());
+  case PixelFormat::HSV24: {
+    CV_Assert(mat_.type() == CV_8UC3);
+    cv::Mat rgbMat;
+    cv::cvtColor(mat_, rgbMat, cv::COLOR_HSV2RGB);
+    img = QImage(rgbMat.data, rgbMat.cols, rgbMat.rows, rgbMat.step,
+                 QImage::Format_RGB888);
+    break;
+  }
+
+  case PixelFormat::Lab24: {
+    CV_Assert(mat_.type() == CV_8UC3);
+    cv::Mat rgbMat;
+    cv::cvtColor(mat_, rgbMat, cv::COLOR_Lab2RGB);
+    img = QImage(rgbMat.data, rgbMat.cols, rgbMat.rows, rgbMat.step,
+                 QImage::Format_RGB888);
+    break;
+  }
+
+  case PixelFormat::BGRA32: {
+    CV_Assert(mat_.type() == CV_8UC4);
+    cv::Mat rgbaMat;
+    cv::cvtColor(mat_, rgbaMat, cv::COLOR_BGRA2RGBA);
+    img = QImage(rgbaMat.data, rgbaMat.cols, rgbaMat.rows, rgbaMat.step,
+                 QImage::Format_RGB888);
+    break;
+  }
+  }
+  return img;
 }

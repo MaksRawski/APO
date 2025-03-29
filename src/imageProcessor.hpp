@@ -2,6 +2,7 @@
 
 #include "imageWrapper.hpp"
 #include <QImage>
+#include <cstdint>
 #include <vector>
 
 namespace imageProcessor {
@@ -14,7 +15,7 @@ const int M = LMAX - LMIN;
 LUT histogram(const ImageWrapper &image);
 LUT negate();
 LUT stretch(int p1, int p2, int q3, int q4);
-LUT posterize(int n);
+LUT posterize(uint8_t n);
 
 QImage toGrayScale(const QImage &image);
 } // namespace imageProcessor

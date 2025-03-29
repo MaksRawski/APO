@@ -1,47 +1,33 @@
 #pragma once
 
+#include "../imageWrapper.hpp"
 #include "imageLabel.hpp"
 #include <QLabel>
+#include <QScrollArea>
 #include <qmdisubwindow.h>
 #include <qpixmap.h>
-#include <QScrollArea>
-
-enum class ImageType {
-  Binary,
-  GrayScale,
-  RGB,
-};
-
-static QString toString(ImageType type) {
-  switch (type) {
-  case ImageType::Binary:
-    return "binary";
-  case ImageType::GrayScale:
-    return "grayscale";
-  case ImageType::RGB:
-    return "RGB";
-  default:
-    return "Unknown";
-  }
-}
+#include <qsize.h>
 
 class MdiChild : public QMdiSubWindow {
-	Q_OBJECT
+  Q_OBJECT
 public:
-	MdiChild();
-	void updatePixmap(QPixmap pixmap);
-	void updateImageName(QString name);
-	void setImageScale(double zoom);
-	QPixmap getPixmap() const;
+  MdiChild();
+  void loadImage(QString filePath);
+  void updateImageName(QString name);
+  void setImageScale(double zoom);
+  const ImageWrapper &getImage() const { return *imageWrapper; };
+  const QSize getImageSize() const {
+    return QSize(imageWrapper->getWidth(), imageWrapper->getHeight());
+  }
 
 signals:
-	void pixmapUpdated(QPixmap pixmap);
+  void imageUpdated(const ImageWrapper &image);
 
-public slots:
-	void toGrayscale();
+  // public slots:
+  // 	void toGrayscale();
 
 private:
-	ImageLabel *imageLabel;
-	ImageType imageType;
-	QString imageName;
+  ImageLabel *imageLabel;
+  ImageWrapper *imageWrapper;
+  QString imageName;
 };

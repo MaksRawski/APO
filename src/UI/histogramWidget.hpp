@@ -38,7 +38,7 @@ public:
   void reset();
 
 public slots:
-  void updateHistogram(QPixmap pixmap);
+  void updateHistogram(const ImageWrapper &image);
 
 signals:
   void updateLUT(imageProcessor::LUT lut, int max);
