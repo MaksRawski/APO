@@ -1,0 +1,102 @@
+name: Qt6 OpenCV Cross-Platform Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Qt6 and OpenCV dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          qt6-base-dev \
+          qt6-tools-dev \
+          libqt6core6 \
+          libqt6gui6 \
+          libopencv-dev \
+          cmake \
+          build-essential
+    
+    - name: Configure CMake
+      run: |
+        mkdir build
+        cd build
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_PREFIX_PATH=/usr/lib/x86_64-linux-gnu/cmake \
+          -DQt6_DIR=/usr/lib/x86_64-linux-gnu/cmake/Qt6
+    
+    - name: Build Project
+      run: |
+        cd build
+        make -j$(nproc)
+    
+    - name: Run Tests
+      run: |
+        cd build
+        ctest --output-on-failure
+
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Qt6
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.5.2'
+        host: 'windows'
+        target: 'desktop'
+        arch: 'win64_msvc2019_64'
+        modules: 'qtbase qttools'
+    
+    - name: Install OpenCV
+      uses: actions/checkout@v4
+      with:
+        repository: 'opencv/opencv'
+        path: 'opencv'
+        ref: '4.7.0'
+    
+    - name: Build OpenCV
+      run: |
+        cd opencv
+        mkdir build
+        cd build
+        cmake .. \
+          -G "Visual Studio 17 2022" \
+          -A x64 \
+          -DCMAKE_INSTALL_PREFIX=./install \
+          -DBUILD_SHARED_LIBS=ON \
+          -DBUILD_TESTS=OFF \
+          -DBUILD_PERF_TESTS=OFF
+        cmake --build . --config Release --target install
+    
+    - name: Configure CMake
+      run: |
+        mkdir build
+        cd build
+        cmake .. \
+          -G "Visual Studio 17 2022" \
+          -A x64 \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DQt6_DIR=${{ env.Qt6_DIR }} \
+          -DOpenCV_DIR=${{ github.workspace }}/opencv/build/install/x64/vc16/lib/cmake/opencv4
+    
+    - name: Build Project
+      run: |
+        cd build
+        cmake --build . --config Release
+    
+    - name: Run Tests
+      run: |
+        cd build
+        ctest -C Release --output-on-failure
