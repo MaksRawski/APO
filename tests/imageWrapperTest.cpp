@@ -81,7 +81,7 @@ TEST_F(ImageWrapperTest, GenerateQImage_BGR_Gradient) {
 }
 
 TEST_F(ImageWrapperTest, GenerateQImage_BGR_Gradient_BIG) {
-  cv::Mat rgbMat(512, 512, CV_8UC3);
+  cv::Mat rgbMat(4096, 4096, CV_8UC3);
   for (int y = 0; y < rgbMat.rows; ++y) {
     for (int x = 0; x < rgbMat.cols; ++x) {
       rgbMat.at<cv::Vec3b>(y, x) = cv::Vec3b(y % 255, x % 255, (y + x) % 255);
@@ -91,16 +91,17 @@ TEST_F(ImageWrapperTest, GenerateQImage_BGR_Gradient_BIG) {
   ImageWrapper imageWrapper(rgbMat);
   QImage image = imageWrapper.generateQImage();
 
-  EXPECT_EQ(image.width(), rgbMat.cols);
-  EXPECT_EQ(image.height(), rgbMat.rows);
+  ASSERT_FALSE(image.isNull());
+  ASSERT_EQ(image.width(), rgbMat.cols);
+  ASSERT_EQ(image.height(), rgbMat.rows);
+
 
   for (int y = 0; y < image.height(); ++y) {
     for (int x = 0; x < image.width(); ++x) {
-      // this line fails when y = 0, x = 1
       QRgb pixel = image.pixel(x, y);
-      ASSERT_EQ(qBlue(pixel), y);
-      ASSERT_EQ(qGreen(pixel), x);
-      ASSERT_EQ(qRed(pixel), y + x);
+      ASSERT_EQ(qBlue(pixel), y % 255);
+      ASSERT_EQ(qGreen(pixel), x % 255);
+      ASSERT_EQ(qRed(pixel), (y + x) % 255);
     }
   }
 }
