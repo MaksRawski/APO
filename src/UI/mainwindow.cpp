@@ -61,6 +61,7 @@ void MainWindow::setupUI() {
 void MainWindow::openImage() {
   QString filePath = QFileDialog::getOpenFileName(
       this, tr("Open Image"), "", tr("Image Files (*.png *.jpg *.bmp)"));
+  if (filePath.isEmpty()) return;
 
   // create new window
   MdiChild *mdiChild = new MdiChild;
