@@ -61,8 +61,9 @@ ${WINDOWS_RELEASE_BUILD_DIR}:
 ${WINDOWS_PACKAGE_ZIP}: windows-release
 	mkdir -p ${WINDOWS_PACKAGE_DIR}
 	cp ${WINDOWS_RELEASE_BUILD_DIR}/${PROGRAM_NAME}.exe ${WINDOWS_PACKAGE_DIR}/
+	cp /opt/windows-opencv-build/bin/*.dll ${WINDOWS_PACKAGE_DIR}/
 	wine /opt/Qt/6.8.2/mingw_64/bin/windeployqt.exe --release ${WINDOWS_PACKAGE_DIR}/${PROGRAM_NAME}.exe
-	zip -r ${WINDOWS_PACKAGE_DIR}/${PROGRAM_NAME}-windows.zip ${WINDOWS_PACKAGE_DIR}/
+	# zip -r ${WINDOWS_PACKAGE_DIR}/${PROGRAM_NAME}-windows.zip ${WINDOWS_PACKAGE_DIR}/
 
 clean:
 	rm -rf ${LINUX_BUILD_DIR} ${WINDOWS_BUILD_DIR}
