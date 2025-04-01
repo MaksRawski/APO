@@ -7,7 +7,9 @@ set(CMAKE_AUTOMOC OFF)
 
 set(Qt6_LIBS Qt6::Core Qt6::Gui Qt6::Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
-# find_package(OpenCV REQUIRED)
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE) # toolchain file handles OpenCV manually
+  find_package(OpenCV REQUIRED)
+endif()
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 qt6_wrap_cpp(MOC_SOURCES
