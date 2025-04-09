@@ -23,9 +23,8 @@ public:
 
 private:
   QMdiArea *mdiArea;
-  // necessary to store, to allow for communication
   HistogramWidget *histogramWidget;
-  MdiChild *activeChild;
+  MdiChild *activeChild = nullptr;
 
   // actions
   QAction *toRGBAction;

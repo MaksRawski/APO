@@ -15,7 +15,7 @@ public:
   MdiChild();
   void loadImage(QString filePath);
   void setImage(QPixmap pixmap);
-  void updateImageName(QString name);
+  void setImageName(QString name);
   void setImageScale(double zoom);
   void updateChannelNames();
   const ImageWrapper &getImage() const { return *imageWrapper; };

@@ -35,12 +35,13 @@ void MainWindow::setupMenuBar() {
   QMenu *imageTypeMenu = imageMenu->addMenu("&Type");
 
   toLabAction = imageTypeMenu->addAction("&Lab");
-  toLabAction->setEnabled(false);
   toHSVAction = imageTypeMenu->addAction("&HSV");
-  toHSVAction->setEnabled(false);
   toRGBAction = imageTypeMenu->addAction("&RGB");
-  toRGBAction->setEnabled(false);
   toGrayscaleAction = imageTypeMenu->addAction("&Grayscale");
+
+  toLabAction->setEnabled(false);
+  toHSVAction->setEnabled(false);
+  toRGBAction->setEnabled(false);
   toGrayscaleAction->setEnabled(false);
 
   connect(openAction, &QAction::triggered, this, &MainWindow::openImage);
@@ -68,23 +69,22 @@ void MainWindow::setupUI() {
 void MainWindow::openImage() {
   QString filePath = QFileDialog::getOpenFileName(
       this, tr("Open Image"), "", tr("Image Files (*.png *.jpg *.bmp)"));
-  if (filePath.isEmpty()) return;
+  if (filePath.isEmpty())
+    return;
 
   // create new window
   MdiChild *newChild = new MdiChild;
 
-  // NOTE: mdiChild(ren) will emit signals anytime an image changes so technically we could have a non-active
-  // image trigger this and overwrite the histogram output. For now I assume that for image to change
-  // it must be first active, so the histogram should always match the active image.
-  newChild->loadImage(filePath); // will emit the initial imageUpdated signal
-
+  // NOTE: will emit the initial imageUpdated signal
+  newChild->loadImage(filePath);
   connectActions(newChild);
 
   // scale the image so that it takes at max 70% of the window
   QSize size = activeChild->getImageSize();
   QSize windowSize = this->size();
   QSize scaledSize = size.scaled(windowSize * 0.7, Qt::KeepAspectRatio);
-  double scaleFactor = static_cast<float>(scaledSize.width()) / static_cast<float>(size.width());
+  double scaleFactor =
+      static_cast<float>(scaledSize.width()) / static_cast<float>(size.width());
 
   // prevent upscaling
   if (scaleFactor < 1.0)
@@ -97,9 +97,10 @@ void MainWindow::openImage() {
 void MainWindow::mdiSubWindowActivated(QMdiSubWindow *window) {
   if (window == nullptr) {
     histogramWidget->reset();
+    activeChild = nullptr;
     return;
   }
-  MdiChild *mdiChild = qobject_cast<MdiChild*>(window);
+  MdiChild *mdiChild = qobject_cast<MdiChild *>(window);
 
   if (mdiChild) {
     activeChild = mdiChild;
@@ -107,14 +108,15 @@ void MainWindow::mdiSubWindowActivated(QMdiSubWindow *window) {
   }
 }
 
-
 // enables all the actions that operate on the image
 void MainWindow::connectActions(MdiChild *newActiveChild) {
-  disconnect(toLabAction, &QAction::triggered, activeChild, &MdiChild::toLab);
-  disconnect(toHSVAction, &QAction::triggered, activeChild, &MdiChild::toHSV);
-  disconnect(toRGBAction, &QAction::triggered, activeChild, &MdiChild::toRGB);
-  disconnect(toGrayscaleAction, &QAction::triggered, activeChild, &MdiChild::toGrayscale);
-  disconnect(activeChild, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
+  if (activeChild != nullptr) {
+    disconnect(toLabAction, &QAction::triggered, activeChild, &MdiChild::toLab);
+    disconnect(toHSVAction, &QAction::triggered, activeChild, &MdiChild::toHSV);
+    disconnect(toRGBAction, &QAction::triggered, activeChild, &MdiChild::toRGB);
+    disconnect(toGrayscaleAction, &QAction::triggered, activeChild, &MdiChild::toGrayscale);
+    disconnect(activeChild, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
+  }
 
   activeChild = newActiveChild;
   connect(toLabAction, &QAction::triggered, activeChild, &MdiChild::toLab);
@@ -126,5 +128,5 @@ void MainWindow::connectActions(MdiChild *newActiveChild) {
   toGrayscaleAction->setEnabled(true);
   toRGBAction->setEnabled(true);
   toLabAction->setEnabled(true);
-  toGrayscaleAction->setEnabled(true);
+  toHSVAction->setEnabled(true);
 }

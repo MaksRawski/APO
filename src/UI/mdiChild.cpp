@@ -57,12 +57,14 @@ void MdiChild::loadImage(QString filePath) {
 
   QPixmap pixmap = QPixmap::fromImage(image);
   setImage(pixmap);
-  updateImageName(fileName);
+  setImageName(fileName);
 }
 
 void MdiChild::setImage(QPixmap pixmap) {
+  qDebug() << "setImage!";
   imageLabel->setImage(pixmap);
-  resize(pixmap.size() + QSize(30, 30));
+  resize(pixmap.size() + QSize(30, 70));
+  setImageName(imageName);
   emit imageUpdated(*imageWrapper);
 }
 
@@ -102,7 +104,7 @@ void MdiChild::toRGB() {
   setImage(QPixmap::fromImage(im.generateQImage()));
 }
 
-void MdiChild::updateImageName(QString name) {
+void MdiChild::setImageName(QString name) {
   imageName = name;
   auto imageFormat = pixelFormatToString(imageWrapper->getFormat());
   setWindowTitle(QString("[%1] %2").arg(imageFormat).arg(name));
