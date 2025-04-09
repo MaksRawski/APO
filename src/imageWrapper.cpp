@@ -86,108 +86,135 @@ std::vector<ImageWrapper> ImageWrapper::splitChannels() const {
 }
 
 ImageWrapper ImageWrapper::toRGB() const {
+  ImageWrapper out;
   switch (format_) {
   case PixelFormat::BGR24: {
-    ImageWrapper out = ImageWrapper(*this);
-    return out;
+    out = ImageWrapper(*this);
+    break;
   }
   case PixelFormat::HSV24: {
     cv::Mat res;
     cv::cvtColor(mat_, res, cv::COLOR_HSV2BGR);
-    ImageWrapper out = ImageWrapper(res);
-    out.format_ = PixelFormat::BGR24;
-    return out;
+    out = ImageWrapper(res);
+    break;
   }
   case PixelFormat::Lab24: {
     cv::Mat res;
     cv::cvtColor(mat_, res, cv::COLOR_Lab2BGR);
-    ImageWrapper out = ImageWrapper(res);
-    out.format_ = PixelFormat::BGR24;
-    return out;
+    out = ImageWrapper(res);
+    break;
+  }
+  case PixelFormat::Grayscale8: {
+    cv::Mat res;
+    cv::cvtColor(mat_, res, cv::COLOR_GRAY2BGR);
+    out = ImageWrapper(res);
+    break;
   }
   default:
     throw new std::runtime_error("not yet implemented!");
   }
+  out.format_ = PixelFormat::BGR24;
+  return out;
 }
 
 ImageWrapper ImageWrapper::toHSV() const {
+  ImageWrapper out;
   switch (format_) {
   case PixelFormat::BGR24: {
     cv::Mat res;
     cv::cvtColor(mat_, res, cv::COLOR_BGR2HSV);
-    ImageWrapper out = ImageWrapper(res);
-    out.format_ = PixelFormat::HSV24;
-    return out;
+    out = ImageWrapper(res);
+    break;
   }
   case PixelFormat::HSV24: {
-    ImageWrapper out = ImageWrapper(*this);
-    return out;
+    out = ImageWrapper(*this);
+    break;
   }
   case PixelFormat::Lab24: {
     cv::Mat bgr, res;
     cv::cvtColor(mat_, bgr, cv::COLOR_Lab2BGR);
     cv::cvtColor(bgr, res, cv::COLOR_BGR2HSV);
-    ImageWrapper out = ImageWrapper(res);
-    out.format_ = PixelFormat::HSV24;
-    return out;
+    out = ImageWrapper(res);
+    break;
+  }
+  case PixelFormat::Grayscale8: {
+    cv::Mat bgr, res;
+    cv::cvtColor(mat_, bgr, cv::COLOR_GRAY2BGR);
+    cv::cvtColor(bgr, res, cv::COLOR_BGR2HSV);
+    out = ImageWrapper(res);
+    break;
   }
   default:
     throw new std::runtime_error("not yet implemented!");
   }
+  out.format_ = PixelFormat::HSV24;
+  return out;
 }
 
 ImageWrapper ImageWrapper::toLab() const {
+  ImageWrapper out;
   switch (format_) {
   case PixelFormat::BGR24: {
     cv::Mat res;
     cv::cvtColor(mat_, res, cv::COLOR_BGR2Lab);
-    ImageWrapper out = ImageWrapper(res);
-    out.format_ = PixelFormat::Lab24;
-    return out;
+    out = ImageWrapper(res);
+    break;
   }
   case PixelFormat::HSV24: {
     cv::Mat bgr, res;
     cv::cvtColor(mat_, bgr, cv::COLOR_HSV2BGR);
     cv::cvtColor(bgr, res, cv::COLOR_BGR2Lab);
-    ImageWrapper out = ImageWrapper(res);
-    out.format_ = PixelFormat::Lab24;
-    return out;
+    out = ImageWrapper(res);
+    break;
   }
   case PixelFormat::Lab24: {
-    ImageWrapper out = ImageWrapper(*this);
-    return out;
+    out = ImageWrapper(*this);
+    break;
+  }
+  case PixelFormat::Grayscale8: {
+    cv::Mat bgr, res;
+    cv::cvtColor(mat_, bgr, cv::COLOR_GRAY2BGR);
+    cv::cvtColor(bgr, res, cv::COLOR_BGR2Lab);
+    out = ImageWrapper(res);
+    break;
   }
   default:
     throw new std::runtime_error("not yet implemented!");
   }
+  out.format_ = PixelFormat::Lab24;
+  return out;
 }
 
 ImageWrapper ImageWrapper::toGrayscale() const {
+  ImageWrapper out;
   switch (format_) {
   case PixelFormat::BGR24: {
     cv::Mat res;
-    cv::cvtColor(mat_, res, cv::COLOR_RGB2GRAY);
-    ImageWrapper out = ImageWrapper(res);
-    out.format_ = PixelFormat::Grayscale8;
-    return out;
+    cv::cvtColor(mat_, res, cv::COLOR_BGR2GRAY);
+    out = ImageWrapper(res);
+    break;
   }
   case PixelFormat::HSV24: {
     cv::Mat bgr, res;
     cv::cvtColor(mat_, bgr, cv::COLOR_HSV2BGR);
     cv::cvtColor(bgr, res, cv::COLOR_BGR2GRAY);
-    ImageWrapper out = ImageWrapper(res);
-    out.format_ = PixelFormat::Grayscale8;
-    return out;
+    out = ImageWrapper(res);
+    break;
   }
   case PixelFormat::Lab24: {
     cv::Mat bgr, res;
     cv::cvtColor(mat_, res, cv::COLOR_Lab2BGR);
     cv::cvtColor(bgr, res, cv::COLOR_BGR2GRAY);
-    ImageWrapper out = ImageWrapper(res);
-    out.format_ = PixelFormat::Grayscale8;
-    return out;
+    out = ImageWrapper(res);
+    break;
+  }
+  case PixelFormat::Grayscale8: {
+    out = ImageWrapper(*this);
+    break;
   }
   default:
     throw new std::runtime_error("not yet implemented!");
   }
+  out.format_ = PixelFormat::Grayscale8;
+  return out;
 }

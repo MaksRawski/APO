@@ -106,7 +106,6 @@ void MdiChild::toRGB() {
 void MdiChild::setImageName(QString name) {
   imageName = name;
   auto imageFormat = pixelFormatToString(imageWrapper->getFormat());
-  qDebug() << imageFormat;
   setWindowTitle(QString("[%1] %2").arg(imageFormat).arg(name));
 }
 
