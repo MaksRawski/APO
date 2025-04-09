@@ -12,6 +12,7 @@
 #include <QSplitter>
 #include <cassert>
 #include <qaction.h>
+#include <qboxlayout.h>
 #include <qfileinfo.h>
 #include <qkeysequence.h>
 #include <qmdiarea.h>
@@ -45,6 +46,10 @@ void MainWindow::setupMenuBar() {
   toLabAction = imageTypeMenu->addAction("&Lab");
   toGrayscaleAction = imageTypeMenu->addAction("&Grayscale");
 
+  QMenu *aboutMenu = menuBar()->addMenu("Info");
+  aboutAction = aboutMenu->addAction("About");
+
+  duplicateAction->setEnabled(false);
   splitChannelsAction->setEnabled(false);
   toRGBAction->setEnabled(false);
   toHSVAction->setEnabled(false);
@@ -55,6 +60,7 @@ void MainWindow::setupMenuBar() {
   connect(openAction, &QAction::triggered, this, &MainWindow::openImage);
   connect(duplicateAction, &QAction::triggered, this, &MainWindow::duplicateImage);
   connect(splitChannelsAction, &QAction::triggered, this, &MainWindow::splitChannels);
+  connect(aboutAction, &QAction::triggered, this, &MainWindow::openAboutWindow);
 }
 
 void MainWindow::setupUI() {
@@ -201,4 +207,24 @@ void MainWindow::duplicateImage() {
 
   mdiArea->addSubWindow(dupChild);
   dupChild->show();
+}
+
+void MainWindow::openAboutWindow() {
+  QDialog window;
+  QVBoxLayout *layout = new QVBoxLayout(&window);
+
+  window.resize(320, 240);
+  window.setWindowTitle("O programie");
+  QLabel *title = new QLabel("<h3>Aplikacja zbiorcza z ćwiczeń laboratoryjnych</h3>");
+  QLabel *author = new QLabel("Autor: Maksymilian Rawski");
+  QLabel *instructor = new QLabel("Prowadzący: dr inż. Łukasz Roszkowiak");
+  QLabel *className = new QLabel("Algorytmy Przetwarzania Obrazów 2024");
+  QLabel *group = new QLabel("WIT grupa ID06IO1");
+
+  layout->addWidget(title);
+  layout->addWidget(author);
+  layout->addWidget(instructor);
+  layout->addWidget(className);
+  layout->addWidget(group);
+  window.exec();
 }

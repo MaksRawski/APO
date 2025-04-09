@@ -33,6 +33,7 @@ private:
   QAction *toGrayscaleAction;
   QAction *splitChannelsAction;
   QAction *duplicateAction;
+  QAction *aboutAction;
   void connectActions(MdiChild *newActiveChild);
 
   // setup functions
@@ -40,6 +41,7 @@ private:
   void setupUI();
 
 private slots:
+  void openAboutWindow();
   void openImage();
   void duplicateImage();
   void splitChannels();
