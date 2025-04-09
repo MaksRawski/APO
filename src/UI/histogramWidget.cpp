@@ -1,11 +1,13 @@
 #include "histogramWidget.hpp"
 #include "../imageProcessor.hpp"
 #include <QListWidget>
+#include <qboxlayout.h>
 #include <qbrush.h>
 #include <qlabel.h>
 #include <qnamespace.h>
 #include <qpixmap.h>
 #include <qscrollarea.h>
+#include <qwidget.h>
 
 HistogramPlot::HistogramPlot(QWidget *parent) : QWidget(parent) {
   setMinimumSize(256, 100);
@@ -70,18 +72,22 @@ HistogramWidget::HistogramWidget(QWidget *parent)
   // PLOT
   plot = new HistogramPlot;
 
+  QWidget *statsAndLut = new QWidget;
+  QVBoxLayout *statsAndLutLayout = new QVBoxLayout(statsAndLut);
+
+  // STATS
+  statsLabel = new QLabel("Min: -- Max: -- Avg: --");
+  statsAndLutLayout->addWidget(statsLabel);
+
   // LUT
   QScrollArea *lutScrollArea = new QScrollArea;
   lutScrollArea->setWidgetResizable(true);
   lutList = new QListWidget;
   lutScrollArea->setWidget(lutList);
-
-  // STATS
-  statsLabel = new QLabel("Min: -- Max: -- Avg: --");
+  statsAndLutLayout->addWidget(lutScrollArea);
 
   addWidget(plot);
-  addWidget(statsLabel);
-  addWidget(lutScrollArea);
+  addWidget(statsAndLut);
 
   connect(this, &HistogramWidget::updateLUT, plot, &HistogramPlot::updateLUT);
 }
@@ -94,6 +100,7 @@ void HistogramWidget::updateHistogram(const ImageWrapper &image) {
   max = lut[0];
 
   int sum = 0;
+  lutList->clear();
   for (int i = 0; i < lut.size(); ++i) {
     int l = lut[i];
     if (l < min)
