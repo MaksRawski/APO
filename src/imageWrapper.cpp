@@ -2,6 +2,16 @@
 #include <opencv2/imgcodecs.hpp>
 #include <QImage>
 
+ImageWrapper::ImageWrapper(const ImageWrapper &other): format_(other.format_) {
+  other.mat_.copyTo(this->mat_);
+}
+
+ImageWrapper &ImageWrapper::operator=(const ImageWrapper &rhs)  {
+  rhs.mat_.copyTo(this->mat_);
+  format_ = rhs.format_;
+  return *this;
+}
+
 ImageWrapper::ImageWrapper(QString filePath)
     : ImageWrapper(cv::imread(filePath.toStdString(), cv::IMREAD_ANYCOLOR)) {}
 
@@ -56,4 +66,14 @@ QImage ImageWrapper::generateQImage() const {
   }
   }
   return img;
+}
+
+std::vector<ImageWrapper> ImageWrapper::splitChannels() const {
+  std::vector<cv::Mat> channels;
+  cv::split(mat_, channels);
+  std::vector<ImageWrapper> result;
+  for (int i = 0; i < 3; ++i) {
+    result.emplace_back(ImageWrapper(channels[i]));
+  }
+  return result;
 }

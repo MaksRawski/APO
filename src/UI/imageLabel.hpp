@@ -9,7 +9,7 @@ class ImageLabel : public QLabel {
   Q_OBJECT
 
 public:
-  explicit ImageLabel(QWidget *parent = nullptr);
+  ImageLabel(QWidget *parent = nullptr);
 
   void setImage(const QPixmap &pixmap);
   void setImageScale(double scale);

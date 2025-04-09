@@ -72,6 +72,9 @@ constexpr const char *pixelFormatToString(PixelFormat format) {
 
 class ImageWrapper {
 public:
+  ImageWrapper() = default;
+  ImageWrapper(const ImageWrapper &imageWrapper);
+  ImageWrapper &operator=(const ImageWrapper &rhs);
   ImageWrapper(QString filePath);
   ImageWrapper(cv::Mat mat);
 
@@ -80,6 +83,7 @@ public:
   int getHeight() const { return mat_.rows; }
   PixelFormat getFormat() const { return format_; }
   QImage generateQImage() const;
+  std::vector<ImageWrapper> splitChannels() const;
 
 signals:
   void dataChanged(QPixmap pixmap);
