@@ -59,18 +59,20 @@ void MdiChild::loadImage(QString filePath) {
 
   QPixmap pixmap = QPixmap::fromImage(image);
   setImage(pixmap);
+  resize(pixmap.size() + QSize(30, 70));
   setImageName(fileName);
 }
 
 void MdiChild::setImage(QPixmap pixmap) {
   imageLabel->setImage(pixmap);
-  resize(pixmap.size() + QSize(30, 70));
   setImageName(imageName);
   updateChannelNames();
   emit imageUpdated(*imageWrapper);
 }
 
-void MdiChild::setImageScale(double zoom) { imageLabel->setImageScale(zoom); }
+void MdiChild::setImageScale(double zoom) {
+  imageLabel->setImageScale(zoom);
+}
 
 void MdiChild::updateChannelNames() {
   auto imageFormat = imageWrapper->getFormat();
@@ -133,20 +135,22 @@ void MdiChild::tabChanged(int index) {
     return;
 
   if (index == 0) {
-    // TODO: recreate the image from channels
+    // IDEA: recreate the image from channels
   } else if (prevTabIndex == 0) {
-    // split the image into channels
+    // split the original image into channels,
+    // done only when switching from original image
     std::vector<ImageWrapper> imageWrappers = imageWrapper->splitChannels();
 
     if (imageWrappers.size() < 3)
       throw new std::runtime_error("Failed to split channels!");
+
     imageWrapper1 = imageWrappers[0];
     imageWrapper2 = imageWrappers[1];
     imageWrapper3 = imageWrappers[2];
 
-    ImageLabel *imageLabel1 = new ImageLabel;
-    ImageLabel *imageLabel2 = new ImageLabel;
-    ImageLabel *imageLabel3 = new ImageLabel;
+    imageLabel1 = new ImageLabel;
+    imageLabel2 = new ImageLabel;
+    imageLabel3 = new ImageLabel;
 
     QPixmap pixmap1 = QPixmap::fromImage(imageWrapper1.generateQImage());
     QPixmap pixmap2 = QPixmap::fromImage(imageWrapper2.generateQImage());
@@ -158,17 +162,47 @@ void MdiChild::tabChanged(int index) {
     scrollArea1->setWidget(imageLabel1);
     scrollArea2->setWidget(imageLabel2);
     scrollArea3->setWidget(imageLabel3);
+    qDebug() << "recreated!";
   }
-  switch (index) {
+
+  double prevZoom;
+  switch (prevTabIndex) {
+  case 0:
+    prevZoom = imageLabel->getImageScale();
+    break;
   case 1:
-    emit imageUpdated(imageWrapper1);
+    prevZoom = imageLabel1->getImageScale();
     break;
   case 2:
-    emit imageUpdated(imageWrapper2);
+    prevZoom = imageLabel2->getImageScale();
     break;
   case 3:
-    emit imageUpdated(imageWrapper3);
+    prevZoom = imageLabel3->getImageScale();
     break;
+  }
+  qDebug() << "prevZoom:" << prevZoom;
+
+  switch (index) {
+  case 0: {
+    emit imageUpdated(*imageWrapper);
+    imageLabel->setImageScale(prevZoom);
+    break;
+  }
+  case 1: {
+    emit imageUpdated(imageWrapper1);
+    imageLabel1->setImageScale(prevZoom);
+    break;
+  }
+  case 2: {
+    emit imageUpdated(imageWrapper2);
+    imageLabel2->setImageScale(prevZoom);
+    break;
+  }
+  case 3: {
+    emit imageUpdated(imageWrapper3);
+    imageLabel3->setImageScale(prevZoom);
+    break;
+  }
   }
   prevTabIndex = index;
 }

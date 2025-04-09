@@ -87,8 +87,10 @@ void MainWindow::openImage() {
       static_cast<float>(scaledSize.width()) / static_cast<float>(size.width());
 
   // prevent upscaling
-  if (scaleFactor < 1.0)
+  if (scaleFactor < 1.0) {
     activeChild->setImageScale(scaleFactor);
+    activeChild->resize(scaledSize);
+  }
 
   mdiArea->addSubWindow(activeChild);
   activeChild->show();
@@ -114,16 +116,20 @@ void MainWindow::connectActions(MdiChild *newActiveChild) {
     disconnect(toLabAction, &QAction::triggered, activeChild, &MdiChild::toLab);
     disconnect(toHSVAction, &QAction::triggered, activeChild, &MdiChild::toHSV);
     disconnect(toRGBAction, &QAction::triggered, activeChild, &MdiChild::toRGB);
-    disconnect(toGrayscaleAction, &QAction::triggered, activeChild, &MdiChild::toGrayscale);
-    disconnect(activeChild, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
+    disconnect(toGrayscaleAction, &QAction::triggered, activeChild,
+               &MdiChild::toGrayscale);
+    disconnect(activeChild, &MdiChild::imageUpdated, histogramWidget,
+               &HistogramWidget::updateHistogram);
   }
 
   activeChild = newActiveChild;
   connect(toLabAction, &QAction::triggered, activeChild, &MdiChild::toLab);
   connect(toHSVAction, &QAction::triggered, activeChild, &MdiChild::toHSV);
   connect(toRGBAction, &QAction::triggered, activeChild, &MdiChild::toRGB);
-  connect(toGrayscaleAction, &QAction::triggered, activeChild, &MdiChild::toGrayscale);
-  connect(activeChild, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
+  connect(toGrayscaleAction, &QAction::triggered, activeChild,
+          &MdiChild::toGrayscale);
+  connect(activeChild, &MdiChild::imageUpdated, histogramWidget,
+          &HistogramWidget::updateHistogram);
 
   toGrayscaleAction->setEnabled(true);
   toRGBAction->setEnabled(true);

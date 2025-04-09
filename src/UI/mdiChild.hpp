@@ -41,6 +41,7 @@ private:
   // image channels
   ImageWrapper imageWrapper1, imageWrapper2, imageWrapper3;
   QScrollArea *scrollArea1, *scrollArea2, *scrollArea3;
+  ImageLabel *imageLabel1, *imageLabel2, *imageLabel3;
 
   QString imageName;
   int prevTabIndex = 0;
