@@ -57,10 +57,12 @@ void MdiChild::loadImage(QString filePath) {
 
   QPixmap pixmap = QPixmap::fromImage(image);
   setImage(pixmap);
+  updateImageName(fileName);
 }
 
 void MdiChild::setImage(QPixmap pixmap) {
   imageLabel->setImage(pixmap);
+  resize(pixmap.size() + QSize(30, 30));
   emit imageUpdated(*imageWrapper);
 }
 
