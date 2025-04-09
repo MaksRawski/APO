@@ -61,7 +61,6 @@ void MdiChild::loadImage(QString filePath) {
 }
 
 void MdiChild::setImage(QPixmap pixmap) {
-  qDebug() << "setImage!";
   imageLabel->setImage(pixmap);
   resize(pixmap.size() + QSize(30, 70));
   setImageName(imageName);
@@ -88,25 +87,26 @@ void MdiChild::updateChannelNames() {
 }
 
 void MdiChild::toGrayscale() {
-  ImageWrapper im = imageWrapper->toGrayscale();
-  setImage(QPixmap::fromImage(im.generateQImage()));
+  *imageWrapper = imageWrapper->toGrayscale();
+  setImage(QPixmap::fromImage(imageWrapper->generateQImage()));
 }
 void MdiChild::toLab() {
-  ImageWrapper im = imageWrapper->toLab();
-  setImage(QPixmap::fromImage(im.generateQImage()));
+  *imageWrapper = imageWrapper->toLab();
+  setImage(QPixmap::fromImage(imageWrapper->generateQImage()));
 }
 void MdiChild::toHSV() {
-  ImageWrapper im = imageWrapper->toHSV();
-  setImage(QPixmap::fromImage(im.generateQImage()));
+  *imageWrapper = imageWrapper->toHSV();
+  setImage(QPixmap::fromImage(imageWrapper->generateQImage()));
 }
 void MdiChild::toRGB() {
-  ImageWrapper im = imageWrapper->toGrayscale();
-  setImage(QPixmap::fromImage(im.generateQImage()));
+  *imageWrapper = imageWrapper->toRGB();
+  setImage(QPixmap::fromImage(imageWrapper->generateQImage()));
 }
 
 void MdiChild::setImageName(QString name) {
   imageName = name;
   auto imageFormat = pixelFormatToString(imageWrapper->getFormat());
+  qDebug() << imageFormat;
   setWindowTitle(QString("[%1] %2").arg(imageFormat).arg(name));
 }
 
