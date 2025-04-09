@@ -34,14 +34,14 @@ void MainWindow::setupMenuBar() {
   QMenu *imageMenu = menuBar()->addMenu("&Image");
   QMenu *imageTypeMenu = imageMenu->addMenu("&Type");
 
-  toLabAction = imageTypeMenu->addAction("&Lab");
-  toHSVAction = imageTypeMenu->addAction("&HSV");
   toRGBAction = imageTypeMenu->addAction("&RGB");
+  toHSVAction = imageTypeMenu->addAction("&HSV");
+  toLabAction = imageTypeMenu->addAction("&Lab");
   toGrayscaleAction = imageTypeMenu->addAction("&Grayscale");
 
-  toLabAction->setEnabled(false);
-  toHSVAction->setEnabled(false);
   toRGBAction->setEnabled(false);
+  toHSVAction->setEnabled(false);
+  toLabAction->setEnabled(false);
   toGrayscaleAction->setEnabled(false);
 
   connect(openAction, &QAction::triggered, this, &MainWindow::openImage);

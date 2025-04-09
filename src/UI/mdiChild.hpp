@@ -6,6 +6,7 @@
 #include <QScrollArea>
 #include <qmdisubwindow.h>
 #include <qpixmap.h>
+#include <qscrollarea.h>
 #include <qsize.h>
 #include <qtabwidget.h>
 
@@ -39,7 +40,7 @@ private:
   ImageWrapper *imageWrapper;
   // image channels
   ImageWrapper imageWrapper1, imageWrapper2, imageWrapper3;
-  ImageLabel *imageLabel1, *imageLabel2, *imageLabel3;
+  QScrollArea *scrollArea1, *scrollArea2, *scrollArea3;
 
   QString imageName;
   int prevTabIndex = 0;
