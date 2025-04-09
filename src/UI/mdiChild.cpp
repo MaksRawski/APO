@@ -214,3 +214,13 @@ void MdiChild::tabChanged(int index) {
 
   prevTabIndex = index;
 }
+
+QString MdiChild::getImageBasename() const {
+  QFileInfo fileInfo(imageName);
+  return fileInfo.completeBaseName();
+}
+
+QString MdiChild::getImageNameSuffix() const {
+  QFileInfo fileInfo(imageName);
+  return fileInfo.completeSuffix();
+}

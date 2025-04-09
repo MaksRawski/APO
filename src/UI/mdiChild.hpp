@@ -30,6 +30,8 @@ public:
 
   double getImageScale() const { return zoom; }
   QString getImageName() const { return imageName; }
+  QString getImageBasename() const;
+  QString getImageNameSuffix() const;
   const ImageWrapper &getImage() const { return *imageWrapper; };
   const QSize getImageSize() const {
     return QSize(imageWrapper->getWidth(), imageWrapper->getHeight());

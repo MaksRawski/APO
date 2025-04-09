@@ -13,6 +13,7 @@
 #include <cassert>
 #include <qaction.h>
 #include <qfileinfo.h>
+#include <qkeysequence.h>
 #include <qmdiarea.h>
 #include <qmdisubwindow.h>
 #include <qnamespace.h>
@@ -34,6 +35,8 @@ void MainWindow::setupMenuBar() {
   saveAction->setShortcut(QKeySequence::Save);
 
   QMenu *imageMenu = menuBar()->addMenu("&Image");
+  duplicateAction = imageMenu->addAction("&Duplicate");
+  duplicateAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_D));
   splitChannelsAction = imageMenu->addAction("&Split channels");
 
   QMenu *imageTypeMenu = imageMenu->addMenu("&Type");
@@ -48,8 +51,10 @@ void MainWindow::setupMenuBar() {
   toLabAction->setEnabled(false);
   toGrayscaleAction->setEnabled(false);
 
+  // NOTE: connections that need MdiChild directly have to be created using `connectActions`
   connect(openAction, &QAction::triggered, this, &MainWindow::openImage);
-  // connect(saveAction, &QAction::triggered, this, &MainWindow::saveImage);
+  connect(duplicateAction, &QAction::triggered, this, &MainWindow::duplicateImage);
+  connect(splitChannelsAction, &QAction::triggered, this, &MainWindow::splitChannels);
 }
 
 void MainWindow::setupUI() {
@@ -118,26 +123,25 @@ void MainWindow::mdiSubWindowActivated(QMdiSubWindow *window) {
 // enables all the actions that operate on the image
 void MainWindow::connectActions(MdiChild *newActiveChild) {
   if (activeChild != nullptr) {
-    disconnect(splitChannelsAction, &QAction::triggered, this, &MainWindow::splitChannels);
+    disconnect(activeChild, &MdiChild::imageUpdated, this, &MainWindow::toggleOptions);
     disconnect(toRGBAction, &QAction::triggered, activeChild, &MdiChild::toRGB);
     disconnect(toHSVAction, &QAction::triggered, activeChild, &MdiChild::toHSV);
     disconnect(toLabAction, &QAction::triggered, activeChild, &MdiChild::toLab);
     disconnect(toGrayscaleAction, &QAction::triggered, activeChild, &MdiChild::toGrayscale);
 
     disconnect(activeChild, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
-    disconnect(activeChild, &MdiChild::imageUpdated, this, &MainWindow::toggleOptions);
   }
 
   activeChild = newActiveChild;
-  connect(splitChannelsAction, &QAction::triggered, this, &MainWindow::splitChannels);
-  connect(toLabAction, &QAction::triggered, activeChild, &MdiChild::toLab);
-  connect(toHSVAction, &QAction::triggered, activeChild, &MdiChild::toHSV);
+  connect(activeChild, &MdiChild::imageUpdated, this, &MainWindow::toggleOptions);
   connect(toRGBAction, &QAction::triggered, activeChild, &MdiChild::toRGB);
+  connect(toHSVAction, &QAction::triggered, activeChild, &MdiChild::toHSV);
+  connect(toLabAction, &QAction::triggered, activeChild, &MdiChild::toLab);
   connect(toGrayscaleAction, &QAction::triggered, activeChild, &MdiChild::toGrayscale);
 
   connect(activeChild, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
-  connect(activeChild, &MdiChild::imageUpdated, this, &MainWindow::toggleOptions);
 
+  duplicateAction->setEnabled(true);
   splitChannelsAction->setEnabled(true);
   toGrayscaleAction->setEnabled(true);
   toRGBAction->setEnabled(true);
@@ -180,4 +184,21 @@ void MainWindow::toggleOptions(const ImageWrapper &image){
   } else {
     splitChannelsAction->setEnabled(true);
   }
+}
+
+void MainWindow::duplicateImage() {
+  if (activeChild == nullptr) return; // should never happen
+
+  MdiChild *dupChild = new MdiChild;
+  dupChild->setImage(activeChild->getImage());
+
+  auto dupName = activeChild->getImageBasename() + "_dup." + activeChild->getImageNameSuffix();
+  dupChild->setImageName(dupName);
+
+  dupChild->setImageScale(activeChild->getImageScale());
+  dupChild->resize(activeChild->size());
+  connectActions(dupChild);
+
+  mdiArea->addSubWindow(dupChild);
+  dupChild->show();
 }

@@ -32,6 +32,7 @@ private:
   QAction *toLabAction;
   QAction *toGrayscaleAction;
   QAction *splitChannelsAction;
+  QAction *duplicateAction;
   void connectActions(MdiChild *newActiveChild);
 
   // setup functions
@@ -40,6 +41,7 @@ private:
 
 private slots:
   void openImage();
+  void duplicateImage();
   void splitChannels();
   void toggleOptions(const ImageWrapper &image);
   void mdiSubWindowActivated(QMdiSubWindow *window);
