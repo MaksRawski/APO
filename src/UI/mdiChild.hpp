@@ -10,23 +10,30 @@
 #include <qsize.h>
 #include <qtabwidget.h>
 
+
+const QSize CHILD_IMAGE_MARGIN = QSize(30, 70);
+
 class MdiChild : public QMdiSubWindow {
   Q_OBJECT
 public:
   MdiChild();
   void loadImage(QString filePath);
-  void setImage(QPixmap pixmap);
+  void setImage(const QPixmap &pixmap);
+  void setImage(const ImageWrapper &image);
   void setImageName(QString name);
   void setImageScale(double zoom);
   void updateChannelNames();
-  const ImageWrapper &getImage() const { return *imageWrapper; };
-  const QSize getImageSize() const {
-    return QSize(imageWrapper->getWidth(), imageWrapper->getHeight());
-  }
   void toLab();
   void toRGB();
   void toHSV();
   void toGrayscale();
+
+  double getImageScale() const { return zoom; }
+  QString getImageName() const { return imageName; }
+  const ImageWrapper &getImage() const { return *imageWrapper; };
+  const QSize getImageSize() const {
+    return QSize(imageWrapper->getWidth(), imageWrapper->getHeight());
+  }
 
 signals:
   void imageUpdated(const ImageWrapper &image);
@@ -43,6 +50,7 @@ private:
   QScrollArea *scrollArea1, *scrollArea2, *scrollArea3;
   ImageLabel *imageLabel1, *imageLabel2, *imageLabel3;
 
+  double zoom = 1.0;
   QString imageName;
   int prevTabIndex = 0;
 };

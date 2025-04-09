@@ -11,6 +11,7 @@
 
 MdiChild::MdiChild() {
   tabWidget = new QTabWidget;
+  tabWidget->setTabBarAutoHide(true);
 
   // all channels tab
   QScrollArea *scrollArea = new QScrollArea;
@@ -23,7 +24,7 @@ MdiChild::MdiChild() {
   scrollArea1 = new QScrollArea;
   scrollArea1->setWidgetResizable(true);
   // stub imageLabel, will be properly set on the first change to any channel
-  ImageLabel *imageLabel1 = new ImageLabel(scrollArea1);
+  imageLabel1 = new ImageLabel(scrollArea1);
   scrollArea1->setWidget(imageLabel1);
   tabWidget->insertTab(1, scrollArea1, "Red");
 
@@ -31,7 +32,7 @@ MdiChild::MdiChild() {
   scrollArea2 = new QScrollArea;
   scrollArea2->setWidgetResizable(true);
   // stub imageLabel, will be properly set on the first change to any channel
-  ImageLabel *imageLabel2 = new ImageLabel(scrollArea2);
+  imageLabel2 = new ImageLabel(scrollArea2);
   scrollArea2->setWidget(imageLabel2);
   tabWidget->insertTab(2, scrollArea2, "Green");
 
@@ -39,7 +40,7 @@ MdiChild::MdiChild() {
   scrollArea3 = new QScrollArea;
   scrollArea3->setWidgetResizable(true);
   // stub imageLabel, will be properly set on the first change to any channel
-  ImageLabel *imageLabel3 = new ImageLabel(scrollArea3);
+  imageLabel3 = new ImageLabel(scrollArea3);
   scrollArea1->setWidget(imageLabel3);
   tabWidget->insertTab(3, scrollArea3, "Blue");
 
@@ -59,19 +60,30 @@ void MdiChild::loadImage(QString filePath) {
 
   QPixmap pixmap = QPixmap::fromImage(image);
   setImage(pixmap);
-  resize(pixmap.size() + QSize(30, 70));
+  resize(pixmap.size() + CHILD_IMAGE_MARGIN);
   setImageName(fileName);
 }
 
-void MdiChild::setImage(QPixmap pixmap) {
+void MdiChild::setImage(const ImageWrapper &image) {
+  imageWrapper = new ImageWrapper(image);
+  QImage qimage = imageWrapper->generateQImage();
+  if (qimage.isNull())
+    throw new std::runtime_error("Failed to generate a QImage!");
+
+  QPixmap pixmap = QPixmap::fromImage(qimage);
+  setImage(pixmap);
+  resize(pixmap.size() + CHILD_IMAGE_MARGIN);
+}
+
+void MdiChild::setImage(const QPixmap &pixmap) {
   imageLabel->setImage(pixmap);
-  setImageName(imageName);
   updateChannelNames();
   emit imageUpdated(*imageWrapper);
 }
 
 void MdiChild::setImageScale(double zoom) {
   imageLabel->setImageScale(zoom);
+  this->zoom = zoom;
 }
 
 void MdiChild::updateChannelNames() {
@@ -104,18 +116,22 @@ void MdiChild::updateChannelNames() {
 void MdiChild::toGrayscale() {
   *imageWrapper = imageWrapper->toGrayscale();
   setImage(QPixmap::fromImage(imageWrapper->generateQImage()));
+  setImageName(imageName); // update type in the window title
 }
 void MdiChild::toLab() {
   *imageWrapper = imageWrapper->toLab();
   setImage(QPixmap::fromImage(imageWrapper->generateQImage()));
+  setImageName(imageName); // update type in the window title
 }
 void MdiChild::toHSV() {
   *imageWrapper = imageWrapper->toHSV();
   setImage(QPixmap::fromImage(imageWrapper->generateQImage()));
+  setImageName(imageName); // update type in the window title
 }
 void MdiChild::toRGB() {
   *imageWrapper = imageWrapper->toRGB();
   setImage(QPixmap::fromImage(imageWrapper->generateQImage()));
+  setImageName(imageName); // update type in the window title
 }
 
 void MdiChild::setImageName(QString name) {
@@ -130,15 +146,8 @@ void MdiChild::tabChanged(int index) {
   if (index < 0)
     return;
 
-  // ignore the initial signal emission (not sure even if there is one)
-  if (index == 0 && prevTabIndex == 0)
-    return;
-
-  if (index == 0) {
-    // IDEA: recreate the image from channels
-  } else if (prevTabIndex == 0) {
-    // split the original image into channels,
-    // done only when switching from original image
+  // if switching to a channel from an image, regenerate all channels
+  if (prevTabIndex == 0 && index != 0) {
     std::vector<ImageWrapper> imageWrappers = imageWrapper->splitChannels();
 
     if (imageWrappers.size() < 3)
@@ -162,9 +171,9 @@ void MdiChild::tabChanged(int index) {
     scrollArea1->setWidget(imageLabel1);
     scrollArea2->setWidget(imageLabel2);
     scrollArea3->setWidget(imageLabel3);
-    qDebug() << "recreated!";
   }
 
+  // set channel/image zoom to whatever the user had in the previous tab
   double prevZoom;
   switch (prevTabIndex) {
   case 0:
@@ -180,8 +189,6 @@ void MdiChild::tabChanged(int index) {
     prevZoom = imageLabel3->getImageScale();
     break;
   }
-  qDebug() << "prevZoom:" << prevZoom;
-
   switch (index) {
   case 0: {
     emit imageUpdated(*imageWrapper);
@@ -204,5 +211,6 @@ void MdiChild::tabChanged(int index) {
     break;
   }
   }
+
   prevTabIndex = index;
 }
