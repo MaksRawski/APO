@@ -1,25 +1,15 @@
 #include "mainwindow.hpp"
 #include "histogramWidget.hpp"
 #include "mdiChild.hpp"
-#include <QAction>
 #include <QFileDialog>
-#include <QLabel>
-#include <QMdiArea>
-#include <QMdiSubWindow>
 #include <QMenu>
 #include <QMenuBar>
 #include <QPixmap>
 #include <QSplitter>
-#include <cassert>
-#include <qaction.h>
 #include <qboxlayout.h>
 #include <qfileinfo.h>
 #include <qkeysequence.h>
-#include <qmdiarea.h>
-#include <qmdisubwindow.h>
-#include <qnamespace.h>
-#include <qobject.h>
-#include <qpixmap.h>
+#include <QTimer>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   setupMenuBar();
@@ -72,13 +62,20 @@ void MainWindow::setupUI() {
   setCentralWidget(mdiArea);
 
   // create dock
-  QDockWidget *dock = new QDockWidget;
+  QDockWidget *dock = new QDockWidget(this);
 
   // for now using just HistogramWidget as the entire dock
   histogramWidget = new HistogramWidget;
   dock->setWidget(histogramWidget);
-
   addDockWidget(Qt::RightDockWidgetArea, dock);
+
+  // wait with resizing till the UI fully renders
+  QTimer::singleShot(0, [this, dock]() {
+    if (dock->isVisible()) {
+      int w = static_cast<int>(0.25 * this->width());
+      dock->setMinimumWidth(w);
+    }
+  });
 }
 
 void MainWindow::openImage() {
