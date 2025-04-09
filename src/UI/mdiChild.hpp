@@ -14,6 +14,7 @@ class MdiChild : public QMdiSubWindow {
 public:
   MdiChild();
   void loadImage(QString filePath);
+  void setImage(QPixmap pixmap);
   void updateImageName(QString name);
   void setImageScale(double zoom);
   void updateChannelNames();
@@ -21,6 +22,10 @@ public:
   const QSize getImageSize() const {
     return QSize(imageWrapper->getWidth(), imageWrapper->getHeight());
   }
+  void toLab();
+  void toRGB();
+  void toHSV();
+  void toGrayscale();
 
 signals:
   void imageUpdated(const ImageWrapper &image);

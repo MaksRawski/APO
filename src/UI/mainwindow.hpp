@@ -1,6 +1,7 @@
 #pragma once
 
 #include "histogramWidget.hpp"
+#include "mdiChild.hpp"
 #include <QLabel>
 #include <QMainWindow>
 #include <QMdiArea>
@@ -24,9 +25,14 @@ private:
   QMdiArea *mdiArea;
   // necessary to store, to allow for communication
   HistogramWidget *histogramWidget;
+  MdiChild *activeChild;
 
   // actions
+  QAction *toRGBAction;
+  QAction *toHSVAction;
+  QAction *toLabAction;
   QAction *toGrayscaleAction;
+  void connectActions(MdiChild *newActiveChild);
 
   // setup functions
   void setupMenuBar();

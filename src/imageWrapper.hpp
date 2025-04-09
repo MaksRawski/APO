@@ -83,7 +83,12 @@ public:
   int getHeight() const { return mat_.rows; }
   PixelFormat getFormat() const { return format_; }
   QImage generateQImage() const;
+
   std::vector<ImageWrapper> splitChannels() const;
+  ImageWrapper toRGB() const;
+  ImageWrapper toHSV() const;
+  ImageWrapper toLab() const;
+  ImageWrapper toGrayscale() const;
 
 signals:
   void dataChanged(QPixmap pixmap);

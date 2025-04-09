@@ -20,28 +20,28 @@ MdiChild::MdiChild() {
   scrollArea->setWidget(imageLabel);
   tabWidget->insertTab(0, scrollArea, "All");
 
-  // 1st channel, Red by default
-  QScrollArea *scrollArea1 = new QScrollArea;
-  scrollArea1->setWidgetResizable(true);
-  imageLabel1 = new ImageLabel(scrollArea1);
-  scrollArea1->setWidget(imageLabel1);
-  tabWidget->insertTab(1, scrollArea1, "Red");
+  // // 1st channel, Red by default
+  // QScrollArea *scrollArea1 = new QScrollArea;
+  // scrollArea1->setWidgetResizable(true);
+  // imageLabel1 = new ImageLabel(scrollArea1);
+  // scrollArea1->setWidget(imageLabel1);
+  // tabWidget->insertTab(1, scrollArea1, "Red");
 
-  // 2nd channel, Green by default
-  QScrollArea *scrollArea2 = new QScrollArea;
-  scrollArea2->setWidgetResizable(true);
-  imageLabel2 = new ImageLabel(scrollArea2);
-  scrollArea2->setWidget(imageLabel2);
-  tabWidget->insertTab(2, scrollArea2, "Green");
+  // // 2nd channel, Green by default
+  // QScrollArea *scrollArea2 = new QScrollArea;
+  // scrollArea2->setWidgetResizable(true);
+  // imageLabel2 = new ImageLabel(scrollArea2);
+  // scrollArea2->setWidget(imageLabel2);
+  // tabWidget->insertTab(2, scrollArea2, "Green");
 
-  // 3rd channel, Blue by default
-  QScrollArea *scrollArea3 = new QScrollArea;
-  scrollArea3->setWidgetResizable(true);
-  imageLabel3 = new ImageLabel(scrollArea3);
-  scrollArea3->setWidget(imageLabel3);
-  tabWidget->insertTab(3, scrollArea3, "Blue");
+  // // 3rd channel, Blue by default
+  // QScrollArea *scrollArea3 = new QScrollArea;
+  // scrollArea3->setWidgetResizable(true);
+  // imageLabel3 = new ImageLabel(scrollArea3);
+  // scrollArea3->setWidget(imageLabel3);
+  // tabWidget->insertTab(3, scrollArea3, "Blue");
 
-  connect(tabWidget, &QTabWidget::currentChanged, this, &MdiChild::tabChanged);
+  // connect(tabWidget, &QTabWidget::currentChanged, this, &MdiChild::tabChanged);
 
   setAttribute(Qt::WA_DeleteOnClose);
   setWidget(tabWidget);
@@ -56,11 +56,14 @@ void MdiChild::loadImage(QString filePath) {
     throw new std::runtime_error("Failed to generate a QImage!");
 
   QPixmap pixmap = QPixmap::fromImage(image);
-  imageLabel->setImage(pixmap);
-  updateImageName(fileName);
+  setImage(pixmap);
+}
 
+void MdiChild::setImage(QPixmap pixmap) {
+  imageLabel->setImage(pixmap);
   emit imageUpdated(*imageWrapper);
 }
+
 void MdiChild::setImageScale(double zoom) { imageLabel->setImageScale(zoom); }
 
 void MdiChild::updateChannelNames() {
@@ -78,6 +81,23 @@ void MdiChild::updateChannelNames() {
     tabWidget->setTabText(2, "Green");
     tabWidget->setTabText(3, "Blue");
   }
+}
+
+void MdiChild::toGrayscale() {
+  ImageWrapper im = imageWrapper->toGrayscale();
+  setImage(QPixmap::fromImage(im.generateQImage()));
+}
+void MdiChild::toLab() {
+  ImageWrapper im = imageWrapper->toLab();
+  setImage(QPixmap::fromImage(im.generateQImage()));
+}
+void MdiChild::toHSV() {
+  ImageWrapper im = imageWrapper->toHSV();
+  setImage(QPixmap::fromImage(im.generateQImage()));
+}
+void MdiChild::toRGB() {
+  ImageWrapper im = imageWrapper->toGrayscale();
+  setImage(QPixmap::fromImage(im.generateQImage()));
 }
 
 void MdiChild::updateImageName(QString name) {

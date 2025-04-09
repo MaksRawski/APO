@@ -1,12 +1,14 @@
 #include "imageWrapper.hpp"
-#include <opencv2/imgcodecs.hpp>
 #include <QImage>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
+#include <stdexcept>
 
-ImageWrapper::ImageWrapper(const ImageWrapper &other): format_(other.format_) {
+ImageWrapper::ImageWrapper(const ImageWrapper &other) : format_(other.format_) {
   other.mat_.copyTo(this->mat_);
 }
 
-ImageWrapper &ImageWrapper::operator=(const ImageWrapper &rhs)  {
+ImageWrapper &ImageWrapper::operator=(const ImageWrapper &rhs) {
   rhs.mat_.copyTo(this->mat_);
   format_ = rhs.format_;
   return *this;
@@ -26,7 +28,8 @@ QImage ImageWrapper::generateQImage() const {
   case PixelFormat::Grayscale8: {
     CV_Assert(mat_.type() == CV_8UC1);
     img = QImage(mat_.data, mat_.cols, mat_.rows, mat_.step,
-                 QImage::Format_Grayscale8).copy();
+                 QImage::Format_Grayscale8)
+              .copy();
     break;
   }
   case PixelFormat::BGR24: {
@@ -34,7 +37,8 @@ QImage ImageWrapper::generateQImage() const {
     cv::Mat rgbMat;
     cv::cvtColor(mat_, rgbMat, cv::COLOR_BGR2RGB);
     img = QImage(rgbMat.data, rgbMat.cols, rgbMat.rows, rgbMat.step,
-                 QImage::Format_RGB888).copy();
+                 QImage::Format_RGB888)
+              .copy();
     break;
   }
 
@@ -43,7 +47,8 @@ QImage ImageWrapper::generateQImage() const {
     cv::Mat rgbMat;
     cv::cvtColor(mat_, rgbMat, cv::COLOR_HSV2RGB);
     img = QImage(rgbMat.data, rgbMat.cols, rgbMat.rows, rgbMat.step,
-                 QImage::Format_RGB888).copy();
+                 QImage::Format_RGB888)
+              .copy();
     break;
   }
 
@@ -52,7 +57,8 @@ QImage ImageWrapper::generateQImage() const {
     cv::Mat rgbMat;
     cv::cvtColor(mat_, rgbMat, cv::COLOR_Lab2RGB);
     img = QImage(rgbMat.data, rgbMat.cols, rgbMat.rows, rgbMat.step,
-                 QImage::Format_RGB888).copy();
+                 QImage::Format_RGB888)
+              .copy();
     break;
   }
 
@@ -61,7 +67,8 @@ QImage ImageWrapper::generateQImage() const {
     cv::Mat rgbaMat;
     cv::cvtColor(mat_, rgbaMat, cv::COLOR_BGRA2RGBA);
     img = QImage(rgbaMat.data, rgbaMat.cols, rgbaMat.rows, rgbaMat.step,
-                 QImage::Format_RGB888).copy();
+                 QImage::Format_RGB888)
+              .copy();
     break;
   }
   }
@@ -76,4 +83,89 @@ std::vector<ImageWrapper> ImageWrapper::splitChannels() const {
     result.emplace_back(ImageWrapper(channels[i]));
   }
   return result;
+}
+
+ImageWrapper ImageWrapper::toRGB() const {
+  switch (format_) {
+  case PixelFormat::BGR24:
+    return ImageWrapper(*this);
+  case PixelFormat::HSV24: {
+    cv::Mat res;
+    cv::cvtColor(mat_, res, cv::COLOR_HSV2BGR);
+    return ImageWrapper(res);
+  }
+  case PixelFormat::Lab24: {
+    cv::Mat res;
+    cv::cvtColor(mat_, res, cv::COLOR_Lab2BGR);
+    return ImageWrapper(res);
+  }
+  default:
+    throw new std::runtime_error("not yet implemented!");
+  }
+}
+
+ImageWrapper ImageWrapper::toHSV() const {
+  switch (format_) {
+  case PixelFormat::BGR24: {
+    cv::Mat res;
+    cv::cvtColor(mat_, res, cv::COLOR_BGR2HSV);
+    return ImageWrapper(res);
+  }
+  case PixelFormat::HSV24:
+    return ImageWrapper(*this);
+
+  case PixelFormat::Lab24: {
+    cv::Mat bgr, res;
+    cv::cvtColor(mat_, bgr, cv::COLOR_Lab2BGR);
+    cv::cvtColor(bgr, res, cv::COLOR_BGR2HSV);
+    return ImageWrapper(res);
+  }
+  default:
+    throw new std::runtime_error("not yet implemented!");
+  }
+}
+
+ImageWrapper ImageWrapper::toLab() const {
+  switch (format_) {
+  case PixelFormat::BGR24: {
+    cv::Mat res;
+    cv::cvtColor(mat_, res, cv::COLOR_BGR2Lab);
+    return ImageWrapper(res);
+  }
+  case PixelFormat::HSV24: {
+    cv::Mat bgr, res;
+    cv::cvtColor(mat_, bgr, cv::COLOR_HSV2BGR);
+    cv::cvtColor(bgr, res, cv::COLOR_BGR2Lab);
+    return ImageWrapper(res);
+  }
+  case PixelFormat::Lab24: {
+    return ImageWrapper(*this);
+  }
+  default:
+    throw new std::runtime_error("not yet implemented!");
+  }
+}
+
+ImageWrapper ImageWrapper::toGrayscale() const {
+  switch (format_) {
+  case PixelFormat::BGR24: {
+    cv::Mat res;
+    cv::cvtColor(mat_, res, cv::COLOR_RGB2GRAY);
+    return ImageWrapper(res);
+  }
+  case PixelFormat::HSV24: {
+    cv::Mat bgr, res;
+    cv::cvtColor(mat_, bgr, cv::COLOR_HSV2BGR);
+    cv::cvtColor(bgr, res, cv::COLOR_BGR2GRAY);
+    return ImageWrapper(res);
+  }
+  case PixelFormat::Lab24: {
+    cv::Mat bgr, res;
+    cv::cvtColor(mat_, res, cv::COLOR_Lab2BGR);
+    cv::cvtColor(bgr, res, cv::COLOR_BGR2GRAY);
+    return ImageWrapper(res);
+  }
+  default:
+    throw new std::runtime_error("not yet implemented!");
+  }
 }
