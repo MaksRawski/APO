@@ -61,8 +61,4 @@ LUT posterize(int n) {
   }
   return lut;
 }
-
-QImage toGrayScale(const QImage &image) {
-  return image.convertToFormat(QImage::Format_Grayscale8);
-}
 } // namespace imageProcessor

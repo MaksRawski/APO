@@ -1,3 +1,4 @@
+#include "../imageProcessor.hpp"
 #include "mdiChild.hpp"
 #include "imageLabel.hpp"
 #include <QPixmap>
@@ -223,4 +224,10 @@ QString MdiChild::getImageBasename() const {
 QString MdiChild::getImageNameSuffix() const {
   QFileInfo fileInfo(imageName);
   return fileInfo.completeSuffix();
+}
+
+void MdiChild::negate() {
+  std::vector<int> neg = imageProcessor::negate();
+  imageWrapper->applyLUT(neg);
+  setImage(*imageWrapper);
 }

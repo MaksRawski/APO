@@ -218,3 +218,9 @@ ImageWrapper ImageWrapper::toGrayscale() const {
   out.format_ = PixelFormat::Grayscale8;
   return out;
 }
+
+ImageWrapper ImageWrapper::applyLUT(std::vector<int> lut) const {
+  cv::Mat res;
+  cv::LUT(mat_, lut, res);
+  return res;
+}

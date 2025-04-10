@@ -34,7 +34,9 @@ private:
   QAction *splitChannelsAction;
   QAction *duplicateAction;
   QAction *aboutAction;
-  void connectActions(MdiChild *newActiveChild);
+  QAction *negateAction;
+  void connectActions(const MdiChild *child);
+  void disconnectActions(const MdiChild *child);
 
   // setup functions
   void setupMenuBar();

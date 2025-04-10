@@ -10,7 +10,6 @@
 #include <qsize.h>
 #include <qtabwidget.h>
 
-
 const QSize CHILD_IMAGE_MARGIN = QSize(30, 70);
 
 class MdiChild : public QMdiSubWindow {
@@ -23,10 +22,6 @@ public:
   void setImageName(QString name);
   void setImageScale(double zoom);
   void updateChannelNames();
-  void toLab();
-  void toRGB();
-  void toHSV();
-  void toGrayscale();
 
   double getImageScale() const { return zoom; }
   QString getImageName() const { return imageName; }
@@ -36,6 +31,13 @@ public:
   const QSize getImageSize() const {
     return QSize(imageWrapper->getWidth(), imageWrapper->getHeight());
   }
+
+public slots:
+  void toLab();
+  void toRGB();
+  void toHSV();
+  void toGrayscale();
+  void negate();
 
 signals:
   void imageUpdated(const ImageWrapper &image);

@@ -10,6 +10,7 @@
 #include <qfileinfo.h>
 #include <qkeysequence.h>
 #include <QTimer>
+#include <stdexcept>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   setupMenuBar();
@@ -28,13 +29,15 @@ void MainWindow::setupMenuBar() {
   QMenu *imageMenu = menuBar()->addMenu("&Image");
   duplicateAction = imageMenu->addAction("&Duplicate");
   duplicateAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_D));
-  splitChannelsAction = imageMenu->addAction("&Split channels");
 
   QMenu *imageTypeMenu = imageMenu->addMenu("&Type");
   toRGBAction = imageTypeMenu->addAction("&RGB");
   toHSVAction = imageTypeMenu->addAction("&HSV");
   toLabAction = imageTypeMenu->addAction("&Lab");
   toGrayscaleAction = imageTypeMenu->addAction("&Grayscale");
+  splitChannelsAction = imageTypeMenu->addAction("&Split channels");
+
+  negateAction = imageMenu->addAction("&Negate");
 
   QMenu *aboutMenu = menuBar()->addMenu("Info");
   aboutAction = aboutMenu->addAction("About");
@@ -45,6 +48,7 @@ void MainWindow::setupMenuBar() {
   toHSVAction->setEnabled(false);
   toLabAction->setEnabled(false);
   toGrayscaleAction->setEnabled(false);
+  negateAction->setEnabled(false);
 
   // NOTE: connections that need MdiChild directly have to be created using `connectActions`
   connect(openAction, &QAction::triggered, this, &MainWindow::openImage);
@@ -84,24 +88,23 @@ void MainWindow::openImage() {
   if (filePath.isEmpty())
     return;
 
-  // create new window and set it as the active one
+  // create new window and connect actions to it
+  disconnectActions(activeChild);
   activeChild = new MdiChild;
+  connectActions(activeChild);
 
   // NOTE: will emit the initial imageUpdated signal
   activeChild->loadImage(filePath);
-  connectActions(activeChild);
 
   // scale the image so that it takes at max 70% of the window
   QSize size = activeChild->getImageSize();
   QSize windowSize = this->size();
   QSize scaledSize = size.scaled(windowSize * 0.7, Qt::KeepAspectRatio);
-  double scaleFactor =
-      static_cast<float>(scaledSize.width()) / static_cast<float>(size.width());
+  double scaleFactor = static_cast<float>(scaledSize.width()) / static_cast<float>(size.width());
 
   // prevent upscaling
   if (scaleFactor < 1.0) {
     activeChild->setImageScale(scaleFactor);
-    qDebug() << "initial scale:" << activeChild->getImageScale();
     activeChild->resize(scaledSize + CHILD_IMAGE_MARGIN);
   }
 
@@ -123,33 +126,46 @@ void MainWindow::mdiSubWindowActivated(QMdiSubWindow *window) {
   }
 }
 
-// enables all the actions that operate on the image
-void MainWindow::connectActions(MdiChild *newActiveChild) {
-  if (activeChild != nullptr) {
-    disconnect(activeChild, &MdiChild::imageUpdated, this, &MainWindow::toggleOptions);
-    disconnect(toRGBAction, &QAction::triggered, activeChild, &MdiChild::toRGB);
-    disconnect(toHSVAction, &QAction::triggered, activeChild, &MdiChild::toHSV);
-    disconnect(toLabAction, &QAction::triggered, activeChild, &MdiChild::toLab);
-    disconnect(toGrayscaleAction, &QAction::triggered, activeChild, &MdiChild::toGrayscale);
+void MainWindow::disconnectActions(const MdiChild *child) {
+  if (child != nullptr) {
+    disconnect(child, &MdiChild::imageUpdated, this, &MainWindow::toggleOptions);
+    disconnect(toRGBAction, &QAction::triggered, child, &MdiChild::toRGB);
+    disconnect(toHSVAction, &QAction::triggered, child, &MdiChild::toHSV);
+    disconnect(toLabAction, &QAction::triggered, child, &MdiChild::toLab);
+    disconnect(toGrayscaleAction, &QAction::triggered, child, &MdiChild::toGrayscale);
+    disconnect(negateAction, &QAction::triggered, child, &MdiChild::negate);
 
-    disconnect(activeChild, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
+    disconnect(child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
   }
+  duplicateAction->setEnabled(false);
+  toGrayscaleAction->setEnabled(false);
+  toRGBAction->setEnabled(false);
+  toLabAction->setEnabled(false);
+  toHSVAction->setEnabled(false);
+  splitChannelsAction->setEnabled(false);
+  negateAction->setEnabled(false);
+}
 
-  activeChild = newActiveChild;
-  connect(activeChild, &MdiChild::imageUpdated, this, &MainWindow::toggleOptions);
-  connect(toRGBAction, &QAction::triggered, activeChild, &MdiChild::toRGB);
-  connect(toHSVAction, &QAction::triggered, activeChild, &MdiChild::toHSV);
-  connect(toLabAction, &QAction::triggered, activeChild, &MdiChild::toLab);
-  connect(toGrayscaleAction, &QAction::triggered, activeChild, &MdiChild::toGrayscale);
+// enables all the actions that operate on the image
+void MainWindow::connectActions(const MdiChild *child) {
+  if (child == nullptr) throw new std::runtime_error("Tried to make connections to nullptr!");
 
-  connect(activeChild, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
+  connect(child, &MdiChild::imageUpdated, this, &MainWindow::toggleOptions);
+  connect(toRGBAction, &QAction::triggered, child, &MdiChild::toRGB);
+  connect(toHSVAction, &QAction::triggered, child, &MdiChild::toHSV);
+  connect(toLabAction, &QAction::triggered, child, &MdiChild::toLab);
+  connect(toGrayscaleAction, &QAction::triggered, child, &MdiChild::toGrayscale);
+  connect(negateAction, &QAction::triggered, child, &MdiChild::negate);
+
+  connect(child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
 
   duplicateAction->setEnabled(true);
-  splitChannelsAction->setEnabled(true);
   toGrayscaleAction->setEnabled(true);
   toRGBAction->setEnabled(true);
   toLabAction->setEnabled(true);
   toHSVAction->setEnabled(true);
+  splitChannelsAction->setEnabled(true);
+  negateAction->setEnabled(true);
 }
 
 void MainWindow::splitChannels() {
@@ -165,15 +181,16 @@ void MainWindow::splitChannels() {
   for (ImageWrapper image : channels) {
     // create new window
     MdiChild *newChild = new MdiChild;
+    disconnectActions(activeChild);
+    connectActions(newChild);
 
     // NOTE: will emit the initial imageUpdated signal
     newChild->setImage(image);
     newChild->setImageName(baseName + '_' + format[c] + '.' + suffix);
-
     newChild->setImageScale(activeChild->getImageScale());
     newChild->resize(activeChild->size());
-    connectActions(newChild);
 
+    activeChild = newChild;
     mdiArea->addSubWindow(newChild);
     newChild->show();
     ++c;
@@ -184,8 +201,10 @@ void MainWindow::toggleOptions(const ImageWrapper &image){
   PixelFormat format = image.getFormat();
   if (format == PixelFormat::Grayscale8) {
     splitChannelsAction->setEnabled(false);
+    negateAction->setEnabled(true);
   } else {
     splitChannelsAction->setEnabled(true);
+    negateAction->setEnabled(false);
   }
 }
 

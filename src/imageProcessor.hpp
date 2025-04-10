@@ -16,6 +16,4 @@ LUT histogram(const ImageWrapper &image);
 LUT negate();
 LUT stretch(int p1, int p2, int q3, int q4);
 LUT posterize(uint8_t n);
-
-QImage toGrayScale(const QImage &image);
 } // namespace imageProcessor
