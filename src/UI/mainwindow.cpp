@@ -113,8 +113,10 @@ void MainWindow::openImage() {
 }
 
 void MainWindow::mdiSubWindowActivated(QMdiSubWindow *window) {
+  // if last window has been closed
   if (window == nullptr) {
     histogramWidget->reset();
+    disconnectActions(activeChild);
     activeChild = nullptr;
     return;
   }
@@ -201,10 +203,8 @@ void MainWindow::toggleOptions(const ImageWrapper &image){
   PixelFormat format = image.getFormat();
   if (format == PixelFormat::Grayscale8) {
     splitChannelsAction->setEnabled(false);
-    negateAction->setEnabled(true);
   } else {
     splitChannelsAction->setEnabled(true);
-    negateAction->setEnabled(false);
   }
 }
 

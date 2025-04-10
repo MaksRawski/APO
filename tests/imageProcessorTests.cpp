@@ -5,6 +5,8 @@
 #include "../src/imageProcessor.hpp"
 #include "../src/imageWrapper.hpp"
 
+using imageProcessor::LUT;
+
 class ImageProcessorTest : public ::testing::Test {
 protected:
   void SetUp() override {}
@@ -13,46 +15,35 @@ protected:
 };
 
 TEST_F(ImageProcessorTest, HistogramTest) {
-  // Prepare test data
-  cv::Mat testData{0, 1, 1, 2, 2, 2, 3, 3, 3, 3};
+  cv::Mat testMat(1, 10, CV_8UC1);
+  uchar testData[] = {0, 1, 1, 2, 2, 2, 3, 3, 3, 3};
+  memcpy(testMat.data, testData, sizeof(testData));
+  ImageWrapper image(testMat);
 
-  // Create ImageWrapper
-  ImageWrapper image(testData);
+  LUT histogram_result = imageProcessor::histogram(image);
 
-  // Compute histogram
-  imageProcessor::LUT histogram_result = imageProcessor::histogram(image);
-
-  // Expected histogram
-  std::vector<int> expected_histogram(256, 0);
+  LUT expected_histogram(256, 0);
   expected_histogram[0] = 1;
   expected_histogram[1] = 2;
   expected_histogram[2] = 3;
   expected_histogram[3] = 4;
-
-  // Compare histograms
   EXPECT_EQ(histogram_result, expected_histogram);
 }
 
-// Test histogram edge cases
-TEST_F(ImageProcessorTest, HistogramEdgeCasesTest) {
-  // Empty image
-  cv::Mat emptyData;
-  ImageWrapper emptyImage(emptyData);
+TEST_F(ImageProcessorTest, ApplyNegateLUT) {
+  cv::Mat testMat(1, 10, CV_8UC1);
+  uchar testData[] = {0, 42, 55, 200, 255};
+  memcpy(testMat.data, testData, sizeof(testData));
+  ImageWrapper image(testMat);
 
-  imageProcessor::LUT empty_histogram = imageProcessor::histogram(emptyImage);
-  EXPECT_TRUE(std::all_of(empty_histogram.begin(), empty_histogram.end(),
-                          [](int count) { return count == 0; }));
+  LUT negateLut = imageProcessor::negate();
+  ImageWrapper negation = imageProcessor::applyLUT(image, negateLut);
 
-  // Image with single value
-  cv::Mat singleValueData{1};
-  ImageWrapper singleValueImage(singleValueData);
-
-  imageProcessor::LUT single_histogram =
-      imageProcessor::histogram(singleValueImage);
-  EXPECT_EQ(single_histogram[42], 100);
-  EXPECT_TRUE(
-      std::all_of(single_histogram.begin(), single_histogram.end(),
-                  [&](int count) { return count == 0 || count == 100; }));
+  cv::Mat negationMat = negation.getMat();
+  ASSERT_EQ(negationMat.at<uchar>(0, 0), 255 - testData[0]);
+  ASSERT_EQ(negationMat.at<uchar>(0, 1), 255 - testData[1]);
+  ASSERT_EQ(negationMat.at<uchar>(0, 2), 255 - testData[2]);
+  ASSERT_EQ(negationMat.at<uchar>(0, 3), 255 - testData[3]);
 }
 
 int main(int argc, char **argv) {

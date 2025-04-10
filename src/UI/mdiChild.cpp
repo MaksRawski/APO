@@ -10,6 +10,9 @@
 #include <qtabwidget.h>
 #include <stdexcept>
 
+using imageProcessor::applyLUT;
+using imageProcessor::LUT;
+
 MdiChild::MdiChild() {
   tabWidget = new QTabWidget;
   tabWidget->setTabBarAutoHide(true);
@@ -79,6 +82,11 @@ void MdiChild::setImage(const ImageWrapper &image) {
 void MdiChild::setImage(const QPixmap &pixmap) {
   imageLabel->setImage(pixmap);
   updateChannelNames();
+
+  // if the user is on the main image tab we don't need to regenerate channels
+  // that will be done once the tab is switched
+  if (prevTabIndex != 0) regenerateChannels();
+
   emit imageUpdated(*imageWrapper);
 }
 
@@ -149,29 +157,7 @@ void MdiChild::tabChanged(int index) {
 
   // if switching to a channel from an image, regenerate all channels
   if (prevTabIndex == 0 && index != 0) {
-    std::vector<ImageWrapper> imageWrappers = imageWrapper->splitChannels();
-
-    if (imageWrappers.size() < 3)
-      throw new std::runtime_error("Failed to split channels!");
-
-    imageWrapper1 = imageWrappers[0];
-    imageWrapper2 = imageWrappers[1];
-    imageWrapper3 = imageWrappers[2];
-
-    imageLabel1 = new ImageLabel;
-    imageLabel2 = new ImageLabel;
-    imageLabel3 = new ImageLabel;
-
-    QPixmap pixmap1 = QPixmap::fromImage(imageWrapper1.generateQImage());
-    QPixmap pixmap2 = QPixmap::fromImage(imageWrapper2.generateQImage());
-    QPixmap pixmap3 = QPixmap::fromImage(imageWrapper3.generateQImage());
-
-    imageLabel1->setImage(pixmap1);
-    imageLabel2->setImage(pixmap2);
-    imageLabel3->setImage(pixmap3);
-    scrollArea1->setWidget(imageLabel1);
-    scrollArea2->setWidget(imageLabel2);
-    scrollArea3->setWidget(imageLabel3);
+    regenerateChannels();
   }
 
   // set channel/image zoom to whatever the user had in the previous tab
@@ -227,7 +213,35 @@ QString MdiChild::getImageNameSuffix() const {
 }
 
 void MdiChild::negate() {
-  std::vector<int> neg = imageProcessor::negate();
-  imageWrapper->applyLUT(neg);
-  setImage(*imageWrapper);
+  // TODO: for non-grayscale images, invert channels
+  LUT neg = imageProcessor::negate();
+  qDebug() << "neg:" << neg[0] << "-" << neg[255];
+  ImageWrapper res = applyLUT(*imageWrapper, neg);
+  setImage(res);
+}
+
+void MdiChild::regenerateChannels() {
+  std::vector<ImageWrapper> imageWrappers = imageWrapper->splitChannels();
+
+  if (imageWrappers.size() < 3)
+    throw new std::runtime_error("Failed to split channels!");
+
+  imageWrapper1 = imageWrappers[0];
+  imageWrapper2 = imageWrappers[1];
+  imageWrapper3 = imageWrappers[2];
+
+  imageLabel1 = new ImageLabel;
+  imageLabel2 = new ImageLabel;
+  imageLabel3 = new ImageLabel;
+
+  QPixmap pixmap1 = QPixmap::fromImage(imageWrapper1.generateQImage());
+  QPixmap pixmap2 = QPixmap::fromImage(imageWrapper2.generateQImage());
+  QPixmap pixmap3 = QPixmap::fromImage(imageWrapper3.generateQImage());
+
+  imageLabel1->setImage(pixmap1);
+  imageLabel2->setImage(pixmap2);
+  imageLabel3->setImage(pixmap3);
+  scrollArea1->setWidget(imageLabel1);
+  scrollArea2->setWidget(imageLabel2);
+  scrollArea3->setWidget(imageLabel3);
 }

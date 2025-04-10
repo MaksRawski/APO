@@ -89,7 +89,6 @@ public:
   ImageWrapper toHSV() const;
   ImageWrapper toLab() const;
   ImageWrapper toGrayscale() const;
-  ImageWrapper applyLUT(std::vector<int> lut) const;
 
 signals:
   void dataChanged(QPixmap pixmap);

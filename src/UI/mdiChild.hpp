@@ -21,7 +21,6 @@ public:
   void setImage(const ImageWrapper &image);
   void setImageName(QString name);
   void setImageScale(double zoom);
-  void updateChannelNames();
 
   double getImageScale() const { return zoom; }
   QString getImageName() const { return imageName; }
@@ -31,6 +30,10 @@ public:
   const QSize getImageSize() const {
     return QSize(imageWrapper->getWidth(), imageWrapper->getHeight());
   }
+
+private:
+  void updateChannelNames();
+  void regenerateChannels();
 
 public slots:
   void toLab();

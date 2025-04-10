@@ -80,7 +80,7 @@ if(BUILD_TESTS)
   )
 
   add_gtest_executable(image_processor_tests
-    tests/imageWrapperTest.cpp
+    tests/imageProcessorTests.cpp
     src/imageWrapper.cpp
     src/imageProcessor.cpp
   )
