@@ -108,14 +108,17 @@ void HistogramWidget::updateHistogram(const ImageWrapper &image) {
     if (l > max)
       max = l;
     sum += l;
+  }
 
-    // NOTE: if this was addItem was done in another loop __maybe__ the above
-    // could use some compiler optimization magic?
-    lutList->addItem(QString("%1: %2").arg(i).arg(l));
+  for (int i = 0; i < 256; ++i) {
+    int l = hist[i];
+    double percent = 0;
+    if (l > 0) percent = floor((double)l / (double)max * 10000) / 100;
+    lutList->addItem(QString("%1:\t%2\t%3%").arg(i).arg(l).arg(percent));
   }
   average = static_cast<double>(sum) / hist.size();
 
-  statsLabel->setText(QString("Min: %1  Max: %2  Avg: %3")
+  statsLabel->setText(QString("Min: %1  Max: %2  Avg: %3\n\nValue\tCount\tPercent of max count")
                           .arg(min)
                           .arg(max)
                           .arg(average, 0, 'f', 2));
