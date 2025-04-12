@@ -20,13 +20,35 @@ TEST_F(ImageProcessorTest, HistogramTest) {
   memcpy(testMat.data, testData, sizeof(testData));
   ImageWrapper image(testMat);
 
-  LUT histogram_result = imageProcessor::histogram(image);
+  std::vector<int> histogram_result = imageProcessor::histogram(image);
 
-  LUT expected_histogram(256, 0);
+  std::vector<int> expected_histogram(256, 0);
   expected_histogram[0] = 1;
   expected_histogram[1] = 2;
   expected_histogram[2] = 3;
   expected_histogram[3] = 4;
+  EXPECT_EQ(histogram_result, expected_histogram);
+}
+
+TEST_F(ImageProcessorTest, HistogramBigTest) {
+  cv::Mat testMat(1, 1000, CV_8UC1);
+  for (int i = 0; i < 1000; ++i){
+    if (i < 100) {
+      testMat.data[i] = 42;
+    } else if (i < 500) {
+      testMat.data[i] = 68;
+    } else {
+      testMat.data[i] = 255;
+    }
+  }
+  ImageWrapper image(testMat);
+
+  std::vector<int> histogram_result = imageProcessor::histogram(image);
+
+  std::vector<int> expected_histogram(256, 0);
+  expected_histogram[42] = 100;
+  expected_histogram[68] = 400;
+  expected_histogram[255] = 500;
   EXPECT_EQ(histogram_result, expected_histogram);
 }
 

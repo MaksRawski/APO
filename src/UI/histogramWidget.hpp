@@ -19,13 +19,13 @@ public:
   explicit HistogramPlot(QWidget *parent = nullptr);
 
 public slots:
-  void updateLUT(imageProcessor::LUT l, int max);
+  void updateHist(std::vector<int> hist, int max);
 
 protected:
   void paintEvent(QPaintEvent *event) override;
 
 private:
-  imageProcessor::LUT lut;
+  std::vector<int> hist;
   int maxLutValue;
 };
 
@@ -41,14 +41,14 @@ public slots:
   void updateHistogram(const ImageWrapper &image);
 
 signals:
-  void updateLUT(imageProcessor::LUT lut, int max);
+  void updateHist(std::vector<int> lut, int max);
 
 private:
   HistogramPlot *plot;
   QLabel *statsLabel;
   QListWidget *lutList;
 
-  imageProcessor::LUT lut;
+  std::vector<int> hist;
   int min, max;
   double average;
 };

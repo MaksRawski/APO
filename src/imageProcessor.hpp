@@ -13,7 +13,7 @@ const int LMAX = 256;
 const int M = LMAX - LMIN;
 
 ImageWrapper applyLUT(const ImageWrapper &image, const LUT &lut);
-LUT histogram(const ImageWrapper &image);
+std::vector<int> histogram(const ImageWrapper &image);
 LUT negate();
 LUT stretch(int p1, int p2, int q3, int q4);
 LUT posterize(uint8_t n);

@@ -5,14 +5,14 @@
 #include <vector>
 
 namespace imageProcessor {
-LUT histogram(const ImageWrapper &imageWrapper) {
+std::vector<int> histogram(const ImageWrapper &imageWrapper) {
   cv::Mat image = imageWrapper.getMat();
 
   // we don't display histograms for non grayscale images
   if (image.type() != CV_8UC1)
     return {};
 
-  LUT histogram(M, 0);
+  std::vector<int> histogram(M, 0);
 
   for (int y = 0; y < image.rows; ++y) {
     const uchar *rowPtr = image.ptr<uchar>(y);
