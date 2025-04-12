@@ -69,6 +69,18 @@ void MdiChild::loadImage(QString filePath) {
   setImageName(fileName);
 }
 
+void MdiChild::setImage(const QPixmap &pixmap) {
+  imageLabel->setImage(pixmap);
+  resize(pixmap.size() + CHILD_IMAGE_MARGIN);
+  updateChannelNames();
+
+  // if the user is on the main image tab we don't need to regenerate channels
+  // that will be done once the tab is switched
+  if (prevTabIndex != 0) regenerateChannels();
+
+  emit imageUpdated(*imageWrapper);
+}
+
 void MdiChild::setImage(const ImageWrapper &image) {
   imageWrapper = new ImageWrapper(image);
   QImage qimage = imageWrapper->generateQImage();
@@ -77,18 +89,24 @@ void MdiChild::setImage(const ImageWrapper &image) {
 
   QPixmap pixmap = QPixmap::fromImage(qimage);
   setImage(pixmap);
-  resize(pixmap.size() + CHILD_IMAGE_MARGIN);
 }
 
-void MdiChild::setImage(const QPixmap &pixmap) {
-  imageLabel->setImage(pixmap);
-  updateChannelNames();
+void MdiChild::swapImage(const QPixmap &image) {
+  QSize size = this->size();
+  double prevZoom = getImageScale();
+  setImage(image);
+  resize(size);
+  setImageScale(prevZoom);
+}
 
-  // if the user is on the main image tab we don't need to regenerate channels
-  // that will be done once the tab is switched
-  if (prevTabIndex != 0) regenerateChannels();
+void MdiChild::swapImage(const ImageWrapper &image) {
+  imageWrapper = new ImageWrapper(image);
+  QImage qimage = imageWrapper->generateQImage();
+  if (qimage.isNull())
+    throw new std::runtime_error("Failed to generate a QImage!");
 
-  emit imageUpdated(*imageWrapper);
+  QPixmap pixmap = QPixmap::fromImage(qimage);
+  swapImage(pixmap);
 }
 
 void MdiChild::setImageScale(double zoom) {
@@ -125,22 +143,22 @@ void MdiChild::updateChannelNames() {
 
 void MdiChild::toGrayscale() {
   *imageWrapper = imageWrapper->toGrayscale();
-  setImage(QPixmap::fromImage(imageWrapper->generateQImage()));
+  swapImage(QPixmap::fromImage(imageWrapper->generateQImage()));
   setImageName(imageName); // update type in the window title
 }
 void MdiChild::toLab() {
   *imageWrapper = imageWrapper->toLab();
-  setImage(QPixmap::fromImage(imageWrapper->generateQImage()));
+  swapImage(QPixmap::fromImage(imageWrapper->generateQImage()));
   setImageName(imageName); // update type in the window title
 }
 void MdiChild::toHSV() {
   *imageWrapper = imageWrapper->toHSV();
-  setImage(QPixmap::fromImage(imageWrapper->generateQImage()));
+  swapImage(QPixmap::fromImage(imageWrapper->generateQImage()));
   setImageName(imageName); // update type in the window title
 }
 void MdiChild::toRGB() {
   *imageWrapper = imageWrapper->toRGB();
-  setImage(QPixmap::fromImage(imageWrapper->generateQImage()));
+  swapImage(QPixmap::fromImage(imageWrapper->generateQImage()));
   setImageName(imageName); // update type in the window title
 }
 
@@ -249,9 +267,9 @@ void MdiChild::normalize() {
   double min, max;
   cv::minMaxLoc(imageWrapper->getMat(), &min, &max);
   LUT stretched = imageProcessor::stretch((int)min, (int)max, 0, 255);
-  setImage(applyLUT(*imageWrapper, stretched));
+  swapImage(applyLUT(*imageWrapper, stretched));
 }
 
 void MdiChild::equalize() {
-  setImage(imageProcessor::equalizeChannels(imageWrapper->getMat()));
+  swapImage(imageProcessor::equalizeChannels(imageWrapper->getMat()));
 }

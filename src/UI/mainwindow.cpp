@@ -110,6 +110,7 @@ void MainWindow::openImage() {
   if (scaleFactor < 1.0) {
     activeChild->setImageScale(scaleFactor);
     activeChild->resize(scaledSize + CHILD_IMAGE_MARGIN);
+    activeChild->setMaximumSize(scaledSize + CHILD_IMAGE_MARGIN);
   }
 
   mdiArea->addSubWindow(activeChild);

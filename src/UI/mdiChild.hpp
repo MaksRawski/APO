@@ -19,6 +19,10 @@ public:
   void loadImage(QString filePath);
   void setImage(const QPixmap &pixmap);
   void setImage(const ImageWrapper &image);
+  // difference between this and `setImage` is that this maintains
+  // the same size of the window whereas the previous one adjusts the size to fit the unscaled image
+  void swapImage(const ImageWrapper &image);
+  void swapImage(const QPixmap &image);
   void setImageName(QString name);
   void setImageScale(double zoom);
 
