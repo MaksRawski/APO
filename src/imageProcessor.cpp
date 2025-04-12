@@ -2,30 +2,38 @@
 #include "imageWrapper.hpp"
 #include <QColorSpace>
 #include <qimage.h>
+#include <stdexcept>
 #include <vector>
 
 namespace imageProcessor {
 std::vector<int> histogram(const ImageWrapper &imageWrapper) {
-  cv::Mat image = imageWrapper.getMat();
+  cv::Mat mat = imageWrapper.getMat();
+  return histogram(mat);
+}
 
-  // we don't display histograms for non grayscale images
-  if (image.type() != CV_8UC1)
+std::vector<int> histogram(const cv::Mat &mat) {
+  // we only calculate histograms for grayscale images
+  if (mat.type() != CV_8UC1)
     return {};
 
   std::vector<int> histogram(M, 0);
 
-  for (int y = 0; y < image.rows; ++y) {
-    const uchar *rowPtr = image.ptr<uchar>(y);
-    for (int x = 0; x < image.cols; ++x) {
+  for (int y = 0; y < mat.rows; ++y) {
+    const uchar *rowPtr = mat.ptr<uchar>(y);
+    for (int x = 0; x < mat.cols; ++x) {
       histogram[rowPtr[x]]++;
     }
   }
   return histogram;
 }
 
-// applies LUT to every channel of an image
 ImageWrapper applyLUT(const ImageWrapper &image, const LUT &lut) {
-  cv::Mat res = image.getMat().clone();
+  return ImageWrapper(applyLUTcv(image.getMat(), lut));
+}
+
+// applies LUT to every channel of an image
+cv::Mat applyLUTcv(const cv::Mat &mat, const LUT &lut){
+  cv::Mat res = mat.clone();
 
   if (res.channels() == 1) {
     for (int y = 0; y < res.rows; ++y) {
@@ -97,4 +105,52 @@ LUT posterize(int n) {
   }
   return lut;
 }
+
+// returns LUT
+// LUT equalize(const ImageWrapper &image) {
+//   cv::Mat mat = image.getMat();
+//   return equalize(mat);
+// }
+
+LUT equalize(const cv::Mat &mat) {
+  std::vector<int> hist = histogram(mat);
+
+  if (mat.channels() != 1) {
+    throw std::runtime_error(
+        "Tried to create an equalization LUT for non-grayscale image!");
+  }
+  int s = 0;
+  std::vector<int> cdf(256);
+
+  for (int i = 0; i < 256; ++i) {
+    s += hist[i];
+    cdf[i] = s;
+  }
+
+  // equalize cdf
+  int totalPixels = mat.rows * mat.cols;
+
+  // calculate equalization LUT
+  LUT lut(256);
+  for (int i = 0; i < 256; ++i) {
+    lut[i] = static_cast<uchar>(255.0 * cdf[i] / totalPixels);
+  }
+  return lut;
+}
+
+cv::Mat equalizeChannels(const cv::Mat &image) {
+  std::vector<cv::Mat> channels;
+  cv::split(image, channels);
+
+  for (int i = 0; i < channels.size(); ++i) {
+    std::vector<uchar> lut = equalize(channels[i]);
+    channels[i] = applyLUTcv(channels[i], lut);
+  }
+
+  cv::Mat equalizedImage;
+  cv::merge(channels, equalizedImage);
+
+  return equalizedImage;
+}
+
 } // namespace imageProcessor

@@ -10,7 +10,6 @@
 #include <qfileinfo.h>
 #include <qkeysequence.h>
 #include <QTimer>
-#include <stdexcept>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   setupMenuBar();
@@ -37,7 +36,10 @@ void MainWindow::setupMenuBar() {
   toGrayscaleAction = imageTypeMenu->addAction("&Grayscale");
   splitChannelsAction = imageTypeMenu->addAction("&Split channels");
 
-  negateAction = imageMenu->addAction("&Negate");
+  negateAction = imageMenu->addAction("Negate");
+  negateAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_I));
+  normalizeAction = imageMenu->addAction("Normalize");
+  equalizeAction = imageMenu->addAction("Equalize");
 
   QMenu *aboutMenu = menuBar()->addMenu("Info");
   aboutAction = aboutMenu->addAction("About");
@@ -49,6 +51,8 @@ void MainWindow::setupMenuBar() {
   toLabAction->setEnabled(false);
   toGrayscaleAction->setEnabled(false);
   negateAction->setEnabled(false);
+  normalizeAction->setEnabled(false);
+  equalizeAction->setEnabled(false);
 
   // NOTE: connections that need MdiChild directly have to be created using `connectActions`
   connect(openAction, &QAction::triggered, this, &MainWindow::openImage);
@@ -136,6 +140,8 @@ void MainWindow::disconnectActions(const MdiChild *child) {
     disconnect(toLabAction, &QAction::triggered, child, &MdiChild::toLab);
     disconnect(toGrayscaleAction, &QAction::triggered, child, &MdiChild::toGrayscale);
     disconnect(negateAction, &QAction::triggered, child, &MdiChild::negate);
+    disconnect(normalizeAction, &QAction::triggered, child, &MdiChild::normalize);
+    disconnect(equalizeAction, &QAction::triggered, child, &MdiChild::equalize);
 
     disconnect(child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
   }
@@ -146,6 +152,8 @@ void MainWindow::disconnectActions(const MdiChild *child) {
   toHSVAction->setEnabled(false);
   splitChannelsAction->setEnabled(false);
   negateAction->setEnabled(false);
+  normalizeAction->setEnabled(false);
+  equalizeAction->setEnabled(false);
 }
 
 // enables all the actions that operate on the image
@@ -158,6 +166,8 @@ void MainWindow::connectActions(const MdiChild *child) {
   connect(toLabAction, &QAction::triggered, child, &MdiChild::toLab);
   connect(toGrayscaleAction, &QAction::triggered, child, &MdiChild::toGrayscale);
   connect(negateAction, &QAction::triggered, child, &MdiChild::negate);
+  connect(normalizeAction, &QAction::triggered, child, &MdiChild::normalize);
+  connect(equalizeAction, &QAction::triggered, child, &MdiChild::equalize);
 
   connect(child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
 
@@ -168,6 +178,8 @@ void MainWindow::connectActions(const MdiChild *child) {
   toHSVAction->setEnabled(true);
   splitChannelsAction->setEnabled(true);
   negateAction->setEnabled(true);
+  normalizeAction->setEnabled(true);
+  equalizeAction->setEnabled(true);
 }
 
 void MainWindow::splitChannels() {

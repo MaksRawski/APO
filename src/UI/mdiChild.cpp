@@ -3,6 +3,7 @@
 #include "imageLabel.hpp"
 #include <QPixmap>
 #include <QVBoxLayout>
+#include <opencv2/core.hpp>
 #include <qfileinfo.h>
 #include <qnamespace.h>
 #include <qpixmap.h>
@@ -213,9 +214,7 @@ QString MdiChild::getImageNameSuffix() const {
 }
 
 void MdiChild::negate() {
-  // TODO: for non-grayscale images, invert channels
   LUT neg = imageProcessor::negate();
-  qDebug() << "neg:" << neg[0] << "-" << neg[255];
   ImageWrapper res = applyLUT(*imageWrapper, neg);
   setImage(res);
 }
@@ -244,4 +243,15 @@ void MdiChild::regenerateChannels() {
   scrollArea1->setWidget(imageLabel1);
   scrollArea2->setWidget(imageLabel2);
   scrollArea3->setWidget(imageLabel3);
+}
+
+void MdiChild::normalize() {
+  double min, max;
+  cv::minMaxLoc(imageWrapper->getMat(), &min, &max);
+  LUT stretched = imageProcessor::stretch((int)min, (int)max, 0, 255);
+  setImage(applyLUT(*imageWrapper, stretched));
+}
+
+void MdiChild::equalize() {
+  setImage(imageProcessor::equalizeChannels(imageWrapper->getMat()));
 }

@@ -35,6 +35,8 @@ private:
   QAction *duplicateAction;
   QAction *aboutAction;
   QAction *negateAction;
+  QAction *normalizeAction;
+  QAction *equalizeAction;
   void connectActions(const MdiChild *child);
   void disconnectActions(const MdiChild *child);
 

@@ -41,6 +41,8 @@ public slots:
   void toHSV();
   void toGrayscale();
   void negate();
+  void normalize();
+  void equalize();
 
 signals:
   void imageUpdated(const ImageWrapper &image);
