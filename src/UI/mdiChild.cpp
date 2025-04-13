@@ -234,7 +234,7 @@ QString MdiChild::getImageNameSuffix() const {
 void MdiChild::negate() {
   LUT neg = imageProcessor::negate();
   ImageWrapper res = applyLUT(*imageWrapper, neg);
-  setImage(res);
+  swapImage(res);
 }
 
 void MdiChild::regenerateChannels() {
