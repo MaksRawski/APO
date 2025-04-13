@@ -5,12 +5,10 @@
 #include <qdebug.h>
 #include <stdexcept>
 
-ImageWrapper::ImageWrapper(const ImageWrapper &other) : format_(other.format_) {
-  other.mat_.copyTo(this->mat_);
-}
+ImageWrapper::ImageWrapper(const ImageWrapper &other) : format_(other.format_), mat_(other.mat_.clone()) {}
 
 ImageWrapper &ImageWrapper::operator=(const ImageWrapper &rhs) {
-  rhs.mat_.copyTo(this->mat_);
+  mat_ = rhs.mat_.clone();
   format_ = rhs.format_;
   return *this;
 }

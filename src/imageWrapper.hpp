@@ -4,7 +4,6 @@
 #include <opencv2/opencv.hpp>
 #include <qimage.h>
 #include <stdexcept>
-#include <string>
 
 // For internal storage in ImageWrapper.
 enum class PixelFormat {
