@@ -94,8 +94,10 @@ HistogramWidget::HistogramWidget(QWidget *parent)
 
 void HistogramWidget::updateHistogram(const ImageWrapper &image) {
   hist = imageProcessor::histogram(image);
-  if (hist.empty())
+  if (hist.empty()) {
+    reset();
     return;
+  }
   min = hist[0];
   max = hist[0];
 
