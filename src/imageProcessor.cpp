@@ -16,7 +16,7 @@ std::vector<int> histogram(const cv::Mat &mat) {
   if (mat.type() != CV_8UC1)
     return {};
 
-  std::vector<int> histogram(M, 0);
+  std::vector<int> histogram(256, 0);
 
   for (int y = 0; y < mat.rows; ++y) {
     const uchar *rowPtr = mat.ptr<uchar>(y);
@@ -68,18 +68,17 @@ cv::Mat applyLUTcv(const cv::Mat &mat, const LUT &lut){
 }
 
 LUT negate() {
-  LUT lut(M);
-  lut.resize(M);
-  for (int i = 0; i < M; ++i) {
-    lut[i] = LMAX - i - 1;
+  LUT lut(256);
+  for (int i = 0; i < 256; ++i) {
+    lut[i] = 256 - i - 1;
   }
   return lut;
 }
 
 LUT stretch(uchar p1, uchar p2, uchar q3, uchar q4) {
-  LUT lut(M);
+  LUT lut(256);
   double stretchFactor = static_cast<double>(q4 - q3) / (p2 - p1);
-  for (int i = 0; i < M; ++i) {
+  for (int i = 0; i < 256; ++i) {
     if (p1 <= i && i <= p2)
       lut[i] = static_cast<uchar>(double(i - p1) * stretchFactor) + q3;
     else
@@ -89,16 +88,12 @@ LUT stretch(uchar p1, uchar p2, uchar q3, uchar q4) {
 }
 
 LUT posterize(uchar n) {
-  LUT lut(M);
-  lut.resize(M);
-  std::vector<int> colors;
-  colors.resize(n);
+  LUT lut(256);
 
-  for (int i = 0; i < n; ++i) {
-    colors[i] = LMAX / i;
-  }
-  for (int i = 0; i <= M; ++i) {
-    lut[i] = colors[i / n];
+  float step = 256.0f / n;
+  for (int i = 0; i < 256; ++i) {
+      uchar bin = static_cast<uchar>(i / step);
+      lut[i] = static_cast<uchar>(bin * step + step / 2);
   }
   return lut;
 }

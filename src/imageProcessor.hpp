@@ -8,10 +8,6 @@
 namespace imageProcessor {
 using LUT = std::vector<uchar>;
 
-const int LMIN = 0;
-const int LMAX = 256;
-const int M = LMAX - LMIN;
-
 ImageWrapper applyLUT(const ImageWrapper &image, const LUT &lut);
 cv::Mat applyLUTcv(const cv::Mat &mat, const LUT &lut);
 std::vector<int> histogram(const ImageWrapper &image);

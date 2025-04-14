@@ -50,6 +50,7 @@ public slots:
   void rangeStretch();
   void save();
   void rename();
+  void posterize();
 
 signals:
   void imageUpdated(const ImageWrapper &image);

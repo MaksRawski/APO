@@ -47,6 +47,7 @@ void MainWindow::setupMenuBar() {
   equalizeAction = imageContrastMenu->addAction("&Equalize");
   rangeStretchAction = imageContrastMenu->addAction("Range &stretch");
 
+  posterizeAction = imageMenu->addAction("&Posterize");
 
   QMenu *aboutMenu = menuBar()->addMenu("Info");
   aboutAction = aboutMenu->addAction("About");
@@ -155,6 +156,7 @@ void MainWindow::disconnectActions(const MdiChild *child) {
     disconnect(rangeStretchAction, &QAction::triggered, child, &MdiChild::rangeStretch);
     disconnect(saveAction, &QAction::triggered, child, &MdiChild::save);
     disconnect(renameAction, &QAction::triggered, child, &MdiChild::rename);
+    disconnect(posterizeAction, &QAction::triggered, child, &MdiChild::posterize);
 
     disconnect(child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
   }
@@ -170,6 +172,7 @@ void MainWindow::disconnectActions(const MdiChild *child) {
   rangeStretchAction->setEnabled(false);
   saveAction->setEnabled(false);
   renameAction->setEnabled(false);
+  posterizeAction->setEnabled(false);
 }
 
 // enables all the actions that operate on the image
@@ -187,6 +190,7 @@ void MainWindow::connectActions(const MdiChild *child) {
   connect(rangeStretchAction, &QAction::triggered, child, &MdiChild::rangeStretch);
   connect(saveAction, &QAction::triggered, child, &MdiChild::save);
   connect(renameAction, &QAction::triggered, child, &MdiChild::rename);
+  connect(posterizeAction, &QAction::triggered, child, &MdiChild::posterize);
 
   connect(child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
 
@@ -202,6 +206,7 @@ void MainWindow::connectActions(const MdiChild *child) {
   rangeStretchAction->setEnabled(true);
   saveAction->setEnabled(true);
   renameAction->setEnabled(true);
+  posterizeAction->setEnabled(true);
 }
 
 void MainWindow::splitChannels() {

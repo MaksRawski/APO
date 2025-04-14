@@ -322,3 +322,10 @@ void MdiChild::rename() {
     setImageName(lineEdit->text());
   }
 }
+
+void MdiChild::posterize() {
+  auto res = posterizeDialog(this, 2);
+  if (!res.has_value()) return;
+  LUT lut = imageProcessor::posterize(res.value());
+  swapImage(applyLUT(*imageWrapper, lut));
+}

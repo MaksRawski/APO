@@ -40,6 +40,7 @@ private:
   QAction *rangeStretchAction;
   QAction *saveAction;
   QAction *renameAction;
+  QAction *posterizeAction;
   void connectActions(const MdiChild *child);
   void disconnectActions(const MdiChild *child);
 
