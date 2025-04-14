@@ -18,7 +18,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
 void MainWindow::setupMenuBar() {
   QMenu *fileMenu = menuBar()->addMenu("&File");
-  QAction *openAction = fileMenu->addAction("&Open...");
+  QAction *openAction = fileMenu->addAction("&Open");
   openAction->setShortcut(QKeySequence::Open);
 
   saveAction = fileMenu->addAction("&Save");
@@ -38,12 +38,15 @@ void MainWindow::setupMenuBar() {
   toGrayscaleAction = imageTypeMenu->addAction("&Grayscale");
   toGrayscaleAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_G));
   splitChannelsAction = imageTypeMenu->addAction("&Split channels");
+  splitChannelsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_C));
 
-  negateAction = imageMenu->addAction("Negate");
+  QMenu *imageContrastMenu = imageMenu->addMenu("&Contrast");
+  negateAction = imageContrastMenu->addAction("Negate");
   negateAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_I));
-  normalizeAction = imageMenu->addAction("Nor&malize");
-  equalizeAction = imageMenu->addAction("&Equalize");
-  rangeStretchAction = imageMenu->addAction("Range &stretch");
+  normalizeAction = imageContrastMenu->addAction("Nor&malize");
+  equalizeAction = imageContrastMenu->addAction("&Equalize");
+  rangeStretchAction = imageContrastMenu->addAction("Range &stretch");
+
 
   QMenu *aboutMenu = menuBar()->addMenu("Info");
   aboutAction = aboutMenu->addAction("About");
