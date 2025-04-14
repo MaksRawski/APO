@@ -34,6 +34,7 @@ void MainWindow::setupMenuBar() {
   toHSVAction = imageTypeMenu->addAction("&HSV");
   toLabAction = imageTypeMenu->addAction("&Lab");
   toGrayscaleAction = imageTypeMenu->addAction("&Grayscale");
+  toGrayscaleAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_G));
   splitChannelsAction = imageTypeMenu->addAction("&Split channels");
 
   negateAction = imageMenu->addAction("Negate");
@@ -119,9 +120,9 @@ void MainWindow::openImage() {
 
 void MainWindow::mdiSubWindowActivated(QMdiSubWindow *window) {
   // if last window has been closed
+  disconnectActions(activeChild);
   if (window == nullptr) {
     histogramWidget->reset();
-    disconnectActions(activeChild);
     activeChild = nullptr;
     return;
   }
@@ -130,6 +131,7 @@ void MainWindow::mdiSubWindowActivated(QMdiSubWindow *window) {
   if (mdiChild) {
     activeChild = mdiChild;
     histogramWidget->updateHistogram(mdiChild->getImage());
+    connectActions(activeChild);
   }
 }
 
@@ -232,7 +234,6 @@ void MainWindow::duplicateImage() {
 
   dupChild->setImageScale(activeChild->getImageScale());
   dupChild->resize(activeChild->size());
-  connectActions(dupChild);
 
   mdiArea->addSubWindow(dupChild);
   dupChild->show();
