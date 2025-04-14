@@ -27,7 +27,7 @@ add_executable(APO
   src/UI/mdiChild.cpp
   src/UI/imageLabel.cpp
   src/UI/histogramWidget.cpp
-  src/UI/rangeStretchDialog.cpp
+  src/UI/parametersDialog.cpp
   src/imageProcessor.cpp
   src/imageWrapper.cpp
   ${MOC_SOURCES}

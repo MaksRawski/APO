@@ -1,7 +1,7 @@
 #include "../imageProcessor.hpp"
 #include "mdiChild.hpp"
 #include "imageLabel.hpp"
-#include "rangeStretchDialog.hpp"
+#include "parametersDialog.hpp"
 #include <QPixmap>
 #include <QVBoxLayout>
 #include <opencv2/core.hpp>
@@ -283,13 +283,11 @@ void MdiChild::equalize() {
 }
 
 void MdiChild::rangeStretch() {
-  // TODO: dialog box with parameters
-  // uchar p1, p2, q3, q4;
   double min_d, max_d;
   cv::minMaxLoc(imageWrapper->getMat(), &min_d, &max_d);
   uchar min = static_cast<uchar>(min_d);
   uchar max = static_cast<uchar>(max_d);
-  auto params = getParametersDialog(this, min, max, 0, 255);
+  auto params = rangeStretchDialog(this, min, max, 0, 255);
   if (!params.has_value())
     return;
 
@@ -298,7 +296,6 @@ void MdiChild::rangeStretch() {
 
   LUT stretched = imageProcessor::stretch(p1, p2, q3, q4);
   swapImage(applyLUT(*imageWrapper, stretched));
-
 }
 
 void MdiChild::save() {
