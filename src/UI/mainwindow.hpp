@@ -37,6 +37,7 @@ private:
   QAction *negateAction;
   QAction *normalizeAction;
   QAction *equalizeAction;
+  QAction *rangeStretchAction;
   void connectActions(const MdiChild *child);
   void disconnectActions(const MdiChild *child);
 

@@ -13,14 +13,12 @@ const int LMAX = 256;
 const int M = LMAX - LMIN;
 
 ImageWrapper applyLUT(const ImageWrapper &image, const LUT &lut);
-// ImageWrapper applyLUT(const cv::Mat &mat, const LUT &lut);
 cv::Mat applyLUTcv(const cv::Mat &mat, const LUT &lut);
 std::vector<int> histogram(const ImageWrapper &image);
 std::vector<int> histogram(const cv::Mat &mat);
 LUT negate();
-LUT stretch(int p1, int p2, int q3, int q4);
-LUT posterize(uint8_t n);
-// LUT equalize(const ImageWrapper &image);
+LUT stretch(uchar p1, uchar p2, uchar q3, uchar q4);
+LUT posterize(uchar n);
 LUT equalize(const cv::Mat &mat);
 cv::Mat equalizeChannels(const cv::Mat &mat);
 } // namespace imageProcessor

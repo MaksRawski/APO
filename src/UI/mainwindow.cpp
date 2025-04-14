@@ -39,8 +39,9 @@ void MainWindow::setupMenuBar() {
 
   negateAction = imageMenu->addAction("Negate");
   negateAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_I));
-  normalizeAction = imageMenu->addAction("Normalize");
-  equalizeAction = imageMenu->addAction("Equalize");
+  normalizeAction = imageMenu->addAction("Nor&malize");
+  equalizeAction = imageMenu->addAction("&Equalize");
+  rangeStretchAction = imageMenu->addAction("Range &stretch");
 
   QMenu *aboutMenu = menuBar()->addMenu("Info");
   aboutAction = aboutMenu->addAction("About");
@@ -54,6 +55,7 @@ void MainWindow::setupMenuBar() {
   negateAction->setEnabled(false);
   normalizeAction->setEnabled(false);
   equalizeAction->setEnabled(false);
+  rangeStretchAction->setEnabled(false);
 
   // NOTE: connections that need MdiChild directly have to be created using `connectActions`
   connect(openAction, &QAction::triggered, this, &MainWindow::openImage);
@@ -145,6 +147,7 @@ void MainWindow::disconnectActions(const MdiChild *child) {
     disconnect(negateAction, &QAction::triggered, child, &MdiChild::negate);
     disconnect(normalizeAction, &QAction::triggered, child, &MdiChild::normalize);
     disconnect(equalizeAction, &QAction::triggered, child, &MdiChild::equalize);
+    disconnect(rangeStretchAction, &QAction::triggered, child, &MdiChild::rangeStretch);
 
     disconnect(child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
   }
@@ -157,6 +160,7 @@ void MainWindow::disconnectActions(const MdiChild *child) {
   negateAction->setEnabled(false);
   normalizeAction->setEnabled(false);
   equalizeAction->setEnabled(false);
+  rangeStretchAction->setEnabled(false);
 }
 
 // enables all the actions that operate on the image
@@ -171,6 +175,7 @@ void MainWindow::connectActions(const MdiChild *child) {
   connect(negateAction, &QAction::triggered, child, &MdiChild::negate);
   connect(normalizeAction, &QAction::triggered, child, &MdiChild::normalize);
   connect(equalizeAction, &QAction::triggered, child, &MdiChild::equalize);
+  connect(rangeStretchAction, &QAction::triggered, child, &MdiChild::rangeStretch);
 
   connect(child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
 
@@ -183,6 +188,7 @@ void MainWindow::connectActions(const MdiChild *child) {
   negateAction->setEnabled(true);
   normalizeAction->setEnabled(true);
   equalizeAction->setEnabled(true);
+  rangeStretchAction->setEnabled(true);
 }
 
 void MainWindow::splitChannels() {

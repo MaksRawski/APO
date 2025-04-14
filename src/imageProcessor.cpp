@@ -68,7 +68,7 @@ cv::Mat applyLUTcv(const cv::Mat &mat, const LUT &lut){
 }
 
 LUT negate() {
-  LUT lut;
+  LUT lut(M);
   lut.resize(M);
   for (int i = 0; i < M; ++i) {
     lut[i] = LMAX - i - 1;
@@ -76,23 +76,20 @@ LUT negate() {
   return lut;
 }
 
-LUT stretch(int p1, int p2, int q3, int q4) {
-  LUT lut;
-  lut.resize(M);
-  double div = 1.0 / static_cast<double>(p2 - p1);
-  for (size_t i = 0; i < M; ++i) {
-    if (i < p1)
-      lut[i] = q3;
-    else if (i <= p2)
-      lut[i] = (i - p1) * q4 * div;
+LUT stretch(uchar p1, uchar p2, uchar q3, uchar q4) {
+  LUT lut(M);
+  double stretchFactor = static_cast<double>(q4 - q3) / (p2 - p1);
+  for (int i = 0; i < M; ++i) {
+    if (p1 <= i && i <= p2)
+      lut[i] = static_cast<uchar>(double(i - p1) * stretchFactor) + q3;
     else
-      lut[i] = q4;
+      lut[i] = i;
   }
   return lut;
 }
 
-LUT posterize(int n) {
-  LUT lut;
+LUT posterize(uchar n) {
+  LUT lut(M);
   lut.resize(M);
   std::vector<int> colors;
   colors.resize(n);
@@ -105,12 +102,6 @@ LUT posterize(int n) {
   }
   return lut;
 }
-
-// returns LUT
-// LUT equalize(const ImageWrapper &image) {
-//   cv::Mat mat = image.getMat();
-//   return equalize(mat);
-// }
 
 LUT equalize(const cv::Mat &mat) {
   std::vector<int> hist = histogram(mat);

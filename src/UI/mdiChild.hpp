@@ -47,6 +47,7 @@ public slots:
   void negate();
   void normalize();
   void equalize();
+  void rangeStretch();
 
 signals:
   void imageUpdated(const ImageWrapper &image);
