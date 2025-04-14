@@ -40,14 +40,16 @@ private:
   void regenerateChannels();
 
 public slots:
-  void toLab();
   void toRGB();
   void toHSV();
+  void toLab();
   void toGrayscale();
   void negate();
   void normalize();
   void equalize();
   void rangeStretch();
+  void save();
+  void rename();
 
 signals:
   void imageUpdated(const ImageWrapper &image);

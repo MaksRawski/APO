@@ -21,13 +21,15 @@ void MainWindow::setupMenuBar() {
   QAction *openAction = fileMenu->addAction("&Open...");
   openAction->setShortcut(QKeySequence::Open);
 
-  QAction *saveAction = fileMenu->addAction("&Save");
+  saveAction = fileMenu->addAction("&Save");
   saveAction->setEnabled(false);
   saveAction->setShortcut(QKeySequence::Save);
 
   QMenu *imageMenu = menuBar()->addMenu("&Image");
   duplicateAction = imageMenu->addAction("&Duplicate");
   duplicateAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_D));
+  renameAction = imageMenu->addAction("&Rename");
+  renameAction->setShortcut(QKeySequence(Qt::Key_F2));
 
   QMenu *imageTypeMenu = imageMenu->addMenu("&Type");
   toRGBAction = imageTypeMenu->addAction("&RGB");
@@ -148,6 +150,8 @@ void MainWindow::disconnectActions(const MdiChild *child) {
     disconnect(normalizeAction, &QAction::triggered, child, &MdiChild::normalize);
     disconnect(equalizeAction, &QAction::triggered, child, &MdiChild::equalize);
     disconnect(rangeStretchAction, &QAction::triggered, child, &MdiChild::rangeStretch);
+    disconnect(saveAction, &QAction::triggered, child, &MdiChild::save);
+    disconnect(renameAction, &QAction::triggered, child, &MdiChild::rename);
 
     disconnect(child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
   }
@@ -161,6 +165,8 @@ void MainWindow::disconnectActions(const MdiChild *child) {
   normalizeAction->setEnabled(false);
   equalizeAction->setEnabled(false);
   rangeStretchAction->setEnabled(false);
+  saveAction->setEnabled(false);
+  renameAction->setEnabled(false);
 }
 
 // enables all the actions that operate on the image
@@ -176,6 +182,8 @@ void MainWindow::connectActions(const MdiChild *child) {
   connect(normalizeAction, &QAction::triggered, child, &MdiChild::normalize);
   connect(equalizeAction, &QAction::triggered, child, &MdiChild::equalize);
   connect(rangeStretchAction, &QAction::triggered, child, &MdiChild::rangeStretch);
+  connect(saveAction, &QAction::triggered, child, &MdiChild::save);
+  connect(renameAction, &QAction::triggered, child, &MdiChild::rename);
 
   connect(child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
 
@@ -189,6 +197,8 @@ void MainWindow::connectActions(const MdiChild *child) {
   normalizeAction->setEnabled(true);
   equalizeAction->setEnabled(true);
   rangeStretchAction->setEnabled(true);
+  saveAction->setEnabled(true);
+  renameAction->setEnabled(true);
 }
 
 void MainWindow::splitChannels() {

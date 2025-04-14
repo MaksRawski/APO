@@ -103,29 +103,25 @@ LUT posterize(uchar n) {
   return lut;
 }
 
-LUT equalize(const cv::Mat &mat) {
+std::vector<uchar> equalize(const cv::Mat &mat) {
   std::vector<int> hist = histogram(mat);
 
   if (mat.channels() != 1) {
     throw std::runtime_error(
         "Tried to create an equalization LUT for non-grayscale image!");
   }
-  int s = 0;
-  std::vector<int> cdf(256);
-
-  for (int i = 0; i < 256; ++i) {
-    s += hist[i];
-    cdf[i] = s;
-  }
-
-  // equalize cdf
+  std::vector<float> cdf(256, 0);
   int totalPixels = mat.rows * mat.cols;
-
-  // calculate equalization LUT
-  LUT lut(256);
-  for (int i = 0; i < 256; ++i) {
-    lut[i] = static_cast<uchar>(255.0 * cdf[i] / totalPixels);
+  cdf[0] = static_cast<float>(hist[0]) / totalPixels;
+  for (int i = 1; i < 256; ++i) {
+    cdf[i] = cdf[i - 1] + static_cast<float>(hist[i]) / totalPixels;
   }
+
+  std::vector<uchar> lut(256, 0);
+  for (int i = 0; i < 256; ++i) {
+    lut[i] = static_cast<uchar>(std::round(cdf[i] * 255));
+  }
+
   return lut;
 }
 

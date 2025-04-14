@@ -38,6 +38,8 @@ private:
   QAction *normalizeAction;
   QAction *equalizeAction;
   QAction *rangeStretchAction;
+  QAction *saveAction;
+  QAction *renameAction;
   void connectActions(const MdiChild *child);
   void disconnectActions(const MdiChild *child);
 

@@ -5,6 +5,10 @@
 #include <QPixmap>
 #include <QVBoxLayout>
 #include <opencv2/core.hpp>
+#include <qabstractspinbox.h>
+#include <qdialog.h>
+#include <qdialogbuttonbox.h>
+#include <qfiledialog.h>
 #include <qfileinfo.h>
 #include <qnamespace.h>
 #include <qpixmap.h>
@@ -12,6 +16,8 @@
 #include <qtabwidget.h>
 #include <stdexcept>
 #include <tuple>
+#include <QLineEdit>
+#include <QFormLayout>
 
 using imageProcessor::applyLUT;
 using imageProcessor::LUT;
@@ -283,7 +289,7 @@ void MdiChild::rangeStretch() {
   cv::minMaxLoc(imageWrapper->getMat(), &min_d, &max_d);
   uchar min = static_cast<uchar>(min_d);
   uchar max = static_cast<uchar>(max_d);
-  auto params = getParametersDialog(min, max, 0, 255);
+  auto params = getParametersDialog(this, min, max, 0, 255);
   if (!params.has_value())
     return;
 
@@ -293,4 +299,29 @@ void MdiChild::rangeStretch() {
   LUT stretched = imageProcessor::stretch(p1, p2, q3, q4);
   swapImage(applyLUT(*imageWrapper, stretched));
 
+}
+
+void MdiChild::save() {
+  QString fileName =
+    QFileDialog::getSaveFileName(this, tr("Save File"), imageName, tr("Images (*.png *.jpg *.jpeg *.bmp)"));
+  imageWrapper->generateQImage().save(fileName);
+}
+
+void MdiChild::rename() {
+  QDialog dialog(this);
+  dialog.setWindowTitle("Set image name");
+
+  QFormLayout *formLayout = new QFormLayout(&dialog);
+  QLineEdit *lineEdit = new QLineEdit();
+  lineEdit->setText(imageName);
+  formLayout->addRow(lineEdit);
+
+  QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+  QObject::connect(buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+  QObject::connect(buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+  formLayout->addRow(buttonBox);
+
+  if (dialog.exec() == QDialog::Accepted) {
+    setImageName(lineEdit->text());
+  }
 }
