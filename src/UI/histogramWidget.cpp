@@ -103,7 +103,7 @@ void HistogramWidget::updateHistogram(const ImageWrapper &image) {
 
   int sum = 0;
   lutList->clear();
-  for (int i = 0; i < hist.size(); ++i) {
+  for (int i = 0; i < 256; ++i) {
     int l = hist[i];
     if (l < min)
       min = l;
@@ -118,9 +118,11 @@ void HistogramWidget::updateHistogram(const ImageWrapper &image) {
     if (l > 0) percent = floor((double)l / (double)max * 10000) / 100;
     lutList->addItem(QString("%1:\t%2\t%3%").arg(i).arg(l).arg(percent));
   }
-  average = static_cast<double>(sum) / hist.size();
+  average = static_cast<double>(sum) / 256;
 
-  statsLabel->setText(QString("Min: %1  Max: %2  Avg: %3\n\nValue\tCount\tPercent of max count")
+  statsLabel->setText(QString("Pixel count: %1\tMin: %2\tMax: %3\tAvg: "
+                              "%4\n\nValue\tCount\tPercent of max count")
+                          .arg(sum)
                           .arg(min)
                           .arg(max)
                           .arg(average, 0, 'f', 2));
