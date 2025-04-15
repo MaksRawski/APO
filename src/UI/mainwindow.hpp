@@ -1,6 +1,7 @@
 #pragma once
 
 #include "histogramWidget.hpp"
+#include "mdiChild.hpp"
 #include <QLabel>
 #include <QMainWindow>
 #include <QMdiArea>
@@ -22,14 +23,38 @@ public:
 
 private:
   QMdiArea *mdiArea;
-  // necessary to store, to allow for communication
   HistogramWidget *histogramWidget;
+  MdiChild *activeChild = nullptr;
+
+  // actions
+  QAction *toRGBAction;
+  QAction *toHSVAction;
+  QAction *toLabAction;
+  QAction *toGrayscaleAction;
+  QAction *splitChannelsAction;
+  QAction *duplicateAction;
+  QAction *aboutAction;
+  QAction *negateAction;
+  QAction *normalizeAction;
+  QAction *equalizeAction;
+  QAction *rangeStretchAction;
+  QAction *saveAction;
+  QAction *renameAction;
+  QAction *posterizeAction;
+  QAction *blurMedianAction;
+  QAction *blurGaussianAction;
+  void connectActions(const MdiChild *child);
+  void disconnectActions(const MdiChild *child);
 
   // setup functions
   void setupMenuBar();
   void setupUI();
 
 private slots:
+  void openAboutWindow();
   void openImage();
+  void duplicateImage();
+  void splitChannels();
+  void toggleOptions(const ImageWrapper &image);
   void mdiSubWindowActivated(QMdiSubWindow *window);
 };
