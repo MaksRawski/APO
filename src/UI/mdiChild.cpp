@@ -5,6 +5,7 @@
 #include <QPixmap>
 #include <QVBoxLayout>
 #include <opencv2/core.hpp>
+#include <opencv2/core/hal/interface.h>
 #include <opencv2/opencv.hpp>
 #include <qabstractspinbox.h>
 #include <qdialog.h>
@@ -110,6 +111,16 @@ void MdiChild::swapImage(const QPixmap &image) {
 }
 
 void MdiChild::swapImage(const ImageWrapper &image) {
+  imageWrapper = new ImageWrapper(image);
+  QImage qimage = imageWrapper->generateQImage();
+  if (qimage.isNull())
+    throw new std::runtime_error("Failed to generate a QImage!");
+
+  QPixmap pixmap = QPixmap::fromImage(qimage);
+  swapImage(pixmap);
+}
+
+void MdiChild::swapImage(const cv::Mat &image) {
   imageWrapper = new ImageWrapper(image);
   QImage qimage = imageWrapper->generateQImage();
   if (qimage.isNull())
@@ -332,15 +343,16 @@ void MdiChild::posterize() {
 }
 
 void MdiChild::blurMedian() {
-  auto res = kernelSizeDialog(this, 0, std::vector<uchar> {3, 5, 7});
+  auto res = kernelSizeDialog(this);
   if (!res.has_value()) return;
   uchar k = res.value();
   cv::Mat mat;
   cv::medianBlur(imageWrapper->getMat(), mat, k);
-  swapImage(ImageWrapper(mat));
+  swapImage(mat);
 }
+
 void MdiChild::blurGaussian() {
-  auto res = gaussianBlurDialog(this, 0, std::vector<uchar> {3, 5, 7});
+  auto res = gaussianBlurDialog(this);
   if (!res.has_value()) return;
   uchar k;
   double sigma;
@@ -348,5 +360,37 @@ void MdiChild::blurGaussian() {
 
   cv::Mat mat;
   cv::GaussianBlur(imageWrapper->getMat(), mat, cv::Size(k, k), sigma);
-  swapImage(ImageWrapper(mat));
+  swapImage(mat);
+}
+
+void MdiChild::edgeDetectSobel() {
+  auto res = sobelDialog(this);
+  if (!res.has_value()) return;
+  uchar k;
+  Direction dir;
+  std::tie(k, dir) = res.value();
+  cv::Mat mat;
+  if (dir == Direction::Horizontal)
+    cv::Sobel(imageWrapper->getMat(), mat, CV_8UC1, 1, 0, k);
+  else
+    cv::Sobel(imageWrapper->getMat(), mat, CV_8UC1, 0, 1, k);
+
+  swapImage(mat);
+}
+void MdiChild::edgeDetectLaplacian() {
+  auto res = kernelSizeDialog(this);
+  if (!res.has_value()) return;
+  uchar k = res.value();
+  cv::Mat mat;
+  cv::Laplacian(imageWrapper->getMat(), mat, CV_8UC1, k);
+  swapImage(mat);
+}
+void MdiChild::edgeDetectCanny() {
+  auto res = cannyDialog(this);
+  if (!res.has_value()) return;
+  uchar k, start, end;
+  std::tie(k, start, end) = res.value();
+  cv::Mat mat;
+  cv::Canny(imageWrapper->getMat(), mat, start, end, k);
+  swapImage(mat);
 }

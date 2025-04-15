@@ -53,6 +53,10 @@ void MainWindow::setupMenuBar() {
   blurMedianAction = imageBlurMenu->addAction("Median");
   blurGaussianAction = imageBlurMenu->addAction("Gaussian");
 
+  QMenu *imageEdgeDetectMenu = imageMenu->addMenu("&EdgeDetect");
+  edgeDetectSobelAction = imageEdgeDetectMenu->addAction("So&bel");
+  edgeDetectLaplacianAction = imageEdgeDetectMenu->addAction("&Laplacian");
+  edgeDetectCannyAction = imageEdgeDetectMenu->addAction("&Canny");
 
   QMenu *aboutMenu = menuBar()->addMenu("Info");
   aboutAction = aboutMenu->addAction("About");
@@ -256,5 +260,8 @@ std::vector<ActionConnection> MainWindow::getConnections() const {
           {renameAction, &MdiChild::rename},
           {posterizeAction, &MdiChild::posterize},
           {blurMedianAction, &MdiChild::blurMedian},
-          {blurGaussianAction, &MdiChild::blurGaussian}};
+          {blurGaussianAction, &MdiChild::blurGaussian},
+          {edgeDetectSobelAction, &MdiChild::edgeDetectSobel},
+          {edgeDetectLaplacianAction, &MdiChild::edgeDetectLaplacian},
+          {edgeDetectCannyAction, &MdiChild::edgeDetectCanny}};
 }

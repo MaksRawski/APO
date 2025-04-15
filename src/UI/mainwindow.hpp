@@ -50,6 +50,9 @@ private:
   QAction *posterizeAction;
   QAction *blurMedianAction;
   QAction *blurGaussianAction;
+  QAction *edgeDetectSobelAction;
+  QAction *edgeDetectLaplacianAction;
+  QAction *edgeDetectCannyAction;
   void connectActions(const MdiChild *child);
   void disconnectActions(const MdiChild *child);
   std::vector<ActionConnection> getConnections() const;
