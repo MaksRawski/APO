@@ -366,3 +366,9 @@ std::optional<std::tuple<Mask3x3, int>> prewittDirection(QWidget *parent) {
   }
   return std::nullopt;
 }
+
+
+// returns indexes of the chosen windows names
+std::optional<std::tuple<uchar, uchar>> windowsPairDialog(std::vector<QString> names) {
+    throw std::runtime_error("not yet implemented");
+}

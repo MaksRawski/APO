@@ -1,16 +1,17 @@
 #include "mainwindow.hpp"
 #include "histogramWidget.hpp"
 #include "mdiChild.hpp"
+#include "parametersDialog.hpp"
 #include <QFileDialog>
 #include <QMenu>
 #include <QMenuBar>
 #include <QPixmap>
 #include <QSplitter>
+#include <QTimer>
 #include <qaction.h>
 #include <qboxlayout.h>
 #include <qfileinfo.h>
 #include <qkeysequence.h>
-#include <QTimer>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   setupMenuBar();
@@ -62,18 +63,25 @@ void MainWindow::setupMenuBar() {
   QMenu *imageSharpenMenu = imageMenu->addMenu("&Sharpen");
   sharpenLaplacianAction = imageSharpenMenu->addAction("&Laplacian");
 
+  QMenu *imageCombineMenu = imageMenu->addMenu("Co&mbine");
+  combineAddAction = imageCombineMenu->addAction("&Add");
+  combineSubAction = imageCombineMenu->addAction("&Sub");
+
   QMenu *aboutMenu = menuBar()->addMenu("Info");
   aboutAction = aboutMenu->addAction("About");
 
+  // actions that operate on single window
   for (auto c : getConnections())
     c.action->setEnabled(false);
 
-  duplicateAction->setEnabled(false);
-  splitChannelsAction->setEnabled(false);
+  // actions that work on multiple images
+  for (auto c : getMainWindowActions()) {
+    c.action->setEnabled(false);
+    connect(c.action, &QAction::triggered, this, c.slot);
+  }
 
+  // always available actions
   connect(openAction, &QAction::triggered, this, &MainWindow::openImage);
-  connect(duplicateAction, &QAction::triggered, this, &MainWindow::duplicateImage);
-  connect(splitChannelsAction, &QAction::triggered, this, &MainWindow::splitChannels);
   connect(aboutAction, &QAction::triggered, this, &MainWindow::openAboutWindow);
 }
 
@@ -104,7 +112,8 @@ void MainWindow::setupUI() {
 
 void MainWindow::openImage() {
   QString filePath = QFileDialog::getOpenFileName(
-      this, tr("Open Image"), "", tr("Image Files (*.png *.jpg *.bmp)"));
+      this, tr("Open Image"), "",
+      tr("Image Files (*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.pgm *.ppm *.xbm *.xpm)"));
   if (filePath.isEmpty())
     return;
 
@@ -152,18 +161,20 @@ void MainWindow::mdiSubWindowActivated(QMdiSubWindow *window) {
 
 void MainWindow::disconnectActions(const MdiChild *child) {
   if (child != nullptr) {
-    for (auto c : getConnections()) {
+    for (auto c : getConnections())
       disconnect(c.action, &QAction::triggered, child, c.slot);
-    }
+
+    for (auto c : getMainWindowActions())
+      disconnect(c.action, &QAction::triggered, this, c.slot);
+
     disconnect(child, &MdiChild::imageUpdated, this, &MainWindow::toggleOptions);
     disconnect(child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
   }
-  for (auto c : getConnections()) {
+  for (auto c : getConnections())
     c.action->setEnabled(false);
-  }
 
-  duplicateAction->setEnabled(false);
-  splitChannelsAction->setEnabled(false);
+  for (auto c : getMainWindowActions())
+    c.action->setEnabled(false);
 }
 
 // enables all the actions that operate on the image
@@ -171,22 +182,25 @@ void MainWindow::connectActions(const MdiChild *child) {
   if (child == nullptr)
     throw new std::runtime_error("Tried to make connections to nullptr!");
 
-  for (auto c : getConnections()) {
+  for (auto c : getConnections())
     connect(c.action, &QAction::triggered, child, c.slot);
-  }
+
+  for (auto c : getMainWindowActions())
+    connect(c.action, &QAction::triggered, this, c.slot);
+
   connect(child, &MdiChild::imageUpdated, this, &MainWindow::toggleOptions);
   connect(child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
 
-  for (auto c : getConnections()) {
+  for (auto c : getConnections())
     c.action->setEnabled(true);
-  }
 
-  duplicateAction->setEnabled(true);
-  splitChannelsAction->setEnabled(true);
+  for (auto c : getMainWindowActions())
+    c.action->setEnabled(true);
 }
 
 void MainWindow::splitChannels() {
-  if (activeChild == nullptr) return; // should never happen
+  if (activeChild == nullptr)
+    return; // should never happen
   QString imageName = activeChild->getImageName();
   QFileInfo fileInfo(imageName);
   QString baseName = fileInfo.completeBaseName();
@@ -214,7 +228,7 @@ void MainWindow::splitChannels() {
   }
 }
 
-void MainWindow::toggleOptions(const ImageWrapper &image){
+void MainWindow::toggleOptions(const ImageWrapper &image) {
   PixelFormat format = image.getFormat();
   if (format == PixelFormat::Grayscale8) {
     splitChannelsAction->setEnabled(false);
@@ -224,7 +238,8 @@ void MainWindow::toggleOptions(const ImageWrapper &image){
 }
 
 void MainWindow::duplicateImage() {
-  if (activeChild == nullptr) return; // should never happen
+  if (activeChild == nullptr)
+    return; // should never happen
 
   MdiChild *dupChild = new MdiChild;
   dupChild->setImage(activeChild->getImage());
@@ -260,23 +275,63 @@ void MainWindow::openAboutWindow() {
 }
 
 std::vector<ActionConnection> MainWindow::getConnections() const {
-  return {{toRGBAction, &MdiChild::toRGB},
-          {toHSVAction, &MdiChild::toHSV},
-          {toLabAction, &MdiChild::toLab},
-          {toGrayscaleAction, &MdiChild::toGrayscale},
-          {negateAction, &MdiChild::negate},
-          {normalizeAction, &MdiChild::normalize},
-          {equalizeAction, &MdiChild::equalize},
-          {rangeStretchAction, &MdiChild::rangeStretch},
-          {saveAction, &MdiChild::save},
-          {renameAction, &MdiChild::rename},
-          {posterizeAction, &MdiChild::posterize},
-          {blurMedianAction, &MdiChild::blurMedian},
-          {blurGaussianAction, &MdiChild::blurGaussian},
-          {edgeDetectSobelAction, &MdiChild::edgeDetectSobel},
-          {edgeDetectLaplacianAction, &MdiChild::edgeDetectLaplacian},
-          {edgeDetectCannyAction, &MdiChild::edgeDetectCanny},
-          {sharpenLaplacianAction, &MdiChild::sharpenLaplacian},
-          {edgeDetectPrewittAction, &MdiChild::edgeDetectPrewitt},
+  return {
+      {toRGBAction, &MdiChild::toRGB},
+      {toHSVAction, &MdiChild::toHSV},
+      {toLabAction, &MdiChild::toLab},
+      {toGrayscaleAction, &MdiChild::toGrayscale},
+      {negateAction, &MdiChild::negate},
+      {normalizeAction, &MdiChild::normalize},
+      {equalizeAction, &MdiChild::equalize},
+      {rangeStretchAction, &MdiChild::rangeStretch},
+      {saveAction, &MdiChild::save},
+      {renameAction, &MdiChild::rename},
+      {posterizeAction, &MdiChild::posterize},
+      {blurMedianAction, &MdiChild::blurMedian},
+      {blurGaussianAction, &MdiChild::blurGaussian},
+      {edgeDetectSobelAction, &MdiChild::edgeDetectSobel},
+      {edgeDetectLaplacianAction, &MdiChild::edgeDetectLaplacian},
+      {edgeDetectCannyAction, &MdiChild::edgeDetectCanny},
+      {sharpenLaplacianAction, &MdiChild::sharpenLaplacian},
+      {edgeDetectPrewittAction, &MdiChild::edgeDetectPrewitt},
   };
+}
+
+std::vector<MainWindowActionConnection> MainWindow::getMainWindowActions() const {
+  return {{duplicateAction, &MainWindow::duplicateImage},
+          {splitChannelsAction, &MainWindow::splitChannels},
+          {combineAddAction, &MainWindow::combineAdd},
+          {combineSubAction, &MainWindow::combineSub}};
+}
+
+std::vector<NameWindow> MainWindow::getWindows() const {
+  const QList<QMdiSubWindow *> subWindows = mdiArea->subWindowList();
+  std::vector<NameWindow> nameWindows(subWindows.size());
+
+  for (QMdiSubWindow *window : subWindows) {
+    MdiChild *mdiChild = qobject_cast<MdiChild *>(window->widget());
+    QString name = mdiChild->getImageName();
+    nameWindows.push_back({name, mdiChild});
+  }
+  return nameWindows;
+}
+
+void MainWindow::combineAdd() {
+  std::vector<NameWindow> windows = getWindows();
+  std::vector<QString> names;
+  for (auto nameWindow : windows)
+    names.push_back(nameWindow.name);
+
+  auto res = windowsPairDialog(names);
+  if (!res.has_value())
+    return;
+  uchar srcI, dstI;
+  std::tie(srcI, dstI) = res.value();
+  cv::Mat out;
+
+  // TODO:
+}
+
+void MainWindow::combineSub() {
+  // TODO:
 }

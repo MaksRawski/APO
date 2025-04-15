@@ -20,7 +20,12 @@ struct ActionConnection {
   QAction *action;
   void (MdiChild::*slot)();
 };
-}
+struct MainWindowActionConnection;
+struct NameWindow {
+  QString name;
+  MdiChild *window;
+};
+} // namespace
 
 class MainWindow : public QMainWindow {
   Q_OBJECT
@@ -55,13 +60,19 @@ private:
   QAction *edgeDetectCannyAction;
   QAction *sharpenLaplacianAction;
   QAction *edgeDetectPrewittAction;
+  QAction *combineAddAction;
+  QAction *combineSubAction;
   void connectActions(const MdiChild *child);
   void disconnectActions(const MdiChild *child);
   std::vector<ActionConnection> getConnections() const;
+  std::vector<MainWindowActionConnection> getMainWindowActions() const;
 
   // setup functions
   void setupMenuBar();
   void setupUI();
+
+  // utils
+  std::vector<NameWindow> getWindows() const;
 
 private slots:
   void openAboutWindow();
@@ -70,4 +81,13 @@ private slots:
   void splitChannels();
   void toggleOptions(const ImageWrapper &image);
   void mdiSubWindowActivated(QMdiSubWindow *window);
+  void combineAdd();
+  void combineSub();
 };
+
+namespace {
+struct MainWindowActionConnection {
+  QAction *action;
+  void (MainWindow::*slot)();
+};
+} // namespace
