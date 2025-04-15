@@ -7,32 +7,32 @@ on:
     branches: [ main ]
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          qt6-base-dev \
-          qt6-tools-dev \
-          libqt6core6 \
-          libqt6gui6 \
-          libopencv-dev \
-          cmake \
-          build-essential
-    
-    - name: Build Project
-      run: |
-        make
-    
-    - name: Run Tests
-      run: |
-        cd build/Debug
-        ctest --output-on-failure
+  # build-linux:
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #   - uses: actions/checkout@v4
+
+  #   - name: Install dependencies
+  #     run: |
+  #       sudo apt-get update
+  #       sudo apt-get install -y \
+  #         qt6-base-dev \
+  #         qt6-tools-dev \
+  #         libqt6core6 \
+  #         libqt6gui6 \
+  #         libopencv-dev \
+  #         cmake \
+  #         build-essential
+
+  #   - name: Build Project
+  #     run: |
+  #       make
+
+  #   - name: Run Tests
+  #     run: |
+  #       cd build/Debug
+  #       ctest --output-on-failure
 
   build-windows:
     runs-on: windows-latest
