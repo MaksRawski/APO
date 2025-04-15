@@ -38,6 +38,8 @@ jobs:
     runs-on: windows-latest
     
     steps:
+    - uses: actions/checkout@v4
+
     - name: Install dependencies
       run: |
        choco install -y opencv strawberryperl python ninja cmake git aqt visualstudio2022buildtools visualstudio2022-workload-vctools 
