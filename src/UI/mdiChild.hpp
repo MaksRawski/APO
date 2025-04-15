@@ -22,6 +22,7 @@ public:
   // difference between `swapImage` and `setImage` is that this maintains
   // the same size of the window whereas the previous one adjusts the size to fit the unscaled image
   void swapImage(const ImageWrapper &image);
+  void swapImage(const cv::Mat &image);
   void swapImage(const QPixmap &image);
   void setImageName(QString name);
   void setImageScale(double zoom);
@@ -53,6 +54,11 @@ public slots:
   void posterize();
   void blurMedian();
   void blurGaussian();
+  void edgeDetectSobel();
+  void edgeDetectLaplacian();
+  void edgeDetectCanny();
+  void sharpenLaplacian();
+  void edgeDetectPrewitt();
 
 signals:
   void imageUpdated(const ImageWrapper &image);

@@ -1,0 +1,68 @@
+name: Qt6 OpenCV Cross-Platform Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          qt6-base-dev \
+          qt6-tools-dev \
+          libqt6core6 \
+          libqt6gui6 \
+          libopencv-dev \
+          cmake \
+          build-essential
+    
+    - name: Build Project
+      run: |
+        make
+    
+    - name: Run Tests
+      run: |
+        cd build/Debug
+        ctest --output-on-failure
+
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+       choco install -y opencv strawberryperl python ninja cmake git aqt visualstudio2022buildtools visualstudio2022-workload-vctools 
+       New-Item -ItemType SymbolicLink -Path "C:/opencv" -Target "C:/tools/opencv"
+       aqt install-qt windows desktop 6.9.0 win64_msvc2022_64
+       
+    - name: Configure CMake
+      run: |
+        cmake -Bbuild -DCMAKE_BUILD_TYPE=Release
+    
+    - name: Build Project
+      run: |
+        cmake --build build --config Release
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-build
+        path: build/Release/
+
+
+    - name: Run Tests
+      run: |
+        cd build
+        ctest -C Release --output-on-failure
+

@@ -15,6 +15,13 @@
 const int INITIAL_WIDTH = 400;
 const int INITIAL_HEIGHT = 400;
 
+namespace {
+struct ActionConnection {
+  QAction *action;
+  void (MdiChild::*slot)();
+};
+}
+
 class MainWindow : public QMainWindow {
   Q_OBJECT
 
@@ -43,8 +50,14 @@ private:
   QAction *posterizeAction;
   QAction *blurMedianAction;
   QAction *blurGaussianAction;
+  QAction *edgeDetectSobelAction;
+  QAction *edgeDetectLaplacianAction;
+  QAction *edgeDetectCannyAction;
+  QAction *sharpenLaplacianAction;
+  QAction *edgeDetectPrewittAction;
   void connectActions(const MdiChild *child);
   void disconnectActions(const MdiChild *child);
+  std::vector<ActionConnection> getConnections() const;
 
   // setup functions
   void setupMenuBar();
