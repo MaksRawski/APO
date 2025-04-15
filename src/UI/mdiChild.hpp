@@ -2,13 +2,9 @@
 
 #include "../imageWrapper.hpp"
 #include "imageLabel.hpp"
-#include <QLabel>
 #include <QScrollArea>
-#include <qmdisubwindow.h>
-#include <qpixmap.h>
-#include <qscrollarea.h>
-#include <qsize.h>
-#include <qtabwidget.h>
+#include <QMdiSubWindow>
+#include <QTabWidget>
 
 const QSize CHILD_IMAGE_MARGIN = QSize(30, 70);
 

@@ -2,10 +2,8 @@
 
 #include <opencv2/core/base.hpp>
 #include <optional>
-#include <qtypes.h>
 #include <qwidget.h>
 #include <tuple>
-#include <vector>
 
 std::optional<std::tuple<uchar, uchar, uchar, uchar>>
 rangeStretchDialog(QWidget *parent, uchar initialP1, uchar initialP2, uchar initialQ3,

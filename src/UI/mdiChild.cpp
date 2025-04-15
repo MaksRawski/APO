@@ -9,17 +9,9 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/hal/interface.h>
 #include <opencv2/opencv.hpp>
-#include <qabstractspinbox.h>
 #include <qdialog.h>
 #include <qdialogbuttonbox.h>
 #include <qfiledialog.h>
-#include <qfileinfo.h>
-#include <qnamespace.h>
-#include <qpixmap.h>
-#include <qscrollarea.h>
-#include <qtabwidget.h>
-#include <stdexcept>
-#include <tuple>
 
 using imageProcessor::applyLUT;
 using imageProcessor::LUT;

@@ -50,8 +50,8 @@ void MainWindow::setupMenuBar() {
   posterizeAction = imageContrastMenu->addAction("&Posterize");
 
   QMenu *imageBlurMenu = imageMenu->addMenu("&Blur");
-  blurMedianAction = imageBlurMenu->addAction("Median");
-  blurGaussianAction = imageBlurMenu->addAction("Gaussian");
+  blurMedianAction = imageBlurMenu->addAction("&Median");
+  blurGaussianAction = imageBlurMenu->addAction("&Gaussian");
 
   QMenu *imageEdgeDetectMenu = imageMenu->addMenu("&Edge detect");
   edgeDetectSobelAction = imageEdgeDetectMenu->addAction("&Sobel");

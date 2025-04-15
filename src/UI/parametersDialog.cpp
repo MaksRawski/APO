@@ -7,11 +7,6 @@
 #include <QMessageBox>
 #include <QString>
 #include <opencv2/core/base.hpp>
-#include <optional>
-#include <qcombobox.h>
-#include <qdialogbuttonbox.h>
-#include <qgridlayout.h>
-#include <qvalidator.h>
 
 namespace {
 QLineEdit *createValidatedLineEdit(QWidget *parent, int min, int max, int initialValue) {
