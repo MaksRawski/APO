@@ -53,10 +53,14 @@ void MainWindow::setupMenuBar() {
   blurMedianAction = imageBlurMenu->addAction("Median");
   blurGaussianAction = imageBlurMenu->addAction("Gaussian");
 
-  QMenu *imageEdgeDetectMenu = imageMenu->addMenu("&EdgeDetect");
-  edgeDetectSobelAction = imageEdgeDetectMenu->addAction("So&bel");
+  QMenu *imageEdgeDetectMenu = imageMenu->addMenu("&Edge detect");
+  edgeDetectSobelAction = imageEdgeDetectMenu->addAction("&Sobel");
   edgeDetectLaplacianAction = imageEdgeDetectMenu->addAction("&Laplacian");
   edgeDetectCannyAction = imageEdgeDetectMenu->addAction("&Canny");
+  edgeDetectPrewittAction = imageEdgeDetectMenu->addAction("&Prewitt");
+
+  QMenu *imageSharpenMenu = imageMenu->addMenu("&Sharpen");
+  sharpenLaplacianAction = imageSharpenMenu->addAction("&Laplacian");
 
   QMenu *aboutMenu = menuBar()->addMenu("Info");
   aboutAction = aboutMenu->addAction("About");
@@ -64,7 +68,9 @@ void MainWindow::setupMenuBar() {
   for (auto c : getConnections())
     c.action->setEnabled(false);
 
-  // NOTE: connections that need MdiChild directly have to be created using `connectActions`
+  duplicateAction->setEnabled(false);
+  splitChannelsAction->setEnabled(false);
+
   connect(openAction, &QAction::triggered, this, &MainWindow::openImage);
   connect(duplicateAction, &QAction::triggered, this, &MainWindow::duplicateImage);
   connect(splitChannelsAction, &QAction::triggered, this, &MainWindow::splitChannels);
@@ -155,6 +161,9 @@ void MainWindow::disconnectActions(const MdiChild *child) {
   for (auto c : getConnections()) {
     c.action->setEnabled(false);
   }
+
+  duplicateAction->setEnabled(false);
+  splitChannelsAction->setEnabled(false);
 }
 
 // enables all the actions that operate on the image
@@ -171,6 +180,9 @@ void MainWindow::connectActions(const MdiChild *child) {
   for (auto c : getConnections()) {
     c.action->setEnabled(true);
   }
+
+  duplicateAction->setEnabled(true);
+  splitChannelsAction->setEnabled(true);
 }
 
 void MainWindow::splitChannels() {
@@ -263,5 +275,8 @@ std::vector<ActionConnection> MainWindow::getConnections() const {
           {blurGaussianAction, &MdiChild::blurGaussian},
           {edgeDetectSobelAction, &MdiChild::edgeDetectSobel},
           {edgeDetectLaplacianAction, &MdiChild::edgeDetectLaplacian},
-          {edgeDetectCannyAction, &MdiChild::edgeDetectCanny}};
+          {edgeDetectCannyAction, &MdiChild::edgeDetectCanny},
+          {sharpenLaplacianAction, &MdiChild::sharpenLaplacian},
+          {edgeDetectPrewittAction, &MdiChild::edgeDetectPrewitt},
+  };
 }

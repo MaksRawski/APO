@@ -53,6 +53,8 @@ private:
   QAction *edgeDetectSobelAction;
   QAction *edgeDetectLaplacianAction;
   QAction *edgeDetectCannyAction;
+  QAction *sharpenLaplacianAction;
+  QAction *edgeDetectPrewittAction;
   void connectActions(const MdiChild *child);
   void disconnectActions(const MdiChild *child);
   std::vector<ActionConnection> getConnections() const;

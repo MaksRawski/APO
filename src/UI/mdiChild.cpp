@@ -1,7 +1,9 @@
-#include "../imageProcessor.hpp"
 #include "mdiChild.hpp"
+#include "../imageProcessor.hpp"
 #include "imageLabel.hpp"
 #include "parametersDialog.hpp"
+#include <QFormLayout>
+#include <QLineEdit>
 #include <QPixmap>
 #include <QVBoxLayout>
 #include <opencv2/core.hpp>
@@ -18,8 +20,6 @@
 #include <qtabwidget.h>
 #include <stdexcept>
 #include <tuple>
-#include <QLineEdit>
-#include <QFormLayout>
 
 using imageProcessor::applyLUT;
 using imageProcessor::LUT;
@@ -86,7 +86,8 @@ void MdiChild::setImage(const QPixmap &pixmap) {
 
   // if the user is on the main image tab we don't need to regenerate channels
   // that will be done once the tab is switched
-  if (prevTabIndex != 0) regenerateChannels();
+  if (prevTabIndex != 0)
+    regenerateChannels();
 
   emit imageUpdated(*imageWrapper);
 }
@@ -130,9 +131,7 @@ void MdiChild::swapImage(const cv::Mat &image) {
   swapImage(pixmap);
 }
 
-void MdiChild::setImageScale(double zoom) {
-  imageLabel->setImageScale(zoom);
-}
+void MdiChild::setImageScale(double scale) { imageLabel->setImageScale(scale); }
 
 void MdiChild::updateChannelNames() {
   auto imageFormat = imageWrapper->getFormat();
@@ -290,9 +289,7 @@ void MdiChild::normalize() {
   swapImage(applyLUT(*imageWrapper, stretched));
 }
 
-void MdiChild::equalize() {
-  swapImage(imageProcessor::equalizeChannels(imageWrapper->getMat()));
-}
+void MdiChild::equalize() { swapImage(imageProcessor::equalizeChannels(imageWrapper->getMat())); }
 
 void MdiChild::rangeStretch() {
   double min_d, max_d;
@@ -311,8 +308,8 @@ void MdiChild::rangeStretch() {
 }
 
 void MdiChild::save() {
-  QString fileName =
-    QFileDialog::getSaveFileName(this, tr("Save File"), imageName, tr("Images (*.png *.jpg *.jpeg *.bmp)"));
+  QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), imageName,
+                                                  tr("Images (*.png *.jpg *.jpeg *.bmp)"));
   imageWrapper->generateQImage().save(fileName);
 }
 
@@ -325,7 +322,8 @@ void MdiChild::rename() {
   lineEdit->setText(imageName);
   formLayout->addRow(lineEdit);
 
-  QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+  QDialogButtonBox *buttonBox =
+      new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
   QObject::connect(buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
   QObject::connect(buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
   formLayout->addRow(buttonBox);
@@ -337,14 +335,16 @@ void MdiChild::rename() {
 
 void MdiChild::posterize() {
   auto res = posterizeDialog(this, 2);
-  if (!res.has_value()) return;
+  if (!res.has_value())
+    return;
   LUT lut = imageProcessor::posterize(res.value());
   swapImage(applyLUT(*imageWrapper, lut));
 }
 
 void MdiChild::blurMedian() {
   auto res = kernelSizeDialog(this);
-  if (!res.has_value()) return;
+  if (!res.has_value())
+    return;
   uchar k;
   int borderType;
   std::tie(k, borderType) = res.value();
@@ -352,11 +352,7 @@ void MdiChild::blurMedian() {
   // manually padding
   int pad = k / 2;
   cv::Mat padded;
-  cv::copyMakeBorder(
-      imageWrapper->getMat(), padded,
-      pad, pad, pad, pad,
-      borderType
-  );
+  cv::copyMakeBorder(imageWrapper->getMat(), padded, pad, pad, pad, pad, borderType);
 
   cv::Mat out;
   cv::medianBlur(padded, out, k);
@@ -365,7 +361,8 @@ void MdiChild::blurMedian() {
 
 void MdiChild::blurGaussian() {
   auto res = gaussianBlurDialog(this);
-  if (!res.has_value()) return;
+  if (!res.has_value())
+    return;
   uchar k;
   double sigma;
   int borderType;
@@ -378,7 +375,8 @@ void MdiChild::blurGaussian() {
 
 void MdiChild::edgeDetectSobel() {
   auto res = sobelDialog(this);
-  if (!res.has_value()) return;
+  if (!res.has_value())
+    return;
   uchar k;
   Direction dir;
   int borderType;
@@ -393,7 +391,8 @@ void MdiChild::edgeDetectSobel() {
 }
 void MdiChild::edgeDetectLaplacian() {
   auto res = kernelSizeDialog(this);
-  if (!res.has_value()) return;
+  if (!res.has_value())
+    return;
   uchar k;
   int borderType;
   std::tie(k, borderType) = res.value();
@@ -404,7 +403,8 @@ void MdiChild::edgeDetectLaplacian() {
 
 void MdiChild::edgeDetectCanny() {
   auto res = cannyDialog(this);
-  if (!res.has_value()) return;
+  if (!res.has_value())
+    return;
   uchar k, start, end;
   int borderType;
   std::tie(k, start, end, borderType) = res.value();
@@ -412,13 +412,45 @@ void MdiChild::edgeDetectCanny() {
   // manually padding
   int pad = k / 2;
   cv::Mat padded;
-  cv::copyMakeBorder(
-      imageWrapper->getMat(), padded,
-      pad, pad, pad, pad,
-      borderType
-  );
+  cv::copyMakeBorder(imageWrapper->getMat(), padded, pad, pad, pad, pad, borderType);
 
   cv::Mat out;
   cv::Canny(padded, out, start, end, k);
+  swapImage(out);
+}
+
+void MdiChild::sharpenLaplacian() {
+  auto res = laplacianMaskDialog(this);
+  if (!res.has_value())
+    return;
+  Mask3x3 mask;
+  int borderType;
+  std::tie(mask, borderType) = res.value();
+
+  cv::Mat out;
+  cv::Mat kernel(3, 3, CV_64F);
+  for (int i = 0; i < 3; ++i)
+    for (int j = 0; j < 3; ++j)
+      kernel.at<double>(i, j) = mask[i][j];
+
+  cv::filter2D(imageWrapper->getMat(), out, -1, kernel, cv::Point(-1, -1), 0, borderType);
+  swapImage(out);
+}
+
+void MdiChild::edgeDetectPrewitt() {
+  auto res = prewittDirection(this);
+  if (!res.has_value())
+    return;
+  Mask3x3 mask;
+  int borderType;
+  std::tie(mask, borderType) = res.value();
+
+  cv::Mat out;
+  cv::Mat kernel(3, 3, CV_64F);
+  for (int i = 0; i < 3; ++i)
+    for (int j = 0; j < 3; ++j)
+      kernel.at<double>(i, j) = mask[i][j];
+
+  cv::filter2D(imageWrapper->getMat(), out, -1, kernel, cv::Point(-1, -1), 0, borderType);
   swapImage(out);
 }

@@ -57,6 +57,8 @@ public slots:
   void edgeDetectSobel();
   void edgeDetectLaplacian();
   void edgeDetectCanny();
+  void sharpenLaplacian();
+  void edgeDetectPrewitt();
 
 signals:
   void imageUpdated(const ImageWrapper &image);
