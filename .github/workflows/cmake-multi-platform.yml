@@ -13,7 +13,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Install Qt6 and OpenCV dependencies
+    - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y \
@@ -51,6 +51,7 @@ jobs:
     - name: Install dependencies
       run: |
        choco install -y opencv strawberryperl python ninja cmake git aqt visualstudio2022buildtools visualstudio2022-workload-vctools 
+       New-Item -ItemType SymbolicLink -Path "C:/opencv" -Target "C:/tools/opencv"
        aqt install-qt windows desktop 6.9.0 win64_msvc2022_64
        
     - name: Configure CMake
