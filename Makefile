@@ -25,10 +25,10 @@ WINDOWS_PACKAGE_ZIP := ${WINDOWS_PACKAGE_DIR}/${PROGRAM_NAME}.zip
 
 
 linux-debug: ${LINUX_DEBUG_BUILD_DIR}
-	CXX=${CXX} cmake --build ${LINUX_DEBUG_BUILD_DIR}
+	CXX=${CXX} cmake --build ${LINUX_DEBUG_BUILD_DIR} --parallel $(nproc)
 
 linux-release: ${LINUX_RELEASE_BUILD_DIR}
-	CXX=${CXX} cmake --build ${LINUX_RELEASE_BUILD_DIR}
+	CXX=${CXX} cmake --build ${LINUX_RELEASE_BUILD_DIR} --parallel $(nproc)
 
 ${LINUX_DEBUG_BUILD_DIR}:
 	CXX=clang++ cmake -B${LINUX_DEBUG_BUILD_DIR} -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=YES
@@ -38,17 +38,17 @@ ${LINUX_RELEASE_BUILD_DIR}:
 	CXX=${CXX} cmake -B${LINUX_RELEASE_BUILD_DIR} -DCMAKE_BUILD_TYPE=Release
 
 tests: ${LINUX_DEBUG_BUILD_DIR}/CTestTestfile.cmake
-	cmake --build ${LINUX_DEBUG_BUILD_DIR}
+	cmake --build ${LINUX_DEBUG_BUILD_DIR} --parallel $(nproc)
 	cd ${LINUX_DEBUG_BUILD_DIR} && ctest --output-on-failure
 
 ${LINUX_DEBUG_BUILD_DIR}/CTestTestfile.cmake:
 	cmake -B${LINUX_DEBUG_BUILD_DIR} -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON
 
 windows-debug: ${WINDOWS_DEBUG_BUILD_DIR}
-	cmake --build ${WINDOWS_DEBUG_BUILD_DIR}
+	cmake --build ${WINDOWS_DEBUG_BUILD_DIR} --parallel $(nproc)
 
 windows-release: ${WINDOWS_RELEASE_BUILD_DIR}
-	cmake --build ${WINDOWS_RELEASE_BUILD_DIR}
+	cmake --build ${WINDOWS_RELEASE_BUILD_DIR} --parallel $(nproc)
 
 windows-package: ${WINDOWS_PACKAGE_ZIP}
 
