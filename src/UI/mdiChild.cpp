@@ -345,10 +345,22 @@ void MdiChild::posterize() {
 void MdiChild::blurMedian() {
   auto res = kernelSizeDialog(this);
   if (!res.has_value()) return;
-  uchar k = res.value();
-  cv::Mat mat;
-  cv::medianBlur(imageWrapper->getMat(), mat, k);
-  swapImage(mat);
+  uchar k;
+  int borderType;
+  std::tie(k, borderType) = res.value();
+
+  // manually padding
+  int pad = k / 2;
+  cv::Mat padded;
+  cv::copyMakeBorder(
+      imageWrapper->getMat(), padded,
+      pad, pad, pad, pad,
+      borderType
+  );
+
+  cv::Mat out;
+  cv::medianBlur(padded, out, k);
+  swapImage(out);
 }
 
 void MdiChild::blurGaussian() {
@@ -356,10 +368,11 @@ void MdiChild::blurGaussian() {
   if (!res.has_value()) return;
   uchar k;
   double sigma;
-  std::tie(k,  sigma) = res.value();
+  int borderType;
+  std::tie(k, sigma, borderType) = res.value();
 
   cv::Mat mat;
-  cv::GaussianBlur(imageWrapper->getMat(), mat, cv::Size(k, k), sigma);
+  cv::GaussianBlur(imageWrapper->getMat(), mat, cv::Size(k, k), sigma, 0, borderType);
   swapImage(mat);
 }
 
@@ -368,29 +381,44 @@ void MdiChild::edgeDetectSobel() {
   if (!res.has_value()) return;
   uchar k;
   Direction dir;
-  std::tie(k, dir) = res.value();
+  int borderType;
+  std::tie(k, dir, borderType) = res.value();
   cv::Mat mat;
   if (dir == Direction::Horizontal)
-    cv::Sobel(imageWrapper->getMat(), mat, CV_8UC1, 1, 0, k);
+    cv::Sobel(imageWrapper->getMat(), mat, CV_8UC1, 1, 0, k, 1, 0, borderType);
   else
-    cv::Sobel(imageWrapper->getMat(), mat, CV_8UC1, 0, 1, k);
+    cv::Sobel(imageWrapper->getMat(), mat, CV_8UC1, 0, 1, k, 1, 0, borderType);
 
   swapImage(mat);
 }
 void MdiChild::edgeDetectLaplacian() {
   auto res = kernelSizeDialog(this);
   if (!res.has_value()) return;
-  uchar k = res.value();
+  uchar k;
+  int borderType;
+  std::tie(k, borderType) = res.value();
   cv::Mat mat;
-  cv::Laplacian(imageWrapper->getMat(), mat, CV_8UC1, k);
+  cv::Laplacian(imageWrapper->getMat(), mat, CV_8UC1, k, 1, 0, borderType);
   swapImage(mat);
 }
+
 void MdiChild::edgeDetectCanny() {
   auto res = cannyDialog(this);
   if (!res.has_value()) return;
   uchar k, start, end;
-  std::tie(k, start, end) = res.value();
-  cv::Mat mat;
-  cv::Canny(imageWrapper->getMat(), mat, start, end, k);
-  swapImage(mat);
+  int borderType;
+  std::tie(k, start, end, borderType) = res.value();
+
+  // manually padding
+  int pad = k / 2;
+  cv::Mat padded;
+  cv::copyMakeBorder(
+      imageWrapper->getMat(), padded,
+      pad, pad, pad, pad,
+      borderType
+  );
+
+  cv::Mat out;
+  cv::Canny(padded, out, start, end, k);
+  swapImage(out);
 }

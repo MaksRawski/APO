@@ -6,6 +6,7 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QString>
+#include <opencv2/core/base.hpp>
 #include <qcombobox.h>
 #include <qdialogbuttonbox.h>
 #include <qvalidator.h>
@@ -22,6 +23,7 @@
 #include <QMessageBox>
 #include <QString>
 #include <optional>
+#include <qwidget.h>
 #include <tuple>
 #include <vector>
 
@@ -44,6 +46,32 @@ QDialogButtonBox *createDialogButtons(QDialog *dialog) {
                    &QDialog::reject);
   return buttonBox;
 }
+const std::vector<uchar> sizes{1, 3, 5, 7};
+QComboBox *createKernelComboBox(QDialog *parent) {
+  QComboBox *cbKernelSize = new QComboBox(parent);
+  for (uchar size : sizes)
+    cbKernelSize->addItem(QString("%1x%1").arg(size), size);
+  cbKernelSize->setCurrentIndex(1);
+  return cbKernelSize;
+}
+struct BorderInfo {
+  int value;
+  const char *description;
+};
+
+std::vector<BorderInfo> allBorders = {
+    {cv::BORDER_CONSTANT, "Constant (000000|abcdefgh|0000000)"},
+    {cv::BORDER_REPLICATE, "Replicate (aaaaaa|abcdefgh|hhhhhhh)"},
+    {cv::BORDER_REFLECT, "Reflect (fedcba|abcdefgh|hgfedcb)"},
+    {cv::BORDER_REFLECT_101, "Reflect 101 (gfedcb|abcdefgh|gfedcba)"}};
+
+QComboBox *createBorderTypeComboBox(QDialog *parent) {
+  QComboBox *cbBorderType = new QComboBox(parent);
+  for (BorderInfo border : allBorders)
+    cbBorderType->addItem(border.description, border.value);
+  cbBorderType->setCurrentIndex(3);
+  return cbBorderType;
+}
 } // namespace
 
 std::optional<std::tuple<uchar, uchar, uchar, uchar>>
@@ -58,10 +86,10 @@ rangeStretchDialog(QWidget *parent, uchar initialP1, uchar initialP2,
   auto *q3Edit = createValidatedLineEdit(&dialog, 0, 255, initialQ3);
   auto *q4Edit = createValidatedLineEdit(&dialog, 0, 255, initialQ4);
 
-  formLayout.addRow("p1 (0-255):", p1Edit);
-  formLayout.addRow("p2 (0-255):", p2Edit);
-  formLayout.addRow("q3 (0-255):", q3Edit);
-  formLayout.addRow("q4 (0-255):", q4Edit);
+  formLayout.addRow("p1 (0-255)", p1Edit);
+  formLayout.addRow("p2 (0-255)", p2Edit);
+  formLayout.addRow("q3 (0-255)", q3Edit);
+  formLayout.addRow("q4 (0-255)", q4Edit);
   formLayout.addRow(createDialogButtons(&dialog));
 
   if (dialog.exec() == QDialog::Accepted) {
@@ -104,22 +132,23 @@ std::optional<uchar> posterizeDialog(QWidget *parent, uchar N) {
   return std::nullopt;
 }
 
-std::optional<uchar> kernelSizeDialog(QWidget *parent) {
+// returns kernel size and border type
+std::optional<std::tuple<uchar, int>> kernelSizeDialog(QWidget *parent) {
   QDialog dialog(parent);
   dialog.setWindowTitle("Select kernel size");
 
   QFormLayout formLayout(&dialog);
-  QComboBox comboBox;
-  std::vector<uchar> sizes{3, 5, 7};
-  for (uchar size : sizes)
-    comboBox.addItem(QString("%1x%1").arg(size), size);
-  comboBox.setCurrentIndex(0);
+  auto *cbKernelSize = createKernelComboBox(&dialog);
+  auto *cbBorderType = createBorderTypeComboBox(&dialog);
 
-  formLayout.addRow("K", &comboBox);
+  formLayout.addRow("Kernel size", cbKernelSize);
+  formLayout.addRow("Border type", cbBorderType);
   formLayout.addRow(createDialogButtons(&dialog));
 
-  if (dialog.exec() == QDialog::Accepted && comboBox.currentIndex() >= 0) {
-    return sizes[comboBox.currentIndex()];
+  if (dialog.exec() == QDialog::Accepted && cbKernelSize->currentIndex() > -1 &&
+      cbBorderType->currentIndex() > -1) {
+    return std::make_tuple(sizes[cbKernelSize->currentIndex()],
+                           allBorders[cbBorderType->currentIndex()].value);
   }
 
   QMessageBox::critical(parent, "Error",
@@ -127,31 +156,32 @@ std::optional<uchar> kernelSizeDialog(QWidget *parent) {
   return std::nullopt;
 }
 
-std::optional<std::tuple<uchar, double>> gaussianBlurDialog(QWidget *parent) {
+std::optional<std::tuple<uchar, double, int>>
+gaussianBlurDialog(QWidget *parent) {
   QDialog dialog(parent);
   dialog.setWindowTitle("Select kernel size and sigma");
 
   QFormLayout formLayout(&dialog);
-  QComboBox comboBox;
-  std::vector<uchar> sizes{3, 5, 7};
-  for (uchar size : sizes)
-    comboBox.addItem(QString("%1x%1").arg(size), size);
-  comboBox.setCurrentIndex(0);
+  auto *cbKernelSize = createKernelComboBox(&dialog);
+  auto *cbBorderType = createBorderTypeComboBox(&dialog);
 
   QLineEdit sigmaEdit;
   QDoubleValidator doubleValidator(0.0, 100.0, 2, &dialog);
   sigmaEdit.setValidator(&doubleValidator);
   sigmaEdit.setText("1.0");
 
-  formLayout.addRow("K", &comboBox);
+  formLayout.addRow("Kernel size", cbKernelSize);
+  formLayout.addRow("Border type", cbBorderType);
   formLayout.addRow("σ (std dev)", &sigmaEdit);
   formLayout.addRow(createDialogButtons(&dialog));
 
   if (dialog.exec() == QDialog::Accepted) {
     bool ok;
     double sigma = sigmaEdit.text().toDouble(&ok);
-    if (comboBox.currentIndex() >= 0 && ok) {
-      return std::make_tuple(sizes[comboBox.currentIndex()], sigma);
+    if (cbKernelSize->currentIndex() > -1 &&
+        cbBorderType->currentIndex() > -1 && ok) {
+      return std::make_tuple(sizes[cbKernelSize->currentIndex()], sigma,
+                             allBorders[cbBorderType->currentIndex()].value);
     }
     QMessageBox::critical(nullptr, "Error",
                           "Invalid input. Please enter a valid sigma.");
@@ -160,30 +190,31 @@ std::optional<std::tuple<uchar, double>> gaussianBlurDialog(QWidget *parent) {
   return std::nullopt;
 }
 
-std::optional<std::tuple<uchar, Direction>> sobelDialog(QWidget *parent) {
+std::optional<std::tuple<uchar, Direction, int>> sobelDialog(QWidget *parent) {
   QDialog dialog(parent);
   dialog.setWindowTitle("Select kernel size and direction");
 
   QFormLayout formLayout(&dialog);
-  QComboBox cbKernelSize;
-  std::vector<uchar> sizes{3, 5, 7};
-  for (uchar size : sizes)
-    cbKernelSize.addItem(QString("%1x%1").arg(size), size);
-  cbKernelSize.setCurrentIndex(0);
+  auto *cbKernelSize = createKernelComboBox(&dialog);
+  auto *cbBorderType = createBorderTypeComboBox(&dialog);
+
   QComboBox cbDir;
   cbDir.addItem(QString("Horizontal"));
   cbDir.addItem(QString("Vertical"));
   cbDir.setCurrentIndex(0);
 
-  formLayout.addRow("K", &cbKernelSize);
+  formLayout.addRow("Kernel size", cbKernelSize);
+  formLayout.addRow("Border type", cbBorderType);
   formLayout.addRow("Direction", &cbDir);
   formLayout.addRow(createDialogButtons(&dialog));
 
   if (dialog.exec() == QDialog::Accepted) {
-    if (cbKernelSize.currentIndex() >= 0 && cbDir.currentIndex() >= 0) {
+    if (cbKernelSize->currentIndex() > -1 && cbDir.currentIndex() > -1 &&
+        cbBorderType->currentIndex() > -1) {
       Direction dir = cbDir.currentIndex() == 0 ? Direction::Horizontal
                                                 : Direction::Vertical;
-      return std::make_tuple(sizes[cbKernelSize.currentIndex()], dir);
+      return std::make_tuple(sizes[cbKernelSize->currentIndex()], dir,
+                             allBorders[cbBorderType->currentIndex()].value);
     }
     QMessageBox::critical(nullptr, "Error", "Invalid input.");
   }
@@ -191,30 +222,33 @@ std::optional<std::tuple<uchar, Direction>> sobelDialog(QWidget *parent) {
   return std::nullopt;
 }
 
-std::optional<std::tuple<uchar, uchar, uchar>> cannyDialog(QWidget *parent) {
+// returns kernel size, start, end, border type
+std::optional<std::tuple<uchar, uchar, uchar, int>>
+cannyDialog(QWidget *parent) {
   QDialog dialog(parent);
   dialog.setWindowTitle("Select threshold");
 
   QFormLayout formLayout(&dialog);
   auto *startLineEdit = createValidatedLineEdit(&dialog, 0, 255, 100);
   auto *endLineEdit = createValidatedLineEdit(&dialog, 0, 255, 200);
-  QComboBox comboBox;
-  std::vector<uchar> sizes{1, 3, 5, 7};
-  for (uchar size : sizes)
-    comboBox.addItem(QString("%1x%1").arg(size), size);
-  comboBox.setCurrentIndex(1);
+  auto *cbKernelSize = createKernelComboBox(&dialog);
+  auto *cbBorderType = createBorderTypeComboBox(&dialog);
 
-  formLayout.addRow("Start (0-255):", startLineEdit);
-  formLayout.addRow("End (0-255):", endLineEdit);
+  formLayout.addRow("Kernel size", cbKernelSize);
+  formLayout.addRow("Border type", cbBorderType);
+  formLayout.addRow("Start (0-255)", startLineEdit);
+  formLayout.addRow("End (0-255)", endLineEdit);
   formLayout.addRow(createDialogButtons(&dialog));
 
   if (dialog.exec() == QDialog::Accepted) {
     bool ok1, ok2;
     uchar start = static_cast<uchar>(startLineEdit->text().toInt(&ok1));
     uchar end = static_cast<uchar>(endLineEdit->text().toInt(&ok2));
-    if (ok1 && ok2 && comboBox.currentIndex() >= 0) {
-      uchar k = sizes[comboBox.currentIndex()];
-      return std::make_tuple(k, start, end);
+    if (cbKernelSize->currentIndex() > -1 &&
+        cbBorderType->currentIndex() > -1 && ok1 && ok2) {
+      uchar k = sizes[cbKernelSize->currentIndex()];
+      int borderType = allBorders[cbBorderType->currentIndex()].value;
+      return std::make_tuple(k, start, end, borderType);
     }
     QMessageBox::critical(
         parent, "Error",
