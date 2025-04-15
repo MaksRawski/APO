@@ -25,23 +25,13 @@ jobs:
           cmake \
           build-essential
     
-    - name: Configure CMake
-      run: |
-        mkdir build
-        cd build
-        cmake .. \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_PREFIX_PATH=/usr/lib/x86_64-linux-gnu/cmake \
-          -DQt6_DIR=/usr/lib/x86_64-linux-gnu/cmake/Qt6
-    
     - name: Build Project
       run: |
-        cd build
-        make -j$(nproc)
+        make
     
     - name: Run Tests
       run: |
-        cd build
+        cd build/Debug
         ctest --output-on-failure
 
   build-windows:
@@ -56,14 +46,18 @@ jobs:
        
     - name: Configure CMake
       run: |
-        cmake -Bbuild \
-          -A x64 \
-          -DCMAKE_BUILD_TYPE=Release
+        cmake -Bbuild -DCMAKE_BUILD_TYPE=Release
     
     - name: Build Project
       run: |
         cmake --build build --config Release
     
+    - name: Upload artifacts
+      with:
+        name: windows-build
+        path: build/Release/
+
+
     - name: Run Tests
       run: |
         cd build
