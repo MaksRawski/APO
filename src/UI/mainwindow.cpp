@@ -56,6 +56,7 @@ void MainWindow::setupMenuBar() {
   aboutAction = aboutMenu->addAction("About");
 
   duplicateAction->setEnabled(false);
+  renameAction->setEnabled(false);
   splitChannelsAction->setEnabled(false);
   toRGBAction->setEnabled(false);
   toHSVAction->setEnabled(false);
