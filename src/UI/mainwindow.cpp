@@ -6,6 +6,7 @@
 #include <QMenuBar>
 #include <QPixmap>
 #include <QSplitter>
+#include <qaction.h>
 #include <qboxlayout.h>
 #include <qfileinfo.h>
 #include <qkeysequence.h>
@@ -52,23 +53,12 @@ void MainWindow::setupMenuBar() {
   blurMedianAction = imageBlurMenu->addAction("Median");
   blurGaussianAction = imageBlurMenu->addAction("Gaussian");
 
+
   QMenu *aboutMenu = menuBar()->addMenu("Info");
   aboutAction = aboutMenu->addAction("About");
 
-  duplicateAction->setEnabled(false);
-  renameAction->setEnabled(false);
-  splitChannelsAction->setEnabled(false);
-  toRGBAction->setEnabled(false);
-  toHSVAction->setEnabled(false);
-  toLabAction->setEnabled(false);
-  toGrayscaleAction->setEnabled(false);
-  negateAction->setEnabled(false);
-  normalizeAction->setEnabled(false);
-  equalizeAction->setEnabled(false);
-  rangeStretchAction->setEnabled(false);
-  posterizeAction->setEnabled(false);
-  blurMedianAction->setEnabled(false);
-  blurGaussianAction->setEnabled(false);
+  for (auto c : getConnections())
+    c.action->setEnabled(false);
 
   // NOTE: connections that need MdiChild directly have to be created using `connectActions`
   connect(openAction, &QAction::triggered, this, &MainWindow::openImage);
@@ -152,74 +142,31 @@ void MainWindow::mdiSubWindowActivated(QMdiSubWindow *window) {
 
 void MainWindow::disconnectActions(const MdiChild *child) {
   if (child != nullptr) {
+    for (auto c : getConnections()) {
+      disconnect(c.action, &QAction::triggered, child, c.slot);
+    }
     disconnect(child, &MdiChild::imageUpdated, this, &MainWindow::toggleOptions);
-    disconnect(toRGBAction, &QAction::triggered, child, &MdiChild::toRGB);
-    disconnect(toHSVAction, &QAction::triggered, child, &MdiChild::toHSV);
-    disconnect(toLabAction, &QAction::triggered, child, &MdiChild::toLab);
-    disconnect(toGrayscaleAction, &QAction::triggered, child, &MdiChild::toGrayscale);
-    disconnect(negateAction, &QAction::triggered, child, &MdiChild::negate);
-    disconnect(normalizeAction, &QAction::triggered, child, &MdiChild::normalize);
-    disconnect(equalizeAction, &QAction::triggered, child, &MdiChild::equalize);
-    disconnect(rangeStretchAction, &QAction::triggered, child, &MdiChild::rangeStretch);
-    disconnect(saveAction, &QAction::triggered, child, &MdiChild::save);
-    disconnect(renameAction, &QAction::triggered, child, &MdiChild::rename);
-    disconnect(posterizeAction, &QAction::triggered, child, &MdiChild::posterize);
-    disconnect(blurMedianAction, &QAction::triggered, child, &MdiChild::blurMedian);
-    disconnect(blurGaussianAction, &QAction::triggered, child, &MdiChild::blurGaussian);
-
     disconnect(child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
   }
-  duplicateAction->setEnabled(false);
-  toGrayscaleAction->setEnabled(false);
-  toRGBAction->setEnabled(false);
-  toLabAction->setEnabled(false);
-  toHSVAction->setEnabled(false);
-  splitChannelsAction->setEnabled(false);
-  negateAction->setEnabled(false);
-  normalizeAction->setEnabled(false);
-  equalizeAction->setEnabled(false);
-  rangeStretchAction->setEnabled(false);
-  saveAction->setEnabled(false);
-  renameAction->setEnabled(false);
-  posterizeAction->setEnabled(false);
+  for (auto c : getConnections()) {
+    c.action->setEnabled(false);
+  }
 }
 
 // enables all the actions that operate on the image
 void MainWindow::connectActions(const MdiChild *child) {
-  if (child == nullptr) throw new std::runtime_error("Tried to make connections to nullptr!");
+  if (child == nullptr)
+    throw new std::runtime_error("Tried to make connections to nullptr!");
 
+  for (auto c : getConnections()) {
+    connect(c.action, &QAction::triggered, child, c.slot);
+  }
   connect(child, &MdiChild::imageUpdated, this, &MainWindow::toggleOptions);
-  connect(toRGBAction, &QAction::triggered, child, &MdiChild::toRGB);
-  connect(toHSVAction, &QAction::triggered, child, &MdiChild::toHSV);
-  connect(toLabAction, &QAction::triggered, child, &MdiChild::toLab);
-  connect(toGrayscaleAction, &QAction::triggered, child, &MdiChild::toGrayscale);
-  connect(negateAction, &QAction::triggered, child, &MdiChild::negate);
-  connect(normalizeAction, &QAction::triggered, child, &MdiChild::normalize);
-  connect(equalizeAction, &QAction::triggered, child, &MdiChild::equalize);
-  connect(rangeStretchAction, &QAction::triggered, child, &MdiChild::rangeStretch);
-  connect(saveAction, &QAction::triggered, child, &MdiChild::save);
-  connect(renameAction, &QAction::triggered, child, &MdiChild::rename);
-  connect(posterizeAction, &QAction::triggered, child, &MdiChild::posterize);
-  connect(blurMedianAction, &QAction::triggered, child, &MdiChild::blurMedian);
-  connect(blurGaussianAction, &QAction::triggered, child, &MdiChild::blurGaussian);
-
   connect(child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
 
-  duplicateAction->setEnabled(true);
-  toGrayscaleAction->setEnabled(true);
-  toRGBAction->setEnabled(true);
-  toLabAction->setEnabled(true);
-  toHSVAction->setEnabled(true);
-  splitChannelsAction->setEnabled(true);
-  negateAction->setEnabled(true);
-  normalizeAction->setEnabled(true);
-  equalizeAction->setEnabled(true);
-  rangeStretchAction->setEnabled(true);
-  saveAction->setEnabled(true);
-  renameAction->setEnabled(true);
-  posterizeAction->setEnabled(true);
-  blurMedianAction->setEnabled(true);
-  blurGaussianAction->setEnabled(true);
+  for (auto c : getConnections()) {
+    c.action->setEnabled(true);
+  }
 }
 
 void MainWindow::splitChannels() {
@@ -294,4 +241,20 @@ void MainWindow::openAboutWindow() {
   layout->addWidget(className);
   layout->addWidget(group);
   window.exec();
+}
+
+std::vector<ActionConnection> MainWindow::getConnections() const {
+  return {{toRGBAction, &MdiChild::toRGB},
+          {toHSVAction, &MdiChild::toHSV},
+          {toLabAction, &MdiChild::toLab},
+          {toGrayscaleAction, &MdiChild::toGrayscale},
+          {negateAction, &MdiChild::negate},
+          {normalizeAction, &MdiChild::normalize},
+          {equalizeAction, &MdiChild::equalize},
+          {rangeStretchAction, &MdiChild::rangeStretch},
+          {saveAction, &MdiChild::save},
+          {renameAction, &MdiChild::rename},
+          {posterizeAction, &MdiChild::posterize},
+          {blurMedianAction, &MdiChild::blurMedian},
+          {blurGaussianAction, &MdiChild::blurGaussian}};
 }
