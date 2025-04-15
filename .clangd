@@ -1,3 +1,2 @@
-ColumnLimit: 120
 CompileFlags:
-  Add: [-Wall, -Wextra, -Wpedantic, -Wconversion, -Wsign-conversion, -Wshadow]
+  Add: [-Wall, -Wextra, -Wpedantic, -Wshadow, -Werror]
