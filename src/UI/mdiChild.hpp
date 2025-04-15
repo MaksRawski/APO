@@ -19,14 +19,14 @@ public:
   void loadImage(QString filePath);
   void setImage(const QPixmap &pixmap);
   void setImage(const ImageWrapper &image);
-  // difference between this and `setImage` is that this maintains
+  // difference between `swapImage` and `setImage` is that this maintains
   // the same size of the window whereas the previous one adjusts the size to fit the unscaled image
   void swapImage(const ImageWrapper &image);
   void swapImage(const QPixmap &image);
   void setImageName(QString name);
   void setImageScale(double zoom);
 
-  double getImageScale() const { return zoom; }
+  double getImageScale() const { return imageLabel->getImageScale(); }
   QString getImageName() const { return imageName; }
   QString getImageBasename() const;
   QString getImageNameSuffix() const;
@@ -51,6 +51,8 @@ public slots:
   void save();
   void rename();
   void posterize();
+  void blurMedian();
+  void blurGaussian();
 
 signals:
   void imageUpdated(const ImageWrapper &image);

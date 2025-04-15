@@ -5,6 +5,7 @@
 #include <QPixmap>
 #include <QVBoxLayout>
 #include <opencv2/core.hpp>
+#include <opencv2/opencv.hpp>
 #include <qabstractspinbox.h>
 #include <qdialog.h>
 #include <qdialogbuttonbox.h>
@@ -102,6 +103,7 @@ void MdiChild::setImage(const ImageWrapper &image) {
 void MdiChild::swapImage(const QPixmap &image) {
   QSize size = this->size();
   double prevZoom = getImageScale();
+
   setImage(image);
   resize(size);
   setImageScale(prevZoom);
@@ -119,7 +121,6 @@ void MdiChild::swapImage(const ImageWrapper &image) {
 
 void MdiChild::setImageScale(double zoom) {
   imageLabel->setImageScale(zoom);
-  this->zoom = zoom;
 }
 
 void MdiChild::updateChannelNames() {
@@ -328,4 +329,24 @@ void MdiChild::posterize() {
   if (!res.has_value()) return;
   LUT lut = imageProcessor::posterize(res.value());
   swapImage(applyLUT(*imageWrapper, lut));
+}
+
+void MdiChild::blurMedian() {
+  auto res = kernelSizeDialog(this, 0, std::vector<uchar> {3, 5, 7});
+  if (!res.has_value()) return;
+  uchar k = res.value();
+  cv::Mat mat;
+  cv::medianBlur(imageWrapper->getMat(), mat, k);
+  swapImage(ImageWrapper(mat));
+}
+void MdiChild::blurGaussian() {
+  auto res = gaussianBlurDialog(this, 0, std::vector<uchar> {3, 5, 7});
+  if (!res.has_value()) return;
+  uchar k;
+  double sigma;
+  std::tie(k,  sigma) = res.value();
+
+  cv::Mat mat;
+  cv::GaussianBlur(imageWrapper->getMat(), mat, cv::Size(k, k), sigma);
+  swapImage(ImageWrapper(mat));
 }

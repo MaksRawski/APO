@@ -5,7 +5,10 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QString>
+#include <qcombobox.h>
 #include <qdialogbuttonbox.h>
+#include <QComboBox>
+#include <qvalidator.h>
 
 std::optional<std::tuple<uchar, uchar, uchar, uchar>>
 rangeStretchDialog(QWidget *parent, uchar initialP1, uchar initialP2,
@@ -36,10 +39,10 @@ rangeStretchDialog(QWidget *parent, uchar initialP1, uchar initialP2,
   q4LineEdit->setText(QString::number(initialQ4));
 
   // Add widgets to the form layout.
-  formLayout->addRow("Parameter p1 (0-255):", p1LineEdit);
-  formLayout->addRow("Parameter p2 (0-255):", p2LineEdit);
-  formLayout->addRow("Parameter q3 (0-255):", q3LineEdit);
-  formLayout->addRow("Parameter q4 (0-255):", q4LineEdit);
+  formLayout->addRow("p1 (0-255):", p1LineEdit);
+  formLayout->addRow("p2 (0-255):", p2LineEdit);
+  formLayout->addRow("q3 (0-255):", q3LineEdit);
+  formLayout->addRow("q4 (0-255):", q4LineEdit);
 
   QDialogButtonBox *buttonBox =
       new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
@@ -50,7 +53,7 @@ rangeStretchDialog(QWidget *parent, uchar initialP1, uchar initialP2,
                    &QDialog::reject);
   formLayout->addRow(buttonBox);
 
-  uchar result = dialog.exec();
+  int result = dialog.exec();
 
   if (result == QDialog::Accepted) {
     bool ok1 = false, ok2 = false, ok3 = false, ok4 = false;
@@ -75,7 +78,7 @@ rangeStretchDialog(QWidget *parent, uchar initialP1, uchar initialP2,
 
 std::optional<uchar> posterizeDialog(QWidget *parent, uchar N) {
   QDialog dialog(parent);
-  dialog.setWindowTitle("Posterize parameters");
+  dialog.setWindowTitle("Enter number of ");
 
   QFormLayout *formLayout = new QFormLayout(&dialog);
   QLineEdit *lineEdit = new QLineEdit(&dialog);
@@ -104,6 +107,83 @@ std::optional<uchar> posterizeDialog(QWidget *parent, uchar N) {
 	  return std::nullopt;
 	}
 
+  } else {
+    return std::nullopt;
+  }
+}
+
+std::optional<uchar> kernelSizeDialog(QWidget *parent, uchar i,
+									  std::vector<uchar> allowed_sizes) {
+  QDialog dialog(parent);
+  dialog.setWindowTitle("Select kernel size");
+
+  QFormLayout *formLayout = new QFormLayout(&dialog);
+  QComboBox cb;
+  for (auto v : allowed_sizes) {
+    cb.addItem(QString("%1x%1").arg(v), v);
+  }
+  cb.setCurrentIndex(i);
+  formLayout->addRow("K", &cb);
+
+  QDialogButtonBox *buttonBox = new QDialogButtonBox(
+      QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+  QObject::connect(buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+  QObject::connect(buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+  formLayout->addRow(buttonBox);
+
+  int result = dialog.exec();
+
+  if (result == QDialog::Accepted) {
+    if (cb.currentIndex() > -1) {
+      return allowed_sizes[cb.currentIndex()];
+    } else {
+      QMessageBox::critical(
+          nullptr, "Error",
+          "Invalid input. Please select a kernel size.");
+      return std::nullopt;
+    }
+  } else {
+    return std::nullopt;
+  }
+}
+
+std::optional<std::tuple<uchar, double>>
+gaussianBlurDialog(QWidget *parent, uchar i, std::vector<uchar> allowed_sizes) {
+  QDialog dialog(parent);
+  dialog.setWindowTitle("Select kernel size and sigma");
+
+  QFormLayout *formLayout = new QFormLayout(&dialog);
+  QComboBox cb;
+  for (auto v : allowed_sizes) {
+    cb.addItem(QString("%1x%1").arg(v), v);
+  }
+  cb.setCurrentIndex(i);
+  formLayout->addRow("K", &cb);
+
+  QLineEdit stdDevLineEdit;
+  QDoubleValidator validator(&dialog);
+  stdDevLineEdit.setValidator(&validator);
+  stdDevLineEdit.setText("1.0");
+  formLayout->addRow("std dev", &stdDevLineEdit);
+
+  QDialogButtonBox *buttonBox = new QDialogButtonBox(
+      QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+  QObject::connect(buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+  QObject::connect(buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+  formLayout->addRow(buttonBox);
+
+  int result = dialog.exec();
+
+  if (result == QDialog::Accepted) {
+    if (cb.currentIndex() > -1) {
+		double stdDev = stdDevLineEdit.text().toDouble();
+      return std::tuple(allowed_sizes[cb.currentIndex()], stdDev);
+    } else {
+      QMessageBox::critical(
+          nullptr, "Error",
+          "Invalid input. Please select a kernel size.");
+      return std::nullopt;
+    }
   } else {
     return std::nullopt;
   }

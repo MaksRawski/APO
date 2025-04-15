@@ -37,17 +37,20 @@ void MainWindow::setupMenuBar() {
   toLabAction = imageTypeMenu->addAction("&Lab");
   toGrayscaleAction = imageTypeMenu->addAction("&Grayscale");
   toGrayscaleAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_G));
-  splitChannelsAction = imageTypeMenu->addAction("&Split channels");
+  splitChannelsAction = imageTypeMenu->addAction("Split &channels");
   splitChannelsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_C));
 
   QMenu *imageContrastMenu = imageMenu->addMenu("&Contrast");
-  negateAction = imageContrastMenu->addAction("Negate");
+  negateAction = imageContrastMenu->addAction("&Negate");
   negateAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_I));
   normalizeAction = imageContrastMenu->addAction("Nor&malize");
   equalizeAction = imageContrastMenu->addAction("&Equalize");
   rangeStretchAction = imageContrastMenu->addAction("Range &stretch");
+  posterizeAction = imageContrastMenu->addAction("&Posterize");
 
-  posterizeAction = imageMenu->addAction("&Posterize");
+  QMenu *imageBlurMenu = imageMenu->addMenu("&Blur");
+  blurMedianAction = imageBlurMenu->addAction("Median");
+  blurGaussianAction = imageBlurMenu->addAction("Gaussian");
 
   QMenu *aboutMenu = menuBar()->addMenu("Info");
   aboutAction = aboutMenu->addAction("About");
@@ -62,6 +65,9 @@ void MainWindow::setupMenuBar() {
   normalizeAction->setEnabled(false);
   equalizeAction->setEnabled(false);
   rangeStretchAction->setEnabled(false);
+  posterizeAction->setEnabled(false);
+  blurMedianAction->setEnabled(false);
+  blurGaussianAction->setEnabled(false);
 
   // NOTE: connections that need MdiChild directly have to be created using `connectActions`
   connect(openAction, &QAction::triggered, this, &MainWindow::openImage);
@@ -157,6 +163,8 @@ void MainWindow::disconnectActions(const MdiChild *child) {
     disconnect(saveAction, &QAction::triggered, child, &MdiChild::save);
     disconnect(renameAction, &QAction::triggered, child, &MdiChild::rename);
     disconnect(posterizeAction, &QAction::triggered, child, &MdiChild::posterize);
+    disconnect(blurMedianAction, &QAction::triggered, child, &MdiChild::blurMedian);
+    disconnect(blurGaussianAction, &QAction::triggered, child, &MdiChild::blurGaussian);
 
     disconnect(child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
   }
@@ -191,6 +199,8 @@ void MainWindow::connectActions(const MdiChild *child) {
   connect(saveAction, &QAction::triggered, child, &MdiChild::save);
   connect(renameAction, &QAction::triggered, child, &MdiChild::rename);
   connect(posterizeAction, &QAction::triggered, child, &MdiChild::posterize);
+  connect(blurMedianAction, &QAction::triggered, child, &MdiChild::blurMedian);
+  connect(blurGaussianAction, &QAction::triggered, child, &MdiChild::blurGaussian);
 
   connect(child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
 
@@ -207,6 +217,8 @@ void MainWindow::connectActions(const MdiChild *child) {
   saveAction->setEnabled(true);
   renameAction->setEnabled(true);
   posterizeAction->setEnabled(true);
+  blurMedianAction->setEnabled(true);
+  blurGaussianAction->setEnabled(true);
 }
 
 void MainWindow::splitChannels() {

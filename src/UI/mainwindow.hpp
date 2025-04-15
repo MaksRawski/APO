@@ -41,6 +41,8 @@ private:
   QAction *saveAction;
   QAction *renameAction;
   QAction *posterizeAction;
+  QAction *blurMedianAction;
+  QAction *blurGaussianAction;
   void connectActions(const MdiChild *child);
   void disconnectActions(const MdiChild *child);
 
