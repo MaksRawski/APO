@@ -32,7 +32,7 @@ jobs:
       run: |
         cmake --build build --config Release
 
-        C:\Qt\$env:Qt6_VERSION\msvc2022_64\bin\windeployqt.exe build\Release\APO.exe
+        & "C:\Qt\$env:Qt6_VERSION\msvc2022_64\bin\windeployqt.exe" build\Release\
         cp C:\opencv\build\x64\bin\opencv_world4110.dll build\Release\
     
     - name: Upload artifacts
