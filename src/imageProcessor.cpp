@@ -1,6 +1,7 @@
 #include "imageProcessor.hpp"
 #include "imageWrapper.hpp"
 #include <QColorSpace>
+#include <opencv2/core.hpp>
 #include <qimage.h>
 #include <stdexcept>
 #include <vector>
@@ -134,31 +135,42 @@ cv::Mat equalizeChannels(const cv::Mat &image) {
   return equalizedImage;
 }
 
-cv::Mat medianBlur(const cv::Mat &mat, int k, int borderType) {
+cv::Mat medianBlur(const cv::Mat &image, int k, int borderType) {
   int pad = k / 2;
-  cv::Mat out;
-  cv::copyMakeBorder(mat, out, pad, pad, pad, pad, borderType);
+  std::vector<cv::Mat> mats;
+  std::vector<cv::Mat> outs;
+  cv::split(image, mats);
 
-  int radius = k / 2;
-  for (int y = radius; y < out.rows - radius; ++y) {
-    uchar* rowPtr = out.ptr(y);
-    for (int x = radius; x < out.cols - radius; ++x) {
-      std::vector<uchar> neighbors;
+  for (cv::Mat mat : mats) {
+    cv::Mat out;
+    cv::copyMakeBorder(mat, out, pad, pad, pad, pad, borderType);
 
-      // For grayscale image
-      for (int i = -radius; i <= radius; ++i) {
-        for (int j = -radius; j <= radius; ++j) {
-          uchar val = out.at<uchar>(y + i, x + j);
-          neighbors.push_back(val);
+    int radius = k / 2;
+    if (mat.channels() == 1) {
+      for (int y = radius; y < out.rows - radius; ++y) {
+        uchar *rowPtr = out.ptr(y);
+        for (int x = radius; x < out.cols - radius; ++x) {
+          std::vector<uchar> neighbors;
+
+          for (int i = -radius; i <= radius; ++i) {
+            for (int j = -radius; j <= radius; ++j) {
+              uchar val = out.at<uchar>(y + i, x + j);
+              neighbors.push_back(val);
+            }
+          }
+
+          std::nth_element(neighbors.begin(), neighbors.begin() + neighbors.size() / 2,
+                           neighbors.end());
+
+          rowPtr[x] = neighbors[neighbors.size() / 2];
         }
       }
-
-      std::nth_element(neighbors.begin(), neighbors.begin() + neighbors.size() / 2,
-                       neighbors.end());
-
-      rowPtr[x] = neighbors[neighbors.size() / 2];
     }
+    outs.push_back(out);
   }
+  cv::Mat out;
+  cv::merge(outs, out);
+
   return out;
 }
 
