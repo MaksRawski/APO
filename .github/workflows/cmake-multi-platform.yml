@@ -47,7 +47,7 @@ jobs:
        aqt install-qt windows desktop 6.8.0 win64_msvc2022_64
     - name: Configure CMake
       run: |
-        $env:Qt6_DIR=6.8.0\msvc2022_64\lib\cmake
+        $env:Qt6_DIR=[Environment]::CurrentDirectory\6.8.0\msvc2022_64\lib\cmake
         cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DQt6_DIR=6.8.0\msvc2022_64\lib\cmake -DOpenCV_DIR=C:\opencv
     
     - name: Build Project
