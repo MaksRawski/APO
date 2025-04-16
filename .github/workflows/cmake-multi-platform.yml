@@ -44,7 +44,7 @@ jobs:
       run: |
        choco install -y opencv strawberryperl python ninja cmake git aqt visualstudio2022buildtools visualstudio2022-workload-vctools 
        New-Item -ItemType SymbolicLink -Path "C:/opencv" -Target "C:/tools/opencv"
-       aqt install-qt windows desktop 6.9.0 win64_msvc2022_64
+       aqt install-qt windows desktop 6.8 win64_msvc2022_64
        
     - name: Configure CMake
       run: |
