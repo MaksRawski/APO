@@ -44,7 +44,7 @@ jobs:
       run: |
        choco install -y strawberryperl python ninja cmake git visualstudio2022buildtools visualstudio2022-workload-vctools
        choco install -y aqt --version 3.1.19
-       choco install -y opencv --package-parameters '/InstallationPath:'C:\opencv'
+       choco install -y opencv --package-parameters "'/InstallationPath:C:\'"
        aqt install-qt --outputdir c:\Qt windows desktop 6.8.0 win64_msvc2022_64
 
     - name: Configure CMake
