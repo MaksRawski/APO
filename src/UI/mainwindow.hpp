@@ -53,6 +53,7 @@ private:
   QAction *saveAction;
   QAction *renameAction;
   QAction *posterizeAction;
+  QAction *blurMeanAction;
   QAction *blurMedianAction;
   QAction *blurGaussianAction;
   QAction *edgeDetectSobelAction;

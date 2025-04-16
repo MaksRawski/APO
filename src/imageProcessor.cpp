@@ -32,7 +32,7 @@ ImageWrapper applyLUT(const ImageWrapper &image, const LUT &lut) {
 }
 
 // applies LUT to every channel of an image
-cv::Mat applyLUTcv(const cv::Mat &mat, const LUT &lut){
+cv::Mat applyLUTcv(const cv::Mat &mat, const LUT &lut) {
   cv::Mat res = mat.clone();
 
   if (res.channels() == 1) {
@@ -92,8 +92,8 @@ LUT posterize(uchar n) {
 
   float step = 256.0f / n;
   for (int i = 0; i < 256; ++i) {
-      uchar bin = static_cast<uchar>(i / step);
-      lut[i] = static_cast<uchar>(bin * step + step / 2);
+    uchar bin = static_cast<uchar>(i / step);
+    lut[i] = static_cast<uchar>(bin * step + step / 2);
   }
   return lut;
 }
@@ -102,8 +102,7 @@ std::vector<uchar> equalize(const cv::Mat &mat) {
   std::vector<int> hist = histogram(mat);
 
   if (mat.channels() != 1) {
-    throw std::runtime_error(
-        "Tried to create an equalization LUT for non-grayscale image!");
+    throw std::runtime_error("Tried to create an equalization LUT for non-grayscale image!");
   }
   std::vector<float> cdf(256, 0);
   int totalPixels = mat.rows * mat.cols;
@@ -124,7 +123,7 @@ cv::Mat equalizeChannels(const cv::Mat &image) {
   std::vector<cv::Mat> channels;
   cv::split(image, channels);
 
-  for (int i = 0; i < channels.size(); ++i) {
+  for (uchar i = 0; i < channels.size(); ++i) {
     std::vector<uchar> lut = equalize(channels[i]);
     channels[i] = applyLUTcv(channels[i], lut);
   }
@@ -133,6 +132,34 @@ cv::Mat equalizeChannels(const cv::Mat &image) {
   cv::merge(channels, equalizedImage);
 
   return equalizedImage;
+}
+
+cv::Mat medianBlur(const cv::Mat &mat, int k, int borderType) {
+  int pad = k / 2;
+  cv::Mat out;
+  cv::copyMakeBorder(mat, out, pad, pad, pad, pad, borderType);
+
+  int radius = k / 2;
+  for (int y = radius; y < out.rows - radius; ++y) {
+    uchar* rowPtr = out.ptr(y);
+    for (int x = radius; x < out.cols - radius; ++x) {
+      std::vector<uchar> neighbors;
+
+      // For grayscale image
+      for (int i = -radius; i <= radius; ++i) {
+        for (int j = -radius; j <= radius; ++j) {
+          uchar val = out.at<uchar>(y + i, x + j);
+          neighbors.push_back(val);
+        }
+      }
+
+      std::nth_element(neighbors.begin(), neighbors.begin() + neighbors.size() / 2,
+                       neighbors.end());
+
+      rowPtr[x] = neighbors[neighbors.size() / 2];
+    }
+  }
+  return out;
 }
 
 } // namespace imageProcessor

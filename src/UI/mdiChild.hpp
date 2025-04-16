@@ -48,6 +48,7 @@ public slots:
   void save();
   void rename();
   void posterize();
+  void blurMean();
   void blurMedian();
   void blurGaussian();
   void edgeDetectSobel();

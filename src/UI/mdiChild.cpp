@@ -333,6 +333,19 @@ void MdiChild::posterize() {
   swapImage(applyLUT(*imageWrapper, lut));
 }
 
+void MdiChild::blurMean() {
+  auto res = kernelSizeDialog(this);
+  if (!res.has_value())
+    return;
+  uchar k;
+  int borderType;
+  std::tie(k, borderType) = res.value();
+
+  cv::Mat out;
+  cv::blur(imageWrapper->getMat(), out, cv::Size(k, k), cv::Point(-1, -1), borderType);
+  swapImage(out);
+}
+
 void MdiChild::blurMedian() {
   auto res = kernelSizeDialog(this);
   if (!res.has_value())
@@ -341,13 +354,7 @@ void MdiChild::blurMedian() {
   int borderType;
   std::tie(k, borderType) = res.value();
 
-  // manually padding
-  int pad = k / 2;
-  cv::Mat padded;
-  cv::copyMakeBorder(imageWrapper->getMat(), padded, pad, pad, pad, pad, borderType);
-
-  cv::Mat out;
-  cv::medianBlur(padded, out, k);
+  cv::Mat out = imageProcessor::medianBlur(imageWrapper->getMat(), k, borderType);
   swapImage(out);
 }
 

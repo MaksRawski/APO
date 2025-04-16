@@ -51,7 +51,8 @@ void MainWindow::setupMenuBar() {
   posterizeAction = imageContrastMenu->addAction("&Posterize");
 
   QMenu *imageBlurMenu = imageMenu->addMenu("&Blur");
-  blurMedianAction = imageBlurMenu->addAction("&Median");
+  blurMeanAction = imageBlurMenu->addAction("&Mean");
+  blurMedianAction = imageBlurMenu->addAction("Me&dian");
   blurGaussianAction = imageBlurMenu->addAction("&Gaussian");
 
   QMenu *imageEdgeDetectMenu = imageMenu->addMenu("&Edge detect");
@@ -287,6 +288,7 @@ std::vector<ActionConnection> MainWindow::getConnections() const {
       {saveAction, &MdiChild::save},
       {renameAction, &MdiChild::rename},
       {posterizeAction, &MdiChild::posterize},
+      {blurMeanAction, &MdiChild::blurMean},
       {blurMedianAction, &MdiChild::blurMedian},
       {blurGaussianAction, &MdiChild::blurGaussian},
       {edgeDetectSobelAction, &MdiChild::edgeDetectSobel},
