@@ -48,6 +48,7 @@ jobs:
     - name: Configure CMake
       run: |
         $env:Qt6_DIR="C:\Qt\6.8.0\msvc2022_64\lib\cmake"
+        tree /F C:\opencv
         cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DQt6_DIR=$env:Qt6_DIR
     
     - name: Build Project
