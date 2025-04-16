@@ -43,13 +43,12 @@ jobs:
     - name: Install dependencies
       run: |
        choco install -y opencv strawberryperl python ninja cmake git aqt --version 3.1.19 visualstudio2022buildtools visualstudio2022-workload-vctools 
-       New-Item -ItemType SymbolicLink -Path "C:/opencv" -Target "C:/tools/opencv"
        aqt install-qt --outputdir c:\Qt windows desktop 6.8.0 win64_msvc2022_64
     - name: Configure CMake
       run: |
         $env:Qt6_DIR="C:\Qt\6.8.0\msvc2022_64\lib\cmake"
-        tree /F C:\opencv
-        cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DQt6_DIR=$env:Qt6_DIR
+        tree /F C:\tools\opencv
+        cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DQt6_DIR=$env:Qt6_DIR -DOpenCV_DIR=C:/tools/opencv/build/x64/vc16/lib
     
     - name: Build Project
       run: |
