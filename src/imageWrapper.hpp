@@ -66,6 +66,8 @@ constexpr const char *pixelFormatToString(PixelFormat format) {
     // we will always have to convert BGRA to RGBA for display,
     // so it's fine to call this format just RGBA
     return "RGBA";
+  default:
+    std::runtime_error("unreachable");
   }
 }
 

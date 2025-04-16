@@ -18,4 +18,5 @@ LUT posterize(uchar n);
 LUT equalize(const cv::Mat &mat);
 cv::Mat medianBlur(const cv::Mat &mat, int k, int borderType);
 cv::Mat equalizeChannels(const cv::Mat &mat);
+cv::Mat operateMats(const cv::Mat &first, const cv::Mat &second, uchar (*op)(uchar, uchar));
 } // namespace imageProcessor

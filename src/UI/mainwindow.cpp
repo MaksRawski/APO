@@ -12,6 +12,7 @@
 #include <qboxlayout.h>
 #include <qfileinfo.h>
 #include <qkeysequence.h>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   setupMenuBar();
@@ -311,7 +312,8 @@ std::vector<NameWindow> MainWindow::getWindows() const {
   std::vector<NameWindow> nameWindows(subWindows.size());
 
   for (QMdiSubWindow *window : subWindows) {
-    MdiChild *mdiChild = qobject_cast<MdiChild *>(window->widget());
+    MdiChild *mdiChild = qobject_cast<MdiChild*>(window);
+    if (mdiChild == nullptr) continue;
     QString name = mdiChild->getImageName();
     nameWindows.push_back({name, mdiChild});
   }
@@ -319,21 +321,57 @@ std::vector<NameWindow> MainWindow::getWindows() const {
 }
 
 void MainWindow::combineAdd() {
-  std::vector<NameWindow> windows = getWindows();
-  std::vector<QString> names;
-  for (auto nameWindow : windows)
-    names.push_back(nameWindow.name);
-
-  auto res = windowsPairDialog(names);
-  if (!res.has_value())
-    return;
-  uchar srcI, dstI;
-  std::tie(srcI, dstI) = res.value();
-  cv::Mat out;
-
-  // TODO:
+  combine([](uchar f, uchar s) -> uchar { return (uchar)std::clamp((int)f + (int)s, 0, 255); });
 }
 
 void MainWindow::combineSub() {
-  // TODO:
+  combine([](uchar f, uchar s) -> uchar { return f - s; });
+}
+
+void MainWindow::combine(uchar (*op)(uchar, uchar)) {
+  std::vector<NameWindow> windows = getWindows();
+  std::vector<QString> names;
+  uchar currentWindowIndex;
+
+  for (uchar i = 0; i < windows.size(); ++i) {
+    names.push_back(windows[i].name);
+    if (activeChild != nullptr && windows[i].name == activeChild->getImageName())
+      currentWindowIndex = i;
+  }
+
+  auto res = windowsPairDialog(this, names, currentWindowIndex);
+  if (!res.has_value())
+    return;
+  uchar firstI, secondI;
+  std::tie(firstI, secondI) = res.value();
+  cv::Mat first = windows[firstI].window->getImage().getMat();
+  cv::Mat second = windows[secondI].window->getImage().getMat();
+  if (first.channels() != second.channels()) {
+    QMessageBox::critical(this, "Error", "Both images must have the same number of channels!");
+    return;
+  }
+  if (first.rows != second.rows || first.cols != second.cols) {
+    QMessageBox::critical(this, "Error", "Both images must have the same sizes!");
+    return;
+  }
+
+  cv::Mat out = imageProcessor::operateMats(first, second, op);
+  MdiChild *newChild = new MdiChild;
+  newChild->setImage(out);
+
+  // scale the image so that it takes at max 70% of the window
+  QSize size = newChild->getImageSize();
+  QSize windowSize = this->size();
+  QSize scaledSize = size.scaled(windowSize * 0.7, Qt::KeepAspectRatio);
+  double scaleFactor = static_cast<float>(scaledSize.width()) / static_cast<float>(size.width());
+
+  // prevent upscaling
+  if (scaleFactor < 1.0) {
+    newChild->setImageScale(scaleFactor);
+    newChild->resize(scaledSize + CHILD_IMAGE_MARGIN);
+    newChild->setMaximumSize(scaledSize + CHILD_IMAGE_MARGIN);
+  }
+
+  mdiArea->addSubWindow(newChild);
+  newChild->show();
 }

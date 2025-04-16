@@ -73,6 +73,7 @@ private:
   void setupUI();
 
   // utils
+  void combine(uchar (*op)(uchar, uchar));
   std::vector<NameWindow> getWindows() const;
 
 private slots:

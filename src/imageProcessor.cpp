@@ -174,4 +174,32 @@ cv::Mat medianBlur(const cv::Mat &image, int k, int borderType) {
   return out;
 }
 
+cv::Mat operateMats(const cv::Mat &first, const cv::Mat &second, uchar (*op)(uchar, uchar)) {
+  if (first.channels() != second.channels())
+    throw std::invalid_argument("Tried to perform operation on images of different channel counts!");
+  if (first.cols != second.cols || first.rows != second.rows)
+    throw std::invalid_argument("Tried to perform operation on images of different sizes!");
+  std::vector<cv::Mat> firstChannels;
+  std::vector<cv::Mat> secondChannels;
+  cv::split(first, firstChannels);
+  cv::split(second, secondChannels);
+  std::vector<cv::Mat> outs;
+
+  for (int c = 0; c < first.channels(); ++c) {
+    cv::Mat out(first.rows, first.cols, CV_8UC1);
+    for (int y = 0; y < first.cols; ++y) {
+      const uchar *rowFirstPtr = first.ptr(y);
+      const uchar *rowSecondPtr = second.ptr(y);
+      uchar *rowOutPtr = out.ptr(y);
+      for (int x = 0; x < first.cols; ++x) {
+        rowOutPtr[x] = op(rowFirstPtr[x], rowSecondPtr[x]);
+      }
+    }
+    outs.push_back(out);
+  }
+  cv::Mat out;
+  cv::merge(outs, out);
+  return out;
+}
+
 } // namespace imageProcessor

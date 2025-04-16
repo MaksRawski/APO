@@ -362,13 +362,37 @@ std::optional<std::tuple<Mask3x3, int>> prewittDirection(QWidget *parent) {
     if (cbDir->currentIndex() > -1 && cbBorderType->currentIndex() > -1 && mask.has_value()) {
       return std::make_tuple(mask.value(), allBorders[cbBorderType->currentIndex()].value);
     }
-    QMessageBox::critical(nullptr, "Error", "Invalid input.");
+    QMessageBox::critical(parent, "Error", "Invalid input.");
   }
   return std::nullopt;
 }
 
 
 // returns indexes of the chosen windows names
-std::optional<std::tuple<uchar, uchar>> windowsPairDialog(std::vector<QString> names) {
-    throw std::runtime_error("not yet implemented");
+std::optional<std::tuple<uchar, uchar>> windowsPairDialog(QWidget *parent,
+                                                          std::vector<QString> names, uchar first) {
+  QDialog dialog(parent);
+  dialog.setWindowTitle("Select two windows");
+
+  QFormLayout formLayout(&dialog);
+  QComboBox *cbFirst = new QComboBox(&dialog);
+  QComboBox *cbSecond = new QComboBox(&dialog);
+  cbFirst->setCurrentIndex(first);
+
+  for (QString name : names) {
+    cbFirst->addItem(name);
+    cbSecond->addItem(name);
+  }
+
+  formLayout.addRow("First image", cbFirst);
+  formLayout.addRow("Second image", cbSecond);
+  formLayout.addRow(createDialogButtons(&dialog));
+
+  if (dialog.exec() == QDialog::Accepted) {
+    if (cbFirst->currentIndex() > -1 && cbSecond->currentIndex() > -1) {
+      return std::make_tuple(cbFirst->currentIndex(), cbSecond->currentIndex());
+    }
+    QMessageBox::critical(parent, "Error", "Invalid input.");
+  }
+  return std::nullopt;
 }
