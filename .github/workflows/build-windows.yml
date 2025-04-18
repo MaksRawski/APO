@@ -47,6 +47,7 @@ jobs:
    
     - name: Configure CMake
       run: |
+        tree /F C:\opencv
         $env:Qt6_DIR="C:\Qt\$env:Qt6_VERSION\msvc2022_64\lib\cmake"
         cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DQt6_DIR=$env:Qt6_DIR -DOpenCV_DIR=C:/opencv/build/x64/vc16/lib
     
