@@ -16,13 +16,35 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install dependencies
+    - name: Install build tools
       run: |
        choco install -y strawberryperl python ninja cmake git visualstudio2022buildtools visualstudio2022-workload-vctools
-       choco install -y aqt --version 3.1.19
-       choco install -y opencv --package-parameters "'/InstallationPath:C:\'"
-       aqt install-qt -b https://qt-mirror.dannhauer.de/ --timeout 30 --outputdir c:\Qt windows desktop $env:Qt6_VERSION win64_msvc2022_64
+      
+    - name: Cache Qt
+      id: cache-qt
+      uses: actions/cache@v4
+      with:
+        path: C:\Qt
+        key: windows-qt
 
+    - name: Install Qt
+      if: steps.cache-qt.outputs.cache-hit != 'true'
+      run: |
+        choco install -y aqt --version 3.2.1
+        aqt install-qt --timeout 30 --outputdir c:\Qt windows desktop $env:Qt6_VERSION win64_msvc2022_64
+   
+    - name: Cache OpenCV
+      id: cache-opencv
+      uses: actions/cache@v4
+      with:
+        path: C:\opencv
+        key: windows-opencv
+        
+    - name: Install OpenCV
+      if: steps.cache-opencv.outputs.cache-hit != 'true'
+      run: |
+        choco install -y opencv --package-parameters "'/InstallationPath:C:\'"
+   
     - name: Configure CMake
       run: |
         $env:Qt6_DIR="C:\Qt\$env:Qt6_VERSION\msvc2022_64\lib\cmake"
