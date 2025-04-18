@@ -55,7 +55,7 @@ jobs:
         cmake --build build --config Release
 
         & "C:\Qt\$env:Qt6_VERSION\msvc2022_64\bin\windeployqt.exe" build\Release\
-        # cp C:\OPENCV\build\x64\bin\opencv_world4110.dll build\Release\
+        cp C:\opencv\build\x64\vc16\bin\opencv_world4110.dll build\Release\
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
