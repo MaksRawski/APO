@@ -12,6 +12,10 @@
 #include <qdialog.h>
 #include <qdialogbuttonbox.h>
 #include <qfiledialog.h>
+#include <QScrollBar>
+#include <qscrollarea.h>
+#include <qscrollbar.h>
+#include <stdexcept>
 
 using imageProcessor::applyLUT;
 using imageProcessor::LUT;
@@ -21,7 +25,7 @@ MdiChild::MdiChild(ImageWrapper imageWrapper) {
   tabWidget->setTabBarAutoHide(true);
 
   // all channels tab
-  QScrollArea *scrollArea = new QScrollArea;
+  scrollArea = new QScrollArea;
   scrollArea->setWidgetResizable(true);
   imageLabel = new ImageLabel(scrollArea);
   scrollArea->setWidget(imageLabel);
@@ -59,7 +63,7 @@ MdiChild::MdiChild(ImageWrapper imageWrapper) {
 }
 
 void MdiChild::setImage(const ImageWrapper &image) {
-  imageWrapper = ImageWrapper(image);
+  imageWrapper = image;
   QImage qimage = imageWrapper.generateQImage();
   if (qimage.isNull())
     throw new std::runtime_error("Failed to generate a QImage!");
@@ -69,21 +73,37 @@ void MdiChild::setImage(const ImageWrapper &image) {
   resize(pixmap.size() + CHILD_IMAGE_MARGIN);
   updateChannelNames();
   regenerateChannels();
-
-  emit imageUpdated(imageWrapper);
+  emitImageUpdatedSignal();
 }
 
-// sets an image but maintains window size and image scale
+namespace {
+  struct ScrollbarsValues{
+    int horizontal, vertical;
+  };
+  ScrollbarsValues getScrollbarsValues(const QScrollArea &scrollArea) {
+    return ScrollbarsValues{scrollArea.horizontalScrollBar()->value(),
+                            scrollArea.verticalScrollBar()->value()};
+  }
+  void setScrollbarsValues(QScrollArea &scrollArea, ScrollbarsValues values) {
+    scrollArea.horizontalScrollBar()->setValue(values.horizontal);
+    scrollArea.verticalScrollBar()->setValue(values.vertical);
+  }
+} // namespace
+
+// sets an image but maintains window size, image scale and scrollbars' positions
 void MdiChild::swapImage(const ImageWrapper &image) {
   QSize size = this->size();
-  double prevZoom = getImageScale();
+  double prevScale = getImageScale();
+  auto oldScrollbarValues = getScrollbarsValues(getScrollArea(tabIndex));
 
   setImage(image);
   resize(size);
-  setImageScale(prevZoom);
+  setImageScale(prevScale);
+  setScrollbarsValues(getScrollArea(tabIndex), oldScrollbarValues);
 }
 
-void MdiChild::setImageScale(double scale) { imageLabel->setImageScale(scale); }
+double MdiChild::getImageScale() const { return getImageLabel(tabIndex).getImageScale(); }
+void MdiChild::setImageScale(double scale) { getImageLabel(tabIndex).setImageScale(scale); }
 
 void MdiChild::updateChannelNames() {
   auto imageFormat = imageWrapper.getFormat();
@@ -126,76 +146,71 @@ void MdiChild::setImageName(QString name) {
   setWindowTitle(QString("[%1] %2").arg(QString::fromStdString(imageFormat), name));
 }
 
+
+QScrollArea& MdiChild::getScrollArea(int index) const {
+  switch (index) {
+  case 0:
+    return *scrollArea;
+  case 1:
+    return *scrollArea1;
+  case 2:
+    return *scrollArea2;
+  case 3:
+    return *scrollArea3;
+  default:
+    throw std::invalid_argument("Invalid tab index " + std::to_string(index));
+  }
+}
+
+ImageLabel& MdiChild::getImageLabel(int index) const {
+  switch (index) {
+  case 0:
+    return *imageLabel;
+  case 1:
+    return *imageLabel1;
+  case 2:
+    return *imageLabel2;
+  case 3:
+    return *imageLabel3;
+  default:
+    throw std::invalid_argument("Invalid tab index " + std::to_string(index));
+  }
+}
+
+const ImageWrapper& MdiChild::getImageWrapper(int index) const {
+  switch (index) {
+  case 0:
+    return imageWrapper;
+  case 1:
+    return imageWrapper1;
+  case 2:
+    return imageWrapper2;
+  case 3:
+    return imageWrapper3;
+  default:
+    throw std::invalid_argument("Invalid tab index " + std::to_string(index));
+  }
+}
+
 void MdiChild::tabChanged(int newTabIndex) {
   // NOTE: this will happen only if there are no widgets in the tabWidget
   // which should be never
   if (newTabIndex < 0)
     return;
 
-  // if switching to a channel from an image, regenerate all channels
-  if (tabIndex == 0 && newTabIndex != 0) {
-    regenerateChannels();
-  }
+  // set the image scale to whatever the user had in the previous tab
+  double prevScale = getImageLabel(tabIndex).getImageScale();
+  getImageLabel(newTabIndex).setImageScale(prevScale);
 
-  // set channel/image zoom to whatever the user had in the previous tab
-  double prevZoom = 1.0;
-  switch (tabIndex) {
-  case 0:
-    prevZoom = imageLabel->getImageScale();
-    break;
-  case 1:
-    prevZoom = imageLabel1->getImageScale();
-    break;
-  case 2:
-    prevZoom = imageLabel2->getImageScale();
-    break;
-  case 3:
-    prevZoom = imageLabel3->getImageScale();
-    break;
-  }
-  switch (newTabIndex) {
-  case 0:
-    imageLabel->setImageScale(prevZoom);
-    break;
-
-  case 1: {
-    imageLabel1->setImageScale(prevZoom);
-    break;
-  }
-  case 2: {
-    imageLabel2->setImageScale(prevZoom);
-    break;
-  }
-  case 3: {
-    imageLabel3->setImageScale(prevZoom);
-    break;
-  }
-  }
+  // set the scrollbars to the position they were in the previous tab
+  auto prevScrollbarsValues = getScrollbarsValues(getScrollArea(tabIndex));
+  setScrollbarsValues(getScrollArea(newTabIndex), prevScrollbarsValues);
 
   tabIndex = newTabIndex;
   emitImageUpdatedSignal();
 }
 
-void MdiChild::emitImageUpdatedSignal() const {
-  switch (tabIndex) {
-  case 0: {
-    emit imageUpdated(imageWrapper);
-    break;
-  }
-  case 1: {
-    emit imageUpdated(imageWrapper1);
-    break;
-  }
-  case 2: {
-    emit imageUpdated(imageWrapper2);
-    break;
-  }
-  case 3: {
-    emit imageUpdated(imageWrapper3);
-    break;
-  }
-  }
-}
+void MdiChild::emitImageUpdatedSignal() const { emit imageUpdated(getImageWrapper(tabIndex)); }
 
 QString MdiChild::getImageBasename() const {
   QFileInfo fileInfo(imageName);

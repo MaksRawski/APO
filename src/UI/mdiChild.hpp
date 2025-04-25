@@ -5,6 +5,7 @@
 #include <QScrollArea>
 #include <QMdiSubWindow>
 #include <QTabWidget>
+#include <qscrollbar.h>
 
 const QSize CHILD_IMAGE_MARGIN = QSize(30, 70);
 
@@ -20,11 +21,11 @@ public:
   void setImageName(QString name);
   void setImageScale(double zoom);
 
-  double getImageScale() const { return imageLabel->getImageScale(); }
+  double getImageScale() const;
   QString getImageName() const { return imageName; }
   QString getImageBasename() const;
   QString getImageNameSuffix() const;
-  const ImageWrapper &getImage() const { return imageWrapper; };
+  const ImageWrapper &getImage() const { return imageWrapper; }
   const QSize getImageSize() const {
     return QSize(imageWrapper.getWidth(), imageWrapper.getHeight());
   }
@@ -33,6 +34,9 @@ public:
 private:
   void updateChannelNames();
   void regenerateChannels();
+  QScrollArea& getScrollArea(int index) const;
+  ImageLabel& getImageLabel(int index) const;
+  const ImageWrapper& getImageWrapper(int index) const;
 
 public slots:
   void toRGB();
@@ -63,9 +67,11 @@ private slots:
 
 private:
   QTabWidget *tabWidget;
-  ImageLabel *imageLabel;
+  // entire image
   ImageWrapper imageWrapper;
-  // image channels
+  QScrollArea *scrollArea;
+  ImageLabel *imageLabel;
+  // channels
   ImageWrapper imageWrapper1, imageWrapper2, imageWrapper3;
   QScrollArea *scrollArea1, *scrollArea2, *scrollArea3;
   ImageLabel *imageLabel1, *imageLabel2, *imageLabel3;
