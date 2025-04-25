@@ -128,41 +128,6 @@ cv::Mat applyToChannels(const cv::Mat &mat, std::function<cv::Mat(const cv::Mat)
   return out;
 }
 
-cv::Mat medianBlur(const cv::Mat &image, int k, int borderType) {
-  int pad = k / 2;
-  std::vector<cv::Mat> mats;
-  std::vector<cv::Mat> outs;
-  cv::split(image, mats);
-
-  for (cv::Mat mat : mats) {
-    cv::Mat out;
-    cv::copyMakeBorder(mat, out, pad, pad, pad, pad, borderType);
-
-    int radius = k / 2;
-    if (mat.channels() == 1) {
-      for (int y = radius; y < out.rows - radius; ++y) {
-        uchar *rowPtr = out.ptr(y);
-        for (int x = radius; x < out.cols - radius; ++x) {
-          std::vector<uchar> neighbors;
-
-          for (int i = -radius; i <= radius; ++i) {
-            for (int j = -radius; j <= radius; ++j) {
-              uchar val = out.at<uchar>(y + i, x + j);
-              neighbors.push_back(val);
-            }
-          }
-
-          std::nth_element(neighbors.begin(), neighbors.begin() + neighbors.size() / 2,
-                           neighbors.end());
-
-          rowPtr[x] = neighbors[neighbors.size() / 2];
-        }
-      }
-    }
-    outs.push_back(out);
-  }
-  cv::Mat out;
-  cv::merge(outs, out);
 cv::Mat normalizeChannels(const cv::Mat &mat) {
   return applyToChannels(mat, [](const cv::Mat &channel){
     double min, max;

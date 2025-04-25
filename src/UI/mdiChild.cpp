@@ -320,7 +320,8 @@ void MdiChild::blurMedian() {
   int borderType;
   std::tie(k, borderType) = res.value();
 
-  cv::Mat out = imageProcessor::medianBlur(imageWrapper.getMat(), k, borderType);
+  cv::Mat out;
+  cv::medianBlur(imageWrapper.getMat(), out, k);
   swapImage(out);
 }
 
