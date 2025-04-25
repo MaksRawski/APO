@@ -302,7 +302,7 @@ void MainWindow::limitWindowSize(MdiChild &child) const {
   QSize size = child.getImageSize();
   QSize windowSize = this->size();
   QSize scaledSize = size.scaled(windowSize * 0.7, Qt::KeepAspectRatio);
-  double scaleFactor = static_cast<float>(scaledSize.width()) / static_cast<float>(size.width());
+  double scaleFactor = static_cast<double>(scaledSize.width()) / static_cast<double>(size.width());
 
   // prevent upscaling
   if (scaleFactor < 1.0) {
@@ -375,7 +375,7 @@ int getActiveWindowIndex(MdiChild *activeChild, const std::vector<QString> names
     QString activeWindowName = activeChild->getImageName();
     auto it = std::find(names.begin(), names.end(), activeWindowName);
     if (it != names.end()) {
-      activeWindowIndex = it - names.begin();
+      activeWindowIndex = static_cast<int>(it - names.begin());
     }
   }
   return activeWindowIndex;
@@ -399,7 +399,7 @@ void MainWindow::combineBlend() {
 
   double blendFactor = blendValue / 100.0;
   cv::Mat out = first * blendFactor + second * (1 - blendFactor);
-  createImageWindow(out);
+  createImageWindow(ImageWrapper(out));
   activeChild->setImageName("Result of Blend");
 }
 
@@ -419,5 +419,5 @@ void MainWindow::combine(cv::Mat (*op)(cv::Mat, cv::Mat)) {
   if (!checkDimensions(this, first, second)) return;
 
   cv::Mat out = op(first, second);
-  createImageWindow(out);
+  createImageWindow(ImageWrapper(out));
 }

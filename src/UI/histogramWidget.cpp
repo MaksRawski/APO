@@ -43,21 +43,21 @@ void HistogramPlot::paintEvent(QPaintEvent *event) {
   for (int i = 0; i < lut_size; ++i) {
     int barHeight = static_cast<int>(
         (static_cast<double>(hist[i]) / maxLutValue) * maxHeight);
-    int x = i * barWidth;
+    int x = static_cast<int>(i * barWidth);
     int y = h - barHeight;
 
     painter.setPen(Qt::gray);
     painter.setBrush(Qt::gray);
-    painter.drawRect(x, y, barWidth, barHeight);
+    painter.drawRect(x, y, static_cast<int>(barWidth), barHeight);
   }
 
   // gradient
   QLinearGradient gradient(0, maxHeight + spacing, w,
                            maxHeight + spacing + gradientHeight);
   for (size_t i = 0; i < hist.size(); ++i) {
-    double intensity = static_cast<double>(i) /
-                       static_cast<double>(hist.size() - 1); // normalize
-    double position = intensity;
+    float intensity = static_cast<float>(i) /
+                       static_cast<float>(hist.size() - 1); // normalize
+    double position = static_cast<double>(intensity);
 
     QColor color =
         QColor::fromRgbF(intensity, intensity, intensity); // grayscale
@@ -94,7 +94,7 @@ HistogramWidget::HistogramWidget(QWidget *parent)
 }
 
 void HistogramWidget::updateHistogram(const ImageWrapper &image) {
-  hist = imageProcessor::histogram(image);
+  hist = imageProcessor::histogram(image.getMat());
   if (hist.empty()) {
     reset();
     return;
@@ -122,7 +122,7 @@ void HistogramWidget::updateHistogram(const ImageWrapper &image) {
     if (l > 0)
       maxValue = i;
     double percent = 0;
-    if (l > 0) percent = floor((double)l / (double)max * 10000) / 100;
+    if (l > 0) percent = floor(static_cast<double>(l) / static_cast<double>(max) * 10000) / 100;
     lutList->addItem(QString("%1:\t%2\t%3%").arg(i).arg(l).arg(percent));
   }
   average = static_cast<double>(sum) / 256;
