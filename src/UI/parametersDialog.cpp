@@ -7,6 +7,7 @@
 #include <QMessageBox>
 #include <QString>
 #include <opencv2/core/base.hpp>
+#include <qlabel.h>
 
 namespace {
 QLineEdit *createValidatedLineEdit(QWidget *parent, int min, int max, int initialValue) {
@@ -394,5 +395,50 @@ std::optional<std::tuple<uchar, uchar>> windowsPairDialog(QWidget *parent,
     }
     QMessageBox::critical(parent, "Error", "Invalid input.");
   }
+  return std::nullopt;
+}
+
+std::optional<std::tuple<uchar, uchar, uchar>> windowsPairBlendDialog(QWidget *parent, std::vector<QString> names, int activeWindowIndex) {
+  QDialog dialog(parent);
+  dialog.setWindowTitle("Select two windows");
+
+  QFormLayout formLayout(&dialog);
+  QComboBox *cbFirst = new QComboBox(&dialog);
+  QComboBox *cbSecond = new QComboBox(&dialog);
+  QSlider *blendSlider = new QSlider(Qt::Horizontal, &dialog);
+  QLabel *blendLabel = new QLabel("50%", &dialog);
+
+  cbFirst->setCurrentIndex(activeWindowIndex);
+  for (const QString &name : names) {
+    cbFirst->addItem(name);
+    cbSecond->addItem(name);
+  }
+
+  blendSlider->setRange(0, 100);
+  blendSlider->setValue(50);
+
+  QObject::connect(blendSlider, &QSlider::valueChanged, [&](int value) {
+    blendLabel->setText(QString::number(value) + "%");
+  });
+
+  formLayout.addRow("First image", cbFirst);
+  formLayout.addRow("Second image", cbSecond);
+
+  QHBoxLayout *blendLayout = new QHBoxLayout();
+  blendLayout->addWidget(blendSlider);
+  blendLayout->addWidget(blendLabel);
+  formLayout.addRow("Blend percentage", blendLayout);
+
+  formLayout.addRow(createDialogButtons(&dialog));
+
+  if (dialog.exec() == QDialog::Accepted) {
+    if (cbFirst->currentIndex() > -1 && cbSecond->currentIndex() > -1) {
+      return std::make_tuple(cbFirst->currentIndex(),
+                             cbSecond->currentIndex(),
+                             static_cast<uchar>(blendSlider->value()));
+    }
+    QMessageBox::critical(parent, "Error", "Invalid input.");
+  }
+
   return std::nullopt;
 }

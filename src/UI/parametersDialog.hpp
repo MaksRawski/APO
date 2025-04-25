@@ -27,4 +27,6 @@ std::optional<std::tuple<Mask3x3, int>> laplacianMaskDialog(QWidget *parent);
 std::optional<std::tuple<Mask3x3, int>> prewittDirection(QWidget *parent);
 
 std::optional<std::tuple<uchar, uchar>> windowsPairDialog(QWidget *parent,
-                                                          std::vector<QString> names, uchar src);
+                                                          std::vector<QString> names, int activeWindowIndex);
+std::optional<std::tuple<uchar, uchar, uchar>>
+windowsPairBlendDialog(QWidget *parent, std::vector<QString> names, int activeWindowIndex);

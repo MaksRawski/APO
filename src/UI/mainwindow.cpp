@@ -68,6 +68,10 @@ void MainWindow::setupMenuBar() {
   QMenu *imageCombineMenu = imageMenu->addMenu("Co&mbine");
   combineAddAction = imageCombineMenu->addAction("&Add");
   combineSubAction = imageCombineMenu->addAction("&Sub");
+  combineBlendAction = imageCombineMenu->addAction("&Blend");
+  combineANDAction = imageCombineMenu->addAction("A&ND");
+  combineORAction = imageCombineMenu->addAction("&OR");
+  combineXORAction = imageCombineMenu->addAction("&XOR");
 
   QMenu *aboutMenu = menuBar()->addMenu("Info");
   aboutAction = aboutMenu->addAction("About");
@@ -272,7 +276,11 @@ std::vector<MainWindowActionConnection> MainWindow::getMainWindowActions() const
   return {{duplicateAction, &MainWindow::duplicateImage},
           {splitChannelsAction, &MainWindow::splitChannels},
           {combineAddAction, &MainWindow::combineAdd},
-          {combineSubAction, &MainWindow::combineSub}};
+          {combineSubAction, &MainWindow::combineSub},
+          {combineBlendAction, &MainWindow::combineBlend},
+          {combineANDAction, &MainWindow::combineAND},
+          {combineORAction, &MainWindow::combineOR},
+          {combineXORAction, &MainWindow::combineXOR}};
 }
 
 std::vector<MdiChild*> MainWindow::getMdiChildren() const {
@@ -322,6 +330,19 @@ void MainWindow::combineSub() {
   combine([](cv::Mat f, cv::Mat s) -> cv::Mat { return f - s; });
   activeChild->setImageName("Result of Sub");
 }
+void MainWindow::combineAND() {
+  combine([](cv::Mat f, cv::Mat s) -> cv::Mat { return f & s; });
+  activeChild->setImageName("Result of AND");
+}
+void MainWindow::combineOR() {
+  combine([](cv::Mat f, cv::Mat s) -> cv::Mat { return f | s; });
+  activeChild->setImageName("Result of OR");
+}
+void MainWindow::combineXOR() {
+  combine([](cv::Mat f, cv::Mat s) -> cv::Mat { return f ^ s; });
+  activeChild->setImageName("Result of XOR");
+}
+
 namespace {
 bool checkDimensions(QWidget *parent, const cv::Mat &first, const cv::Mat &second) {
   if (first.channels() != second.channels()) {
@@ -360,6 +381,27 @@ int getActiveWindowIndex(MdiChild *activeChild, const std::vector<QString> names
   return activeWindowIndex;
 }
 } // namespace
+
+void MainWindow::combineBlend() {
+  std::vector<MdiChild*> windows = getMdiChildren();
+  std::vector<QString> names = getWindowNames(windows);
+  int activeWindowIndex = getActiveWindowIndex(activeChild, names);
+
+  auto res = windowsPairBlendDialog(this, names, activeWindowIndex);
+  if (!res.has_value())
+    return;
+
+  uchar firstI, secondI, blendValue;
+  std::tie(firstI, secondI, blendValue) = res.value();
+  cv::Mat first = windows[firstI]->getImage().getMat();
+  cv::Mat second = windows[secondI]->getImage().getMat();
+  if (!checkDimensions(this, first, second)) return;
+
+  double blendFactor = blendValue / 100.0;
+  cv::Mat out = first * blendFactor + second * (1 - blendFactor);
+  createImageWindow(out);
+  activeChild->setImageName("Result of Blend");
+}
 
 void MainWindow::combine(cv::Mat (*op)(cv::Mat, cv::Mat)) {
   std::vector<MdiChild*> windows = getMdiChildren();

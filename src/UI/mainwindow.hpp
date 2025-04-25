@@ -12,9 +12,6 @@
 #include <qpixmap.h>
 #include <qtabwidget.h>
 
-const int INITIAL_WIDTH = 400;
-const int INITIAL_HEIGHT = 400;
-
 namespace {
 // associates QAction displayed in the menu with appropriate function in MdiChild
 struct ActionConnection {
@@ -63,6 +60,10 @@ private:
   QAction *edgeDetectPrewittAction;
   QAction *combineAddAction;
   QAction *combineSubAction;
+  QAction *combineBlendAction;
+  QAction *combineANDAction;
+  QAction *combineORAction;
+  QAction *combineXORAction;
   void connectActions(const MdiChild &child);
   void disconnectActions(const MdiChild &child);
   std::vector<ActionConnection> getConnections() const;
@@ -87,6 +88,10 @@ private slots:
   void mdiSubWindowActivated(QMdiSubWindow *window);
   void combineAdd();
   void combineSub();
+  void combineBlend();
+  void combineAND();
+  void combineOR();
+  void combineXOR();
 };
 
 namespace {
