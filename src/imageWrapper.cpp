@@ -78,11 +78,16 @@ QImage ImageWrapper::generateQImage() const {
 std::vector<ImageWrapper> ImageWrapper::splitChannels() const {
   std::vector<cv::Mat> channels;
   cv::split(mat_, channels);
-  std::vector<ImageWrapper> result;
-  for (int i = 0; i < 3; ++i) {
-    result.emplace_back(ImageWrapper(channels[i]));
+
+  std::vector<ImageWrapper> imageWrappers;
+  for (auto channel : channels) {
+    imageWrappers.push_back(ImageWrapper(channel));
   }
-  return result;
+  // swap B and R channels
+  if (format_ == PixelFormat::BGR24) {
+    std::swap(imageWrappers[2], imageWrappers[0]);
+  }
+  return imageWrappers;
 }
 
 ImageWrapper ImageWrapper::toRGB() const {
