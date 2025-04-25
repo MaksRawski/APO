@@ -7,11 +7,6 @@
 #include <vector>
 
 namespace imageProcessor {
-std::vector<int> histogram(const ImageWrapper &imageWrapper) {
-  cv::Mat mat = imageWrapper.getMat();
-  return histogram(mat);
-}
-
 std::vector<int> histogram(const cv::Mat &mat) {
   // we only calculate histograms for grayscale images
   if (mat.type() != CV_8UC1)
@@ -70,7 +65,7 @@ cv::Mat applyLUTcv(const cv::Mat &mat, const LUT &lut) {
 
 LUT negate() {
   LUT lut(256);
-  for (int i = 0; i < 256; ++i) {
+  for (uint i = 0; i < 256; ++i) {
     lut[i] = 256 - i - 1;
   }
   return lut;
@@ -99,11 +94,11 @@ LUT posterize(uchar n) {
   return lut;
 }
 
-std::vector<uchar> equalize(const cv::Mat &mat) {
+LUT equalizeLUT(const cv::Mat &mat) {
   std::vector<int> hist = histogram(mat);
 
   if (mat.channels() != 1) {
-    throw std::runtime_error("Tried to create an equalization LUT for non-grayscale image!");
+    throw std::runtime_error("Tried to create an equalization LUT for a non-grayscale image!");
   }
   std::vector<float> cdf(256, 0);
   int totalPixels = mat.rows * mat.cols;
@@ -112,7 +107,7 @@ std::vector<uchar> equalize(const cv::Mat &mat) {
     cdf[i] = cdf[i - 1] + static_cast<float>(hist[i]) / totalPixels;
   }
 
-  std::vector<uchar> lut(256, 0);
+  LUT lut(256, 0);
   for (int i = 0; i < 256; ++i) {
     lut[i] = static_cast<uchar>(std::round(cdf[i] * 255));
   }
@@ -120,19 +115,17 @@ std::vector<uchar> equalize(const cv::Mat &mat) {
   return lut;
 }
 
-cv::Mat equalizeChannels(const cv::Mat &image) {
+cv::Mat applyToChannels(const cv::Mat &mat, std::function<cv::Mat(const cv::Mat)> f) {
   std::vector<cv::Mat> channels;
-  cv::split(image, channels);
+  cv::split(mat, channels);
 
-  for (uchar i = 0; i < channels.size(); ++i) {
-    std::vector<uchar> lut = equalize(channels[i]);
-    channels[i] = applyLUTcv(channels[i], lut);
+  for (auto &channel : channels) {
+    channel = f(channel);
   }
 
-  cv::Mat equalizedImage;
-  cv::merge(channels, equalizedImage);
-
-  return equalizedImage;
+  cv::Mat out;
+  cv::merge(channels, out);
+  return out;
 }
 
 cv::Mat medianBlur(const cv::Mat &image, int k, int borderType) {
@@ -170,7 +163,23 @@ cv::Mat medianBlur(const cv::Mat &image, int k, int borderType) {
   }
   cv::Mat out;
   cv::merge(outs, out);
+cv::Mat normalizeChannels(const cv::Mat &mat) {
+  return applyToChannels(mat, [](const cv::Mat &channel){
+    double min, max;
+    cv::minMaxLoc(channel, &min, &max);
+    LUT stretched = imageProcessor::stretch(static_cast<uchar>(min), static_cast<uchar>(max), 0, 255);
+    return applyLUTcv(channel, stretched);
+  });
+}
 
-  return out;
+cv::Mat equalizeChannels(const cv::Mat &mat) {
+  return applyToChannels(mat, [](const cv::Mat &channel){
+    return applyLUTcv(channel, equalizeLUT(channel));
+  });
+}
+cv::Mat rangeStretchChannels(const cv::Mat &mat, uchar p1, uchar p2, uchar q3, uchar q4) {
+  return applyToChannels(mat, [=](const cv::Mat &channel){
+    return applyLUTcv(channel, imageProcessor::stretch(p1, p2, q3, q4));
+  });
 }
 } // namespace imageProcessor

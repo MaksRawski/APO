@@ -68,11 +68,7 @@ void MdiChild::setImage(const ImageWrapper &image) {
   imageLabel->setImage(pixmap);
   resize(pixmap.size() + CHILD_IMAGE_MARGIN);
   updateChannelNames();
-
-  // if the user is on the main image tab we don't need to regenerate channels as
-  // that will be done once the tab is switched
-  if (tabIndex != 0)
-    regenerateChannels();
+  regenerateChannels();
 
   emit imageUpdated(imageWrapper);
 }
@@ -143,19 +139,19 @@ void MdiChild::setImageName(QString name) {
   setWindowTitle(QString("[%1] %2").arg(imageFormat).arg(name));
 }
 
-void MdiChild::tabChanged(int index) {
+void MdiChild::tabChanged(int newTabIndex) {
   // NOTE: this will happen only if there are no widgets in the tabWidget
   // which should be never
-  if (index < 0)
+  if (newTabIndex < 0)
     return;
 
   // if switching to a channel from an image, regenerate all channels
-  if (tabIndex == 0 && index != 0) {
+  if (tabIndex == 0 && newTabIndex != 0) {
     regenerateChannels();
   }
 
   // set channel/image zoom to whatever the user had in the previous tab
-  double prevZoom;
+  double prevZoom = 1.0;
   switch (tabIndex) {
   case 0:
     prevZoom = imageLabel->getImageScale();
@@ -170,11 +166,11 @@ void MdiChild::tabChanged(int index) {
     prevZoom = imageLabel3->getImageScale();
     break;
   }
-  switch (index) {
-  case 0: {
+  switch (newTabIndex) {
+  case 0:
     imageLabel->setImageScale(prevZoom);
     break;
-  }
+
   case 1: {
     imageLabel1->setImageScale(prevZoom);
     break;
@@ -189,7 +185,7 @@ void MdiChild::tabChanged(int index) {
   }
   }
 
-  tabIndex = index;
+  tabIndex = newTabIndex;
   emitImageUpdatedSignal();
 }
 
@@ -224,13 +220,11 @@ QString MdiChild::getImageNameSuffix() const {
   return fileInfo.completeSuffix();
 }
 
-void MdiChild::negate() {
-  LUT neg = imageProcessor::negate();
-  ImageWrapper res = applyLUT(imageWrapper, neg);
-  swapImage(res);
-}
+void MdiChild::negate() { swapImage(applyLUT(imageWrapper, imageProcessor::negate())); }
 
 void MdiChild::regenerateChannels() {
+  if (imageWrapper.getMat().channels() != 3) return;
+
   std::vector<ImageWrapper> imageWrappers = imageWrapper.splitChannels();
 
   if (imageWrappers.size() < 3)
@@ -256,29 +250,19 @@ void MdiChild::regenerateChannels() {
   scrollArea3->setWidget(imageLabel3);
 }
 
-void MdiChild::normalize() {
-  double min, max;
-  cv::minMaxLoc(imageWrapper.getMat(), &min, &max);
-  LUT stretched = imageProcessor::stretch((int)min, (int)max, 0, 255);
-  swapImage(applyLUT(imageWrapper, stretched));
-}
+void MdiChild::normalize() { swapImage(imageProcessor::normalizeChannels(imageWrapper.getMat())); }
 
 void MdiChild::equalize() { swapImage(imageProcessor::equalizeChannels(imageWrapper.getMat())); }
 
 void MdiChild::rangeStretch() {
-  double min_d, max_d;
-  cv::minMaxLoc(imageWrapper.getMat(), &min_d, &max_d);
-  uchar min = static_cast<uchar>(min_d);
-  uchar max = static_cast<uchar>(max_d);
-  auto params = rangeStretchDialog(this, min, max, 0, 255);
+  auto params = rangeStretchDialog(this, 0, 255, 0, 255);
   if (!params.has_value())
     return;
 
   uchar p1, p2, q3, q4;
   std::tie(p1, p2, q3, q4) = params.value();
 
-  LUT stretched = imageProcessor::stretch(p1, p2, q3, q4);
-  swapImage(applyLUT(imageWrapper, stretched));
+  swapImage(imageProcessor::rangeStretchChannels(imageWrapper.getMat(), p1, p2, q3, q4));
 }
 
 void MdiChild::save() {
