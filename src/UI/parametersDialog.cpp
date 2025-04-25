@@ -370,14 +370,14 @@ std::optional<std::tuple<Mask3x3, int>> prewittDirection(QWidget *parent) {
 
 // returns indexes of the chosen windows names
 std::optional<std::tuple<uchar, uchar>> windowsPairDialog(QWidget *parent,
-                                                          std::vector<QString> names, uchar first) {
+                                                          std::vector<QString> names, int activeWindowIndex) {
   QDialog dialog(parent);
   dialog.setWindowTitle("Select two windows");
 
   QFormLayout formLayout(&dialog);
   QComboBox *cbFirst = new QComboBox(&dialog);
   QComboBox *cbSecond = new QComboBox(&dialog);
-  cbFirst->setCurrentIndex(first);
+  cbFirst->setCurrentIndex(activeWindowIndex);
 
   for (QString name : names) {
     cbFirst->addItem(name);

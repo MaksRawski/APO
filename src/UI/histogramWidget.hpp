@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../imageProcessor.hpp"
+#include "../imageWrapper.hpp"
 #include <QImage>
 #include <QPainter>
 #include <QScrollArea>

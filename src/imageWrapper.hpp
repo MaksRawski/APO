@@ -76,8 +76,8 @@ public:
   ImageWrapper() = default;
   ImageWrapper(const ImageWrapper &imageWrapper);
   ImageWrapper &operator=(const ImageWrapper &rhs);
-  ImageWrapper(QString filePath);
   ImageWrapper(cv::Mat mat);
+  static ImageWrapper fromPath(QString filePath);
 
   const cv::Mat &getMat() const { return mat_; }
   int getWidth() const { return mat_.cols; }

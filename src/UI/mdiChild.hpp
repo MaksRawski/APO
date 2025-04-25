@@ -10,16 +10,13 @@ const QSize CHILD_IMAGE_MARGIN = QSize(30, 70);
 
 class MdiChild : public QMdiSubWindow {
   Q_OBJECT
+
 public:
-  MdiChild();
-  void loadImage(QString filePath);
-  void setImage(const QPixmap &pixmap);
+  explicit MdiChild(ImageWrapper imageWrapper);
   void setImage(const ImageWrapper &image);
   // difference between `swapImage` and `setImage` is that this maintains
   // the same size of the window whereas the previous one adjusts the size to fit the unscaled image
   void swapImage(const ImageWrapper &image);
-  void swapImage(const cv::Mat &image);
-  void swapImage(const QPixmap &image);
   void setImageName(QString name);
   void setImageScale(double zoom);
 
@@ -27,10 +24,11 @@ public:
   QString getImageName() const { return imageName; }
   QString getImageBasename() const;
   QString getImageNameSuffix() const;
-  const ImageWrapper &getImage() const { return *imageWrapper; };
+  const ImageWrapper &getImage() const { return imageWrapper; };
   const QSize getImageSize() const {
-    return QSize(imageWrapper->getWidth(), imageWrapper->getHeight());
+    return QSize(imageWrapper.getWidth(), imageWrapper.getHeight());
   }
+  void emitImageUpdatedSignal() const;
 
 private:
   void updateChannelNames();
@@ -58,7 +56,7 @@ public slots:
   void edgeDetectPrewitt();
 
 signals:
-  void imageUpdated(const ImageWrapper &image);
+  void imageUpdated(const ImageWrapper &image) const;
 
 private slots:
   void tabChanged(int index);
@@ -66,7 +64,7 @@ private slots:
 private:
   QTabWidget *tabWidget;
   ImageLabel *imageLabel;
-  ImageWrapper *imageWrapper;
+  ImageWrapper imageWrapper;
   // image channels
   ImageWrapper imageWrapper1, imageWrapper2, imageWrapper3;
   QScrollArea *scrollArea1, *scrollArea2, *scrollArea3;
@@ -74,5 +72,5 @@ private:
 
   double zoom = 1.0;
   QString imageName;
-  int prevTabIndex = 0;
+  int tabIndex = 0;
 };

@@ -13,8 +13,9 @@ ImageWrapper &ImageWrapper::operator=(const ImageWrapper &rhs) {
   return *this;
 }
 
-ImageWrapper::ImageWrapper(QString filePath)
-    : ImageWrapper(cv::imread(filePath.toStdString(), cv::IMREAD_ANYCOLOR)) {}
+ImageWrapper ImageWrapper::fromPath(QString filePath) {
+    return ImageWrapper(cv::imread(filePath.toStdString(), cv::IMREAD_ANYCOLOR));
+}
 
 ImageWrapper::ImageWrapper(cv::Mat mat) : mat_(std::move(mat)) {
   format_ = pixelFormatFromChannelsNumber(mat_.channels());

@@ -5,6 +5,7 @@
 #include <QFileDialog>
 #include <QMenu>
 #include <QMenuBar>
+#include <QMessageBox>
 #include <QPixmap>
 #include <QSplitter>
 #include <QTimer>
@@ -12,7 +13,6 @@
 #include <qboxlayout.h>
 #include <qfileinfo.h>
 #include <qkeysequence.h>
-#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   setupMenuBar();
@@ -116,37 +116,18 @@ void MainWindow::openImage() {
   QString filePath = QFileDialog::getOpenFileName(
       this, tr("Open Image"), "",
       tr("Image Files (*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.pgm *.ppm *.xbm *.xpm)"));
+
   if (filePath.isEmpty())
     return;
 
-  // create new window and connect actions to it
-  disconnectActions(activeChild);
-  activeChild = new MdiChild;
-  connectActions(activeChild);
-
-  // NOTE: will emit the initial imageUpdated signal
-  activeChild->loadImage(filePath);
-
-  // scale the image so that it takes at max 70% of the window
-  QSize size = activeChild->getImageSize();
-  QSize windowSize = this->size();
-  QSize scaledSize = size.scaled(windowSize * 0.7, Qt::KeepAspectRatio);
-  double scaleFactor = static_cast<float>(scaledSize.width()) / static_cast<float>(size.width());
-
-  // prevent upscaling
-  if (scaleFactor < 1.0) {
-    activeChild->setImageScale(scaleFactor);
-    activeChild->resize(scaledSize + CHILD_IMAGE_MARGIN);
-    activeChild->setMaximumSize(scaledSize + CHILD_IMAGE_MARGIN);
-  }
-
-  mdiArea->addSubWindow(activeChild);
-  activeChild->show();
+  QString fileName = QFileInfo(filePath).fileName();
+  createImageWindow(ImageWrapper::fromPath(filePath));
+  activeChild->setImageName(fileName);
 }
 
 void MainWindow::mdiSubWindowActivated(QMdiSubWindow *window) {
+  disconnectActions(*activeChild);
   // if last window has been closed
-  disconnectActions(activeChild);
   if (window == nullptr) {
     histogramWidget->reset();
     activeChild = nullptr;
@@ -156,48 +137,45 @@ void MainWindow::mdiSubWindowActivated(QMdiSubWindow *window) {
 
   if (mdiChild) {
     activeChild = mdiChild;
-    histogramWidget->updateHistogram(mdiChild->getImage());
-    connectActions(activeChild);
+    connectActions(*activeChild);
   }
 }
 
-void MainWindow::disconnectActions(const MdiChild *child) {
-  if (child != nullptr) {
-    for (auto c : getConnections())
-      disconnect(c.action, &QAction::triggered, child, c.slot);
+void MainWindow::disconnectActions(const MdiChild &child) {
+  for (auto c : getConnections())
+    disconnect(c.action, &QAction::triggered, &child, c.slot);
 
-    for (auto c : getMainWindowActions())
-      disconnect(c.action, &QAction::triggered, this, c.slot);
+  for (auto c : getMainWindowActions())
+    disconnect(c.action, &QAction::triggered, this, c.slot);
 
-    disconnect(child, &MdiChild::imageUpdated, this, &MainWindow::toggleOptions);
-    disconnect(child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
-  }
+  disconnect(&child, &MdiChild::imageUpdated, this, &MainWindow::toggleOptions);
+  disconnect(&child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
   for (auto c : getConnections())
     c.action->setEnabled(false);
 
   for (auto c : getMainWindowActions())
     c.action->setEnabled(false);
+  histogramWidget->reset();
 }
 
 // enables all the actions that operate on the image
-void MainWindow::connectActions(const MdiChild *child) {
-  if (child == nullptr)
-    throw new std::runtime_error("Tried to make connections to nullptr!");
-
+void MainWindow::connectActions(const MdiChild &child) {
   for (auto c : getConnections())
-    connect(c.action, &QAction::triggered, child, c.slot);
+    connect(c.action, &QAction::triggered, &child, c.slot);
 
   for (auto c : getMainWindowActions())
     connect(c.action, &QAction::triggered, this, c.slot);
 
-  connect(child, &MdiChild::imageUpdated, this, &MainWindow::toggleOptions);
-  connect(child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
+  connect(&child, &MdiChild::imageUpdated, this, &MainWindow::toggleOptions);
+  connect(&child, &MdiChild::imageUpdated, histogramWidget, &HistogramWidget::updateHistogram);
 
   for (auto c : getConnections())
     c.action->setEnabled(true);
 
   for (auto c : getMainWindowActions())
     c.action->setEnabled(true);
+
+  child.emitImageUpdatedSignal();
 }
 
 void MainWindow::splitChannels() {
@@ -212,20 +190,11 @@ void MainWindow::splitChannels() {
   std::vector<ImageWrapper> channels = activeChild->getImage().splitChannels();
   int c = 0;
   for (ImageWrapper image : channels) {
+
     // create new window
-    MdiChild *newChild = new MdiChild;
-    disconnectActions(activeChild);
-    connectActions(newChild);
-
-    // NOTE: will emit the initial imageUpdated signal
-    newChild->setImage(image);
-    newChild->setImageName(baseName + '_' + format[c] + '.' + suffix);
-    newChild->setImageScale(activeChild->getImageScale());
-    newChild->resize(activeChild->size());
-
-    activeChild = newChild;
-    mdiArea->addSubWindow(newChild);
-    newChild->show();
+    createImageWindow(image);
+    activeChild->setImageName(baseName + '_' + format[c] + '.' + suffix);
+    activeChild->setImageScale(activeChild->getImageScale());
     ++c;
   }
 }
@@ -243,8 +212,7 @@ void MainWindow::duplicateImage() {
   if (activeChild == nullptr)
     return; // should never happen
 
-  MdiChild *dupChild = new MdiChild;
-  dupChild->setImage(activeChild->getImage());
+  MdiChild *dupChild = new MdiChild(activeChild->getImage());
 
   auto dupName = activeChild->getImageBasename() + "_dup." + activeChild->getImageNameSuffix();
   dupChild->setImageName(dupName);
@@ -307,71 +275,107 @@ std::vector<MainWindowActionConnection> MainWindow::getMainWindowActions() const
           {combineSubAction, &MainWindow::combineSub}};
 }
 
-std::vector<NameWindow> MainWindow::getWindows() const {
+std::vector<MdiChild*> MainWindow::getMdiChildren() const {
   const QList<QMdiSubWindow *> subWindows = mdiArea->subWindowList();
-  std::vector<NameWindow> nameWindows(subWindows.size());
+  std::vector<MdiChild*> mdiChildren;
+  mdiChildren.reserve(subWindows.size());
 
   for (QMdiSubWindow *window : subWindows) {
-    MdiChild *mdiChild = qobject_cast<MdiChild*>(window);
-    if (mdiChild == nullptr) continue;
-    QString name = mdiChild->getImageName();
-    nameWindows.push_back({name, mdiChild});
+    MdiChild *mdiChild = qobject_cast<MdiChild *>(window);
+    if (mdiChild == nullptr)
+      continue;
+    mdiChildren.push_back(mdiChild);
   }
-  return nameWindows;
+  return mdiChildren;
 }
 
-void MainWindow::combineAdd() {
-  combine([](uchar f, uchar s) -> uchar { return (uchar)std::clamp((int)f + (int)s, 0, 255); });
-}
-
-void MainWindow::combineSub() {
-  combine([](uchar f, uchar s) -> uchar { return f - s; });
-}
-
-void MainWindow::combine(uchar (*op)(uchar, uchar)) {
-  std::vector<NameWindow> windows = getWindows();
-  std::vector<QString> names;
-  uchar currentWindowIndex;
-
-  for (uchar i = 0; i < windows.size(); ++i) {
-    names.push_back(windows[i].name);
-    if (activeChild != nullptr && windows[i].name == activeChild->getImageName())
-      currentWindowIndex = i;
-  }
-
-  auto res = windowsPairDialog(this, names, currentWindowIndex);
-  if (!res.has_value())
-    return;
-  uchar firstI, secondI;
-  std::tie(firstI, secondI) = res.value();
-  cv::Mat first = windows[firstI].window->getImage().getMat();
-  cv::Mat second = windows[secondI].window->getImage().getMat();
-  if (first.channels() != second.channels()) {
-    QMessageBox::critical(this, "Error", "Both images must have the same number of channels!");
-    return;
-  }
-  if (first.rows != second.rows || first.cols != second.cols) {
-    QMessageBox::critical(this, "Error", "Both images must have the same sizes!");
-    return;
-  }
-
-  cv::Mat out = imageProcessor::operateMats(first, second, op);
-  MdiChild *newChild = new MdiChild;
-  newChild->setImage(out);
-
-  // scale the image so that it takes at max 70% of the window
-  QSize size = newChild->getImageSize();
+// scale the mdi child so that it takes at max 70% of the main window
+void MainWindow::limitWindowSize(MdiChild &child) const {
+  QSize size = child.getImageSize();
   QSize windowSize = this->size();
   QSize scaledSize = size.scaled(windowSize * 0.7, Qt::KeepAspectRatio);
   double scaleFactor = static_cast<float>(scaledSize.width()) / static_cast<float>(size.width());
 
   // prevent upscaling
   if (scaleFactor < 1.0) {
-    newChild->setImageScale(scaleFactor);
-    newChild->resize(scaledSize + CHILD_IMAGE_MARGIN);
-    newChild->setMaximumSize(scaledSize + CHILD_IMAGE_MARGIN);
+    child.setImageScale(scaleFactor);
+    child.resize(scaledSize + CHILD_IMAGE_MARGIN);
+    child.setMaximumSize(scaledSize + CHILD_IMAGE_MARGIN);
   }
+}
 
-  mdiArea->addSubWindow(newChild);
-  newChild->show();
+void MainWindow::createImageWindow(const ImageWrapper &image) {
+  disconnectActions(*activeChild);
+  activeChild = new MdiChild(image);
+  connectActions(*activeChild);
+
+  limitWindowSize(*activeChild);
+  mdiArea->addSubWindow(activeChild);
+  activeChild->show();
+}
+
+void MainWindow::combineAdd() {
+  combine([](cv::Mat f, cv::Mat s) -> cv::Mat { return f + s; });
+  activeChild->setImageName("Result of Add");
+}
+void MainWindow::combineSub() {
+  combine([](cv::Mat f, cv::Mat s) -> cv::Mat { return f - s; });
+  activeChild->setImageName("Result of Sub");
+}
+namespace {
+bool checkDimensions(QWidget *parent, const cv::Mat &first, const cv::Mat &second) {
+  if (first.channels() != second.channels()) {
+    QMessageBox::critical(parent, "Error", "Images must have the same number of channels!");
+    return false;
+  }
+  if (first.rows != second.rows || first.cols != second.cols) {
+    QMessageBox::critical(parent, "Error", "Images must have the same sizes!");
+    return false;
+  }
+  return true;
+}
+std::vector<QString> getWindowNames(const std::vector<MdiChild *> &windows) {
+  std::vector<QString> names;
+  names.reserve(windows.size());
+
+  for (uchar i = 0; i < windows.size(); ++i) {
+    if (windows[i] == nullptr) {
+      qDebug() << "window" << i << "is nullptr";
+      continue;
+    }
+    QString name = windows[i]->getImageName();
+    names.push_back(name);
+  }
+  return names;
+}
+int getActiveWindowIndex(MdiChild *activeChild, const std::vector<QString> names) {
+  int activeWindowIndex = -1;
+  if (activeChild != nullptr) {
+    QString activeWindowName = activeChild->getImageName();
+    auto it = std::find(names.begin(), names.end(), activeWindowName);
+    if (it != names.end()) {
+      activeWindowIndex = it - names.begin();
+    }
+  }
+  return activeWindowIndex;
+}
+} // namespace
+
+void MainWindow::combine(cv::Mat (*op)(cv::Mat, cv::Mat)) {
+  std::vector<MdiChild*> windows = getMdiChildren();
+  std::vector<QString> names = getWindowNames(windows);
+  int activeWindowIndex = getActiveWindowIndex(activeChild, names);
+
+  auto res = windowsPairDialog(this, names, activeWindowIndex);
+  if (!res.has_value())
+    return;
+
+  uchar firstI, secondI;
+  std::tie(firstI, secondI) = res.value();
+  cv::Mat first = windows[firstI]->getImage().getMat();
+  cv::Mat second = windows[secondI]->getImage().getMat();
+  if (!checkDimensions(this, first, second)) return;
+
+  cv::Mat out = op(first, second);
+  createImageWindow(out);
 }

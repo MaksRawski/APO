@@ -20,6 +20,7 @@ void HistogramPlot::updateHist(std::vector<int> hist, int maxValue) {
 }
 
 void HistogramPlot::paintEvent(QPaintEvent *event) {
+  Q_UNUSED(event);
   QPainter painter(this);
   painter.setRenderHint(QPainter::Antialiasing);
 

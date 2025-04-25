@@ -16,7 +16,7 @@
 using imageProcessor::applyLUT;
 using imageProcessor::LUT;
 
-MdiChild::MdiChild() {
+MdiChild::MdiChild(ImageWrapper imageWrapper) {
   tabWidget = new QTabWidget;
   tabWidget->setTabBarAutoHide(true);
 
@@ -55,46 +55,30 @@ MdiChild::MdiChild() {
 
   setAttribute(Qt::WA_DeleteOnClose);
   setWidget(tabWidget);
-}
-
-void MdiChild::loadImage(QString filePath) {
-  QString fileName = QFileInfo(filePath).fileName();
-  imageWrapper = new ImageWrapper(filePath);
-
-  QImage image = imageWrapper->generateQImage();
-  if (image.isNull())
-    throw new std::runtime_error("Failed to generate a QImage!");
-
-  QPixmap pixmap = QPixmap::fromImage(image);
-  setImage(pixmap);
-  resize(pixmap.size() + CHILD_IMAGE_MARGIN);
-  setImageName(fileName);
-}
-
-void MdiChild::setImage(const QPixmap &pixmap) {
-  imageLabel->setImage(pixmap);
-  resize(pixmap.size() + CHILD_IMAGE_MARGIN);
-  updateChannelNames();
-
-  // if the user is on the main image tab we don't need to regenerate channels
-  // that will be done once the tab is switched
-  if (prevTabIndex != 0)
-    regenerateChannels();
-
-  emit imageUpdated(*imageWrapper);
+  setImage(imageWrapper);
 }
 
 void MdiChild::setImage(const ImageWrapper &image) {
-  imageWrapper = new ImageWrapper(image);
-  QImage qimage = imageWrapper->generateQImage();
+  imageWrapper = ImageWrapper(image);
+  QImage qimage = imageWrapper.generateQImage();
   if (qimage.isNull())
     throw new std::runtime_error("Failed to generate a QImage!");
 
   QPixmap pixmap = QPixmap::fromImage(qimage);
-  setImage(pixmap);
+  imageLabel->setImage(pixmap);
+  resize(pixmap.size() + CHILD_IMAGE_MARGIN);
+  updateChannelNames();
+
+  // if the user is on the main image tab we don't need to regenerate channels as
+  // that will be done once the tab is switched
+  if (tabIndex != 0)
+    regenerateChannels();
+
+  emit imageUpdated(imageWrapper);
 }
 
-void MdiChild::swapImage(const QPixmap &image) {
+// sets an image but maintains window size and image scale
+void MdiChild::swapImage(const ImageWrapper &image) {
   QSize size = this->size();
   double prevZoom = getImageScale();
 
@@ -103,30 +87,10 @@ void MdiChild::swapImage(const QPixmap &image) {
   setImageScale(prevZoom);
 }
 
-void MdiChild::swapImage(const ImageWrapper &image) {
-  imageWrapper = new ImageWrapper(image);
-  QImage qimage = imageWrapper->generateQImage();
-  if (qimage.isNull())
-    throw new std::runtime_error("Failed to generate a QImage!");
-
-  QPixmap pixmap = QPixmap::fromImage(qimage);
-  swapImage(pixmap);
-}
-
-void MdiChild::swapImage(const cv::Mat &image) {
-  imageWrapper = new ImageWrapper(image);
-  QImage qimage = imageWrapper->generateQImage();
-  if (qimage.isNull())
-    throw new std::runtime_error("Failed to generate a QImage!");
-
-  QPixmap pixmap = QPixmap::fromImage(qimage);
-  swapImage(pixmap);
-}
-
 void MdiChild::setImageScale(double scale) { imageLabel->setImageScale(scale); }
 
 void MdiChild::updateChannelNames() {
-  auto imageFormat = imageWrapper->getFormat();
+  auto imageFormat = imageWrapper.getFormat();
   if (imageFormat == PixelFormat::Grayscale8) {
     tabWidget->removeTab(3);
     tabWidget->removeTab(2);
@@ -153,29 +117,29 @@ void MdiChild::updateChannelNames() {
 }
 
 void MdiChild::toGrayscale() {
-  *imageWrapper = imageWrapper->toGrayscale();
-  swapImage(QPixmap::fromImage(imageWrapper->generateQImage()));
+  imageWrapper = imageWrapper.toGrayscale();
+  swapImage(imageWrapper);
   setImageName(imageName); // update type in the window title
 }
 void MdiChild::toLab() {
-  *imageWrapper = imageWrapper->toLab();
-  swapImage(QPixmap::fromImage(imageWrapper->generateQImage()));
+  imageWrapper = imageWrapper.toLab();
+  swapImage(imageWrapper);
   setImageName(imageName); // update type in the window title
 }
 void MdiChild::toHSV() {
-  *imageWrapper = imageWrapper->toHSV();
-  swapImage(QPixmap::fromImage(imageWrapper->generateQImage()));
+  imageWrapper = imageWrapper.toHSV();
+  swapImage(imageWrapper);
   setImageName(imageName); // update type in the window title
 }
 void MdiChild::toRGB() {
-  *imageWrapper = imageWrapper->toRGB();
-  swapImage(QPixmap::fromImage(imageWrapper->generateQImage()));
+  imageWrapper = imageWrapper.toRGB();
+  swapImage(imageWrapper);
   setImageName(imageName); // update type in the window title
 }
 
 void MdiChild::setImageName(QString name) {
   imageName = name;
-  auto imageFormat = pixelFormatToString(imageWrapper->getFormat());
+  auto imageFormat = pixelFormatToString(imageWrapper.getFormat());
   setWindowTitle(QString("[%1] %2").arg(imageFormat).arg(name));
 }
 
@@ -186,13 +150,13 @@ void MdiChild::tabChanged(int index) {
     return;
 
   // if switching to a channel from an image, regenerate all channels
-  if (prevTabIndex == 0 && index != 0) {
+  if (tabIndex == 0 && index != 0) {
     regenerateChannels();
   }
 
   // set channel/image zoom to whatever the user had in the previous tab
   double prevZoom;
-  switch (prevTabIndex) {
+  switch (tabIndex) {
   case 0:
     prevZoom = imageLabel->getImageScale();
     break;
@@ -208,28 +172,46 @@ void MdiChild::tabChanged(int index) {
   }
   switch (index) {
   case 0: {
-    emit imageUpdated(*imageWrapper);
     imageLabel->setImageScale(prevZoom);
     break;
   }
   case 1: {
-    emit imageUpdated(imageWrapper1);
     imageLabel1->setImageScale(prevZoom);
     break;
   }
   case 2: {
-    emit imageUpdated(imageWrapper2);
     imageLabel2->setImageScale(prevZoom);
     break;
   }
   case 3: {
-    emit imageUpdated(imageWrapper3);
     imageLabel3->setImageScale(prevZoom);
     break;
   }
   }
 
-  prevTabIndex = index;
+  tabIndex = index;
+  emitImageUpdatedSignal();
+}
+
+void MdiChild::emitImageUpdatedSignal() const {
+  switch (tabIndex) {
+  case 0: {
+    emit imageUpdated(imageWrapper);
+    break;
+  }
+  case 1: {
+    emit imageUpdated(imageWrapper1);
+    break;
+  }
+  case 2: {
+    emit imageUpdated(imageWrapper2);
+    break;
+  }
+  case 3: {
+    emit imageUpdated(imageWrapper3);
+    break;
+  }
+  }
 }
 
 QString MdiChild::getImageBasename() const {
@@ -244,12 +226,12 @@ QString MdiChild::getImageNameSuffix() const {
 
 void MdiChild::negate() {
   LUT neg = imageProcessor::negate();
-  ImageWrapper res = applyLUT(*imageWrapper, neg);
+  ImageWrapper res = applyLUT(imageWrapper, neg);
   swapImage(res);
 }
 
 void MdiChild::regenerateChannels() {
-  std::vector<ImageWrapper> imageWrappers = imageWrapper->splitChannels();
+  std::vector<ImageWrapper> imageWrappers = imageWrapper.splitChannels();
 
   if (imageWrappers.size() < 3)
     throw new std::runtime_error("Failed to split channels!");
@@ -276,16 +258,16 @@ void MdiChild::regenerateChannels() {
 
 void MdiChild::normalize() {
   double min, max;
-  cv::minMaxLoc(imageWrapper->getMat(), &min, &max);
+  cv::minMaxLoc(imageWrapper.getMat(), &min, &max);
   LUT stretched = imageProcessor::stretch((int)min, (int)max, 0, 255);
-  swapImage(applyLUT(*imageWrapper, stretched));
+  swapImage(applyLUT(imageWrapper, stretched));
 }
 
-void MdiChild::equalize() { swapImage(imageProcessor::equalizeChannels(imageWrapper->getMat())); }
+void MdiChild::equalize() { swapImage(imageProcessor::equalizeChannels(imageWrapper.getMat())); }
 
 void MdiChild::rangeStretch() {
   double min_d, max_d;
-  cv::minMaxLoc(imageWrapper->getMat(), &min_d, &max_d);
+  cv::minMaxLoc(imageWrapper.getMat(), &min_d, &max_d);
   uchar min = static_cast<uchar>(min_d);
   uchar max = static_cast<uchar>(max_d);
   auto params = rangeStretchDialog(this, min, max, 0, 255);
@@ -296,13 +278,13 @@ void MdiChild::rangeStretch() {
   std::tie(p1, p2, q3, q4) = params.value();
 
   LUT stretched = imageProcessor::stretch(p1, p2, q3, q4);
-  swapImage(applyLUT(*imageWrapper, stretched));
+  swapImage(applyLUT(imageWrapper, stretched));
 }
 
 void MdiChild::save() {
   QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), imageName,
                                                   tr("Images (*.png *.jpg *.jpeg *.bmp)"));
-  imageWrapper->generateQImage().save(fileName);
+  imageWrapper.generateQImage().save(fileName);
 }
 
 void MdiChild::rename() {
@@ -330,7 +312,7 @@ void MdiChild::posterize() {
   if (!res.has_value())
     return;
   LUT lut = imageProcessor::posterize(res.value());
-  swapImage(applyLUT(*imageWrapper, lut));
+  swapImage(applyLUT(imageWrapper, lut));
 }
 
 void MdiChild::blurMean() {
@@ -342,7 +324,7 @@ void MdiChild::blurMean() {
   std::tie(k, borderType) = res.value();
 
   cv::Mat out;
-  cv::blur(imageWrapper->getMat(), out, cv::Size(k, k), cv::Point(-1, -1), borderType);
+  cv::blur(imageWrapper.getMat(), out, cv::Size(k, k), cv::Point(-1, -1), borderType);
   swapImage(out);
 }
 
@@ -354,7 +336,7 @@ void MdiChild::blurMedian() {
   int borderType;
   std::tie(k, borderType) = res.value();
 
-  cv::Mat out = imageProcessor::medianBlur(imageWrapper->getMat(), k, borderType);
+  cv::Mat out = imageProcessor::medianBlur(imageWrapper.getMat(), k, borderType);
   swapImage(out);
 }
 
@@ -368,7 +350,7 @@ void MdiChild::blurGaussian() {
   std::tie(k, sigma, borderType) = res.value();
 
   cv::Mat mat;
-  cv::GaussianBlur(imageWrapper->getMat(), mat, cv::Size(k, k), sigma, 0, borderType);
+  cv::GaussianBlur(imageWrapper.getMat(), mat, cv::Size(k, k), sigma, 0, borderType);
   swapImage(mat);
 }
 
@@ -382,9 +364,9 @@ void MdiChild::edgeDetectSobel() {
   std::tie(k, dir, borderType) = res.value();
   cv::Mat mat;
   if (dir == Direction::Horizontal)
-    cv::Sobel(imageWrapper->getMat(), mat, CV_8UC1, 1, 0, k, 1, 0, borderType);
+    cv::Sobel(imageWrapper.getMat(), mat, CV_8UC1, 1, 0, k, 1, 0, borderType);
   else
-    cv::Sobel(imageWrapper->getMat(), mat, CV_8UC1, 0, 1, k, 1, 0, borderType);
+    cv::Sobel(imageWrapper.getMat(), mat, CV_8UC1, 0, 1, k, 1, 0, borderType);
 
   swapImage(mat);
 }
@@ -396,7 +378,7 @@ void MdiChild::edgeDetectLaplacian() {
   int borderType;
   std::tie(k, borderType) = res.value();
   cv::Mat mat;
-  cv::Laplacian(imageWrapper->getMat(), mat, CV_8UC1, k, 1, 0, borderType);
+  cv::Laplacian(imageWrapper.getMat(), mat, CV_8UC1, k, 1, 0, borderType);
   swapImage(mat);
 }
 
@@ -411,7 +393,7 @@ void MdiChild::edgeDetectCanny() {
   // manually padding
   int pad = k / 2;
   cv::Mat padded;
-  cv::copyMakeBorder(imageWrapper->getMat(), padded, pad, pad, pad, pad, borderType);
+  cv::copyMakeBorder(imageWrapper.getMat(), padded, pad, pad, pad, pad, borderType);
 
   cv::Mat out;
   cv::Canny(padded, out, start, end, k);
@@ -432,7 +414,7 @@ void MdiChild::sharpenLaplacian() {
     for (int j = 0; j < 3; ++j)
       kernel.at<double>(i, j) = mask[i][j];
 
-  cv::filter2D(imageWrapper->getMat(), out, -1, kernel, cv::Point(-1, -1), 0, borderType);
+  cv::filter2D(imageWrapper.getMat(), out, -1, kernel, cv::Point(-1, -1), 0, borderType);
   swapImage(out);
 }
 
@@ -450,6 +432,6 @@ void MdiChild::edgeDetectPrewitt() {
     for (int j = 0; j < 3; ++j)
       kernel.at<double>(i, j) = mask[i][j];
 
-  cv::filter2D(imageWrapper->getMat(), out, -1, kernel, cv::Point(-1, -1), 0, borderType);
+  cv::filter2D(imageWrapper.getMat(), out, -1, kernel, cv::Point(-1, -1), 0, borderType);
   swapImage(out);
 }
