@@ -5,6 +5,63 @@
 #include <qdebug.h>
 #include <stdexcept>
 
+namespace PixelFormatUtils {
+PixelFormat fromChannelsNumber(int channels) {
+  switch (channels) {
+  case 1:
+    return PixelFormat::Grayscale8;
+  case 3:
+    return PixelFormat::BGR24;
+  default:
+    throw std::runtime_error("Unsupported image format");
+  }
+}
+
+int toCvType(const PixelFormat &format) {
+  switch (format) {
+  case PixelFormat::Binary:
+  case PixelFormat::Grayscale8:
+    return CV_8UC1;
+  case PixelFormat::BGR24:
+  case PixelFormat::HSV24:
+  case PixelFormat::Lab24:
+    return CV_8UC3;
+  }
+}
+
+std::string toString(const PixelFormat &format) {
+  switch (format) {
+  case PixelFormat::Binary:
+    return "Binary";
+  case PixelFormat::Grayscale8:
+    return "8-bit Grayscale";
+  case PixelFormat::BGR24:
+    // we will always have to convert BGR to RGB for display,
+    // so it's fine to call this format just RGB
+    return "RGB";
+  case PixelFormat::HSV24:
+    return "HSV";
+  case PixelFormat::Lab24:
+    return "Lab";
+  }
+}
+std::vector<std::string> channelNmaes(const PixelFormat &format) {
+  switch (format) {
+  case PixelFormat::Binary:
+  case PixelFormat::Grayscale8:
+    return {};
+  case PixelFormat::BGR24:
+    // we will always have to convert BGR to RGB for display,
+    // so it's fine to have theses channel names as R,G,B
+    return {"R", "G", "B"};
+  case PixelFormat::HSV24:
+    return {"Hue", "Saturation", "Value"};
+  case PixelFormat::Lab24:
+    return {"L", "a", "b"};
+  }
+}
+} // namespace PixelFormatUtils
+
 ImageWrapper::ImageWrapper(const ImageWrapper &other) : format_(other.format_), mat_(other.mat_.clone()) {}
 
 ImageWrapper &ImageWrapper::operator=(const ImageWrapper &rhs) {
@@ -18,7 +75,7 @@ ImageWrapper ImageWrapper::fromPath(QString filePath) {
 }
 
 ImageWrapper::ImageWrapper(cv::Mat mat) : mat_(std::move(mat)) {
-  format_ = pixelFormatFromChannelsNumber(mat_.channels());
+  format_ = PixelFormatUtils::fromChannelsNumber(mat_.channels());
 }
 
 QImage ImageWrapper::generateQImage() const {
@@ -57,16 +114,6 @@ QImage ImageWrapper::generateQImage() const {
     cv::Mat rgbMat;
     cv::cvtColor(mat_, rgbMat, cv::COLOR_Lab2RGB);
     img = QImage(rgbMat.data, rgbMat.cols, rgbMat.rows, rgbMat.step,
-                 QImage::Format_RGB888)
-              .copy();
-    break;
-  }
-
-  case PixelFormat::BGRA32: {
-    CV_Assert(mat_.type() == CV_8UC4);
-    cv::Mat rgbaMat;
-    cv::cvtColor(mat_, rgbaMat, cv::COLOR_BGRA2RGBA);
-    img = QImage(rgbaMat.data, rgbaMat.cols, rgbaMat.rows, rgbaMat.step,
                  QImage::Format_RGB888)
               .copy();
     break;

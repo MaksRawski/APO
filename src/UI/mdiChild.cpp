@@ -92,23 +92,10 @@ void MdiChild::updateChannelNames() {
     tabWidget->removeTab(2);
     tabWidget->removeTab(1);
   } else if (tabWidget->count() < 3) {
-    tabWidget->addTab(scrollArea1, "R");
-    tabWidget->addTab(scrollArea2, "G");
-    tabWidget->addTab(scrollArea3, "B");
-  }
-
-  if (imageFormat == PixelFormat::HSV24) {
-    tabWidget->setTabText(1, "Hue");
-    tabWidget->setTabText(2, "Saturation");
-    tabWidget->setTabText(3, "Value");
-  } else if (imageFormat == PixelFormat::Lab24) {
-    tabWidget->setTabText(1, "L");
-    tabWidget->setTabText(2, "a");
-    tabWidget->setTabText(3, "b");
-  } else if (imageFormat == PixelFormat::BGR24) {
-    tabWidget->setTabText(1, "Red");
-    tabWidget->setTabText(2, "Green");
-    tabWidget->setTabText(3, "Blue");
+    auto names = PixelFormatUtils::channelNmaes(imageFormat);
+    tabWidget->addTab(scrollArea1, QString::fromStdString(names[0]));
+    tabWidget->addTab(scrollArea2, QString::fromStdString(names[1]));
+    tabWidget->addTab(scrollArea3, QString::fromStdString(names[2]));
   }
 }
 
@@ -135,8 +122,8 @@ void MdiChild::toRGB() {
 
 void MdiChild::setImageName(QString name) {
   imageName = name;
-  auto imageFormat = pixelFormatToString(imageWrapper.getFormat());
-  setWindowTitle(QString("[%1] %2").arg(imageFormat).arg(name));
+  std::string imageFormat = PixelFormatUtils::toString(imageWrapper.getFormat());
+  setWindowTitle(QString("[%1] %2").arg(QString::fromStdString(imageFormat), name));
 }
 
 void MdiChild::tabChanged(int newTabIndex) {

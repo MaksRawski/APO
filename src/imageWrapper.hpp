@@ -3,9 +3,8 @@
 #include <QImage>
 #include <opencv2/opencv.hpp>
 #include <qimage.h>
-#include <stdexcept>
 
-// For internal storage in ImageWrapper.
+namespace PixelFormatUtils {
 enum class PixelFormat {
   // 8-bits per pixel, either all 0s or 1s
   Binary,
@@ -17,59 +16,14 @@ enum class PixelFormat {
   HSV24,
   // 24-bits per pixel (0xLLaabb)
   Lab24,
-  // 32-bits per pixel (0xBBGGRRAA)
-  BGRA32,
 };
-
-constexpr PixelFormat pixelFormatFromChannelsNumber(int channels) {
-  switch (channels) {
-  case 1:
-    return PixelFormat::Grayscale8;
-  case 3:
-    return PixelFormat::BGR24;
-  case 4:
-    return PixelFormat::BGRA32;
-  default:
-    throw std::runtime_error("Unsupported image format");
-  }
+PixelFormat fromChannelsNumber(int channels);
+int toCvType(const PixelFormat &format);
+std::string toString(const PixelFormat &format);
+std::vector<std::string> channelNmaes(const PixelFormat &format);
 }
 
-constexpr int pixelFormatToCvType(PixelFormat format) {
-  switch (format) {
-  case PixelFormat::Binary:
-  case PixelFormat::Grayscale8:
-    return CV_8UC1;
-  case PixelFormat::BGR24:
-  case PixelFormat::HSV24:
-  case PixelFormat::Lab24:
-    return CV_8UC3;
-  case PixelFormat::BGRA32:
-    return CV_8UC4;
-  }
-}
-
-constexpr const char *pixelFormatToString(PixelFormat format) {
-  switch (format) {
-  case PixelFormat::Binary:
-    return "Binary";
-  case PixelFormat::Grayscale8:
-    return "8-bit Grayscale";
-  case PixelFormat::BGR24:
-    // we will always have to convert BGR to RGB for display,
-    // so it's fine to call this format just RGB
-    return "RGB";
-  case PixelFormat::HSV24:
-    return "HSV";
-  case PixelFormat::Lab24:
-    return "Lab";
-  case PixelFormat::BGRA32:
-    // we will always have to convert BGRA to RGBA for display,
-    // so it's fine to call this format just RGBA
-    return "RGBA";
-  default:
-    std::runtime_error("unreachable");
-  }
-}
+using PixelFormatUtils::PixelFormat;
 
 class ImageWrapper {
 public:

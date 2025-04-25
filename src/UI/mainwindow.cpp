@@ -189,7 +189,7 @@ void MainWindow::splitChannels() {
   QFileInfo fileInfo(imageName);
   QString baseName = fileInfo.completeBaseName();
   QString suffix = fileInfo.completeSuffix();
-  QString format = pixelFormatToString(activeChild->getImage().getFormat());
+  auto format = PixelFormatUtils::toString(activeChild->getImage().getFormat());
 
   std::vector<ImageWrapper> channels = activeChild->getImage().splitChannels();
   int c = 0;
