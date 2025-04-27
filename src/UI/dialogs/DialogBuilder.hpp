@@ -85,10 +85,9 @@ public:
   Dialog() = delete;
 
   template <DialogValue V> using ResultType = typename ValueTraits<V>::Result;
-  using InputTuple = std::tuple<InputSpec<Values>...>;
   using ResultTuple = std::tuple<ResultType<Values>...>;
 
-  Dialog(QWidget *parent, QString title, InputTuple inputs) {
+  Dialog(QWidget *parent, QString title, InputSpec<Values>... inputs) {
     dialog = new QDialog(parent);
     dialog->setWindowTitle(title);
 
