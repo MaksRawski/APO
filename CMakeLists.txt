@@ -28,6 +28,7 @@ add_executable(APO
   src/UI/imageLabel.cpp
   src/UI/histogramWidget.cpp
   src/UI/parametersDialog.cpp
+  src/UI/dialogs/DialogBuilder.cpp
   src/imageProcessor.cpp
   src/imageWrapper.cpp
   ${MOC_SOURCES}
