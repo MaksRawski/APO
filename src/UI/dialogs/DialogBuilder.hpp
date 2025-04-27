@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MaskEditor.hpp"
+#include <QMessageBox>
 #include <opencv2/core/mat.hpp>
 #include <optional>
 #include <qcombobox.h>
@@ -12,16 +13,16 @@
 #include <qvalidator.h>
 #include <tuple>
 #include <vector>
-#include <QMessageBox>
 
 // Goal of each dialog is to get some values from the user.
 // This enum holds all possible abstract types of values that a dialog
 // may want to get from the user.
 enum class DialogValue {
-  Byte,
-  Double,
-  EnumVariant,
-  Mask,
+  Byte,          // a value in range 0-255 with potentially additional restriction
+  Double,        // a double precision value with no restrictions whatsoever
+  EnumVariant,   // any variant chosen from a provided list
+  Mask,          // a matrix of given size
+  ChoosableMask, // same as Mask but with option of choosing a builtin
 };
 
 // This weird template struct allows for associating some more data
@@ -39,9 +40,9 @@ template <> struct ValueTraits<DialogValue::Byte> {
   using Result = uchar;
 };
 
-// ====
+// ======
 // Double
-// ====
+// ======
 template <> struct ValueTraits<DialogValue::Double> {
   using Restriction = struct {};
   using Result = double;
@@ -62,7 +63,19 @@ template <> struct ValueTraits<DialogValue::EnumVariant> {
 // Mask
 // ====
 template <> struct ValueTraits<DialogValue::Mask> {
-  using Restriction = struct {};
+  using Restriction = QSize;
+  using Result = cv::Mat;
+};
+
+// =============
+// ChoosableMask
+// =============
+struct MasksRestriction {
+  std::vector<cv::Mat> mats;
+  std::vector<QString> descriptions;
+};
+template <> struct ValueTraits<DialogValue::ChoosableMask> {
+  using Restriction = MasksRestriction; // NOTE: this won't be a hard restriction!
   using Result = cv::Mat;
 };
 
@@ -118,11 +131,15 @@ private:
 
   QDialog *dialog;
   std::tuple<Accessor<Values>...> accessors;
+  // NOTE: Since MaskEditor is not a QWidget it's therefore not managed by Qt.
+  // So to avoid memory leaks, all of its instances have to be tied to this class so that they can
+  // be dropped once the dialog is closed.
+  std::vector<MaskEditor> maskEditors;
 
   Accessor<DialogValue::Byte> //
   createInput(const InputSpec<DialogValue::Byte> &spec, QFormLayout &form) {
     auto *edit = createValidatedIntEdit(dialog, spec.restriction.low, spec.restriction.high,
-                                         spec.initialValue);
+                                        spec.initialValue);
     form.addRow(spec.name, edit);
 
     return [&]() {
@@ -167,10 +184,35 @@ private:
   Accessor<DialogValue::Mask> //
   createInput(const InputSpec<DialogValue::Mask> &spec, QFormLayout &form) {
     cv::Mat mat = spec.initialValue;
-    // HACK: constructing MaskEditor on heap so that it outlives the accessor
-    // this ends up in a memory leak!
-    auto *mask = new MaskEditor(dialog, QSize(mat.cols, mat.rows));
-    form.addItem(&mask->getGrid());
-    return [&]() { return mask->getMask(); };
+    auto mask = MaskEditor(dialog, QSize(mat.cols, mat.rows));
+    form.addItem(&mask.getGrid());
+
+    // for the accessor to be able to access the current mask we must provide it an index to
+    // maskEditors at which this mask is going to be stored
+    uint i = maskEditors.size();
+    maskEditors.push_back(mask);
+
+    return [this, i]() { return maskEditors[i].getMask(); };
+  }
+
+  Accessor<DialogValue::ChoosableMask> //
+  createInput(const InputSpec<DialogValue::ChoosableMask> &spec, QFormLayout &form) {
+    auto *cb = createComboBox(dialog, spec.restriction.descriptions, 0);
+    form.addRow(spec.name, cb);
+
+    cv::Mat mat = spec.initialValue;
+    auto mask = MaskEditor(dialog, QSize(mat.cols, mat.rows));
+    form.addItem(&mask.getGrid());
+
+    // we update the MaskEditor anytime a ComboBox is changed
+    QObject::connect(cb, &QComboBox::currentIndexChanged,
+                     [&](uint index) { mask.setMask(spec.restriction.mats[index]); });
+
+    // for the accessor to be able to access the current mask we must provide it an index to
+    // maskEditors at which this mask is going to be stored
+    uint i = maskEditors.size();
+    maskEditors.push_back(mask);
+
+    return [this, i]() { return maskEditors[i].getMask(); };
   }
 };

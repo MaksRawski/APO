@@ -257,7 +257,7 @@ void MdiChild::normalize() { swapImage(imageProcessor::normalizeChannels(imageWr
 void MdiChild::equalize() { swapImage(imageProcessor::equalizeChannels(imageWrapper.getMat())); }
 
 void MdiChild::rangeStretch() {
-  auto params = rangeStretchDialog(this, 0, 255, 0, 255);
+  auto params = rangeStretchDialog(this);
   if (!params.has_value())
     return;
 
@@ -294,7 +294,7 @@ void MdiChild::rename() {
 }
 
 void MdiChild::posterize() {
-  auto res = posterizeDialog(this, 2);
+  auto res = posterizeDialog(this);
   if (!res.has_value())
     return;
   LUT lut = imageProcessor::posterize(res.value());
@@ -302,7 +302,8 @@ void MdiChild::posterize() {
 }
 
 void MdiChild::blurMean() {
-  auto res = kernelSizeDialog(this);
+  auto res = kernelBorderDialog(this);
+
   if (!res.has_value())
     return;
   uchar k;
@@ -315,7 +316,7 @@ void MdiChild::blurMean() {
 }
 
 void MdiChild::blurMedian() {
-  auto res = kernelSizeDialog(this);
+  auto res = kernelBorderDialog(this);
   if (!res.has_value())
     return;
   uchar k;
@@ -345,12 +346,9 @@ void MdiChild::edgeDetectSobel() {
   auto res = sobelDialog(this);
   if (!res.has_value())
     return;
-  uchar k;
-  Direction dir;
-  int borderType;
-  std::tie(k, dir, borderType) = res.value();
+  auto [k, dir, borderType] = res.value();
   cv::Mat mat;
-  if (dir == Direction::Horizontal)
+  if (dir == SobelDirections::Horizontal)
     cv::Sobel(imageWrapper.getMat(), mat, CV_8UC1, 1, 0, k, 1, 0, borderType);
   else
     cv::Sobel(imageWrapper.getMat(), mat, CV_8UC1, 0, 1, k, 1, 0, borderType);
@@ -358,7 +356,7 @@ void MdiChild::edgeDetectSobel() {
   swapImage(mat);
 }
 void MdiChild::edgeDetectLaplacian() {
-  auto res = kernelSizeDialog(this);
+  auto res = kernelBorderDialog(this);
   if (!res.has_value())
     return;
   uchar k;
@@ -388,37 +386,25 @@ void MdiChild::edgeDetectCanny() {
 }
 
 void MdiChild::sharpenLaplacian() {
-  auto res = laplacianMaskDialog(this);
+  auto res = choosableMaskDialog(this, LaplacianMasks::mats, LaplacianMasks::names);
   if (!res.has_value())
     return;
-  Mask3x3 mask;
-  int borderType;
-  std::tie(mask, borderType) = res.value();
 
+  auto [mask, borderType] = res.value();
   cv::Mat out;
-  cv::Mat kernel(3, 3, CV_64F);
-  for (int i = 0; i < 3; ++i)
-    for (int j = 0; j < 3; ++j)
-      kernel.at<double>(i, j) = mask[i][j];
 
-  cv::filter2D(imageWrapper.getMat(), out, -1, kernel, cv::Point(-1, -1), 0, borderType);
+  cv::filter2D(imageWrapper.getMat(), out, -1, mask, cv::Point(-1, -1), 0, borderType);
   swapImage(out);
 }
 
 void MdiChild::edgeDetectPrewitt() {
-  auto res = prewittDirection(this);
+  auto res = choosableMaskDialog(this, PrewittMasks::mats, PrewittMasks::names);
   if (!res.has_value())
     return;
-  Mask3x3 mask;
-  int borderType;
-  std::tie(mask, borderType) = res.value();
 
+  auto [mask, borderType] = res.value();
   cv::Mat out;
-  cv::Mat kernel(3, 3, CV_64F);
-  for (int i = 0; i < 3; ++i)
-    for (int j = 0; j < 3; ++j)
-      kernel.at<double>(i, j) = mask[i][j];
 
-  cv::filter2D(imageWrapper.getMat(), out, -1, kernel, cv::Point(-1, -1), 0, borderType);
+  cv::filter2D(imageWrapper.getMat(), out, -1, mask, cv::Point(-1, -1), 0, borderType);
   swapImage(out);
 }
