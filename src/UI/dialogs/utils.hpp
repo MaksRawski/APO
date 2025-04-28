@@ -85,14 +85,24 @@ const std::vector<QString> names{"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
 } // namespace PrewittMasks
 
 namespace DialogResultsUtils {
-template <typename... Results, typename... Transforms>
-auto transformTuple(const std::optional<std::tuple<Results...>> &result, Transforms &&...transforms)
-    -> std::optional<std::tuple<std::invoke_result_t<Transforms, Results>...>> {
-  if (!result)
-    return std::nullopt;
+template <typename Tuple, typename... Funcs, std::size_t... Is>
+auto mapTupleImpl(const Tuple &tuple, std::index_sequence<Is...>, Funcs &&...funcs) {
+  return std::make_tuple(std::forward<Funcs>(funcs)(std::get<Is>(tuple))...);
+}
 
-  const auto &values = result.value();
-  return std::make_tuple(std::forward<Transforms>(transforms)(std::get<Results>(values))...);
+template <typename... Results, typename... Funcs>
+auto mapTuple(const std::tuple<Results...> &tuple, Funcs &&...funcs) {
+  static_assert(sizeof...(Results) == sizeof...(Funcs),
+                "Number of functions must match number of tuple elements");
+  return mapTupleImpl(tuple, std::index_sequence_for<Results...>{}, std::forward<Funcs>(funcs)...);
+}
+
+template <typename... Results, typename... Funcs>
+auto mapTuple(const std::optional<std::tuple<Results...>> &tuple, Funcs &&...funcs)
+    -> std::optional<std::tuple<std::invoke_result_t<Funcs, Results>...>> {
+  if (!tuple.has_value())
+    return std::nullopt;
+  return mapTuple(tuple.value(), funcs...);
 }
 
 template <typename Result>

@@ -106,7 +106,7 @@ public:
 
     QFormLayout form(dialog);
     // create appropriate inputs adding them to the form while returning "accessors"
-    accessors = std::make_tuple((createInput(std::get<Values>(inputs), &form), ...));
+    accessors = std::make_tuple(createInput(inputs, form)...);
 
     form.addRow(createDialogButtons(dialog));
   }
@@ -114,16 +114,22 @@ public:
   std::optional<ResultTuple> run() const {
     if (dialog->exec() != QDialog::Accepted)
       return std::nullopt;
-    auto values = (std::get<Accessor<Values>>(accessors)(), ...);
 
-    bool hasNullOpt = false;
-    ((hasNullOpt = hasNullOpt || !(std::get<Values>(values).has_value())), ...);
-    if (hasNullOpt) {
+    auto optionals =
+        std::apply([](auto &&...accessors) { return std::make_tuple(accessors()...); }, accessors);
+
+    bool allOptionalsValid = true;
+    std::apply([&](const auto &...opt) { ((allOptionalsValid &= opt.has_value()), ...); }, optionals);
+
+    if (!allOptionalsValid) {
       QMessageBox::critical(dialog, "Error", "Invalid input.");
       return std::nullopt;
     }
 
-    return (std::get<Values>(values).value(), ...);
+    ResultTuple results =
+        std::apply([](const auto &...opt) { return std::make_tuple(opt.value()...); }, optionals);
+
+    return results;
   }
 
 private:
@@ -142,7 +148,7 @@ private:
                                         spec.initialValue);
     form.addRow(spec.name, edit);
 
-    return [&]() {
+    return [&]() -> std::optional<uchar> {
       bool ok;
       uchar v = static_cast<uchar>(edit->text().toInt(&ok));
       if (ok)
@@ -157,7 +163,7 @@ private:
     auto *edit = createValidatedDoubleEdit(dialog, spec.initialValue);
     form.addRow(spec.name, edit);
 
-    return [&]() {
+    return [&]() -> std::optional<double> {
       bool ok;
       double v = static_cast<double>(edit->text().toDouble(&ok));
       if (ok)
@@ -172,12 +178,12 @@ private:
     auto *cb = createComboBox(dialog, spec.restriction.variants, spec.initialValue);
     form.addRow(spec.name, cb);
 
-    return [&]() {
+    return [&]() -> std::optional<uint> {
       int v = cb->currentIndex();
       if (v < 0)
         return std::nullopt;
       else
-        return v;
+        return static_cast<uint>(v);
     };
   }
 

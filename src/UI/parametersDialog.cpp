@@ -40,7 +40,7 @@ kernelBorderDialog(QWidget *parent) {
   auto d = Dialog(parent, QString("Select kernel size and border type"), KernelSizes::inputSpec,
                   BorderTypes::inputSpec);
 
-  return transformTuple(d.run(), KernelSizes::select, BorderTypes::select);
+  return mapTuple(d.run(), KernelSizes::select, BorderTypes::select);
 }
 
 std::optional<std::tuple<KernelSizes::ValueType, BorderTypes::ValueType, double>>
@@ -48,7 +48,7 @@ gaussianBlurDialog(QWidget *parent) {
   auto d = Dialog(parent, QString("Enter Gaussian blur parameters"), KernelSizes::inputSpec,
                   BorderTypes::inputSpec, InputSpec<DialogValue::Double>{"σ (std dev)", {}, 1.0});
 
-  return transformTuple(d.run(), KernelSizes::select, BorderTypes::select, id<double>);
+  return mapTuple(d.run(), KernelSizes::select, BorderTypes::select, id<double>);
 }
 
 std::optional<std::tuple<KernelSizes::ValueType, BorderTypes::ValueType, SobelDirections::Enum>>
@@ -56,7 +56,7 @@ sobelDialog(QWidget *parent) {
   auto d = Dialog(parent, QString("Enter Sobel's filter parameters"), KernelSizes::inputSpec,
                   BorderTypes::inputSpec, SobelDirections::inputSpec);
 
-  return transformTuple(d.run(), KernelSizes::select, BorderTypes::select, SobelDirections::select);
+  return mapTuple(d.run(), KernelSizes::select, BorderTypes::select, SobelDirections::select);
 }
 
 std::optional<std::tuple<KernelSizes::ValueType, BorderTypes::ValueType, uchar, uchar>>
@@ -66,7 +66,7 @@ cannyDialog(QWidget *parent) {
              BorderTypes::inputSpec, InputSpec<DialogValue::Byte>{"Start (0-255)", {0, 255}, 0},
              InputSpec<DialogValue::Byte>{"End (0-255)", {0, 255}, 255});
 
-  return transformTuple(d.run(), KernelSizes::select, BorderTypes::select, id<uchar>, id<uchar>);
+  return mapTuple(d.run(), KernelSizes::select, BorderTypes::select, id<uchar>, id<uchar>);
 }
 
 std::optional<std::tuple<cv::Mat, BorderTypes::ValueType>>
@@ -75,7 +75,7 @@ choosableMaskDialog(QWidget *parent, std::vector<cv::Mat> mats, std::vector<QStr
                   InputSpec<DialogValue::ChoosableMask>{"Masks", {mats, names}, mats[0]},
                   BorderTypes::inputSpec);
 
-  return transformTuple(d.run(), id<cv::Mat>, BorderTypes::select);
+  return mapTuple(d.run(), id<cv::Mat>, BorderTypes::select);
 }
 
 std::optional<std::tuple<uint, uint>> windowsPairDialog(QWidget *parent, std::vector<QString> names,
