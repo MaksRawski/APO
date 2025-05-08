@@ -64,6 +64,9 @@ private:
   QAction *combineANDAction;
   QAction *combineORAction;
   QAction *combineXORAction;
+  QAction *customMaskAction;
+  QAction *custom2StageAction;
+
   void connectActions(const MdiChild &child);
   void disconnectActions(const MdiChild &child);
   std::vector<ActionConnection> getConnections() const;

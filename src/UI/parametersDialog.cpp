@@ -70,7 +70,7 @@ cannyDialog(QWidget *parent) {
 }
 
 std::optional<std::tuple<cv::Mat, BorderTypes::ValueType>>
-choosableMaskDialog(QWidget *parent, std::vector<cv::Mat> mats, std::vector<QString> names) {
+choosableMaskDialog(QWidget *parent, const std::vector<cv::Mat> &mats, const std::vector<QString> &names) {
   auto d = Dialog(parent, QString("Select a mask"),
                   InputSpec<DialogValue::ChoosableMask>{"Masks", {mats, names}, mats[0]},
                   BorderTypes::inputSpec);
@@ -78,8 +78,8 @@ choosableMaskDialog(QWidget *parent, std::vector<cv::Mat> mats, std::vector<QStr
   return mapTuple(d.run(), id<cv::Mat>, BorderTypes::select);
 }
 
-std::optional<std::tuple<uint, uint>> windowsPairDialog(QWidget *parent, std::vector<QString> names,
-                                                        uint activeWindowIndex) {
+std::optional<std::tuple<uint, uint>>
+windowsPairDialog(QWidget *parent, const std::vector<QString> &names, uint activeWindowIndex){
   uint secondWindowIndex = (activeWindowIndex + 1) % names.size();
   auto d =
       Dialog(parent, QString("Select two windows"),                                           //
@@ -90,7 +90,7 @@ std::optional<std::tuple<uint, uint>> windowsPairDialog(QWidget *parent, std::ve
 }
 
 std::optional<std::tuple<uint, uint, uchar>>
-windowsPairBlendDialog(QWidget *parent, std::vector<QString> names, uint activeWindowIndex) {
+windowsPairBlendDialog(QWidget *parent, const std::vector<QString> &names, uint activeWindowIndex) {
   uint secondWindowIndex = (activeWindowIndex + 1) % names.size();
   auto d =
       Dialog(parent, QString("Select two windows"),                                           //

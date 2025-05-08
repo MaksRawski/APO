@@ -58,6 +58,8 @@ public slots:
   void edgeDetectCanny();
   void sharpenLaplacian();
   void edgeDetectPrewitt();
+  void customMask();
+  void customTwoStageFilter();
 
 signals:
   void imageUpdated(const ImageWrapper &image) const;

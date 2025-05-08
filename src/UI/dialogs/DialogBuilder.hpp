@@ -3,26 +3,33 @@
 #include "MaskEditor.hpp"
 #include <QMessageBox>
 #include <opencv2/core/mat.hpp>
+#include <opencv2/opencv.hpp>
 #include <optional>
+#include <qboxlayout.h>
 #include <qcombobox.h>
+#include <qcontainerfwd.h>
 #include <qdialog.h>
 #include <qdialogbuttonbox.h>
 #include <qformlayout.h>
 #include <qlineedit.h>
+#include <qobject.h>
 #include <qtypes.h>
 #include <qvalidator.h>
+#include <qwidget.h>
 #include <tuple>
 #include <vector>
+
+#define DELETE_DEFAULT_CONSTRUCTORS(Type) Type() = delete;
 
 // Goal of each dialog is to get some values from the user.
 // This enum holds all possible abstract types of values that a dialog
 // may want to get from the user.
 enum class DialogValue {
-  Byte,          // a value in range 0-255 with potentially additional restriction
-  Double,        // a double precision value with no restrictions whatsoever
-  EnumVariant,   // any variant chosen from a provided list
-  Mask,          // a matrix of given size
-  ChoosableMask, // same as Mask but with option of choosing a builtin
+  Byte,           // a value in range 0-255 with potentially additional restriction
+  Double,         // a double precision value with no restrictions whatsoever
+  EnumVariant,    // any variant chosen from a provided list
+  ComposableMask, // a mask that is entered via 2 smaller masks
+  ChoosableMask,  // same as Mask but with option of choosing a builtin
 };
 
 // This weird template struct allows for associating some more data
@@ -53,17 +60,18 @@ template <> struct ValueTraits<DialogValue::Double> {
 // =======
 struct EnumVariantRestriction {
   std::vector<QString> variants;
+  DELETE_DEFAULT_CONSTRUCTORS(EnumVariantRestriction);
 };
 template <> struct ValueTraits<DialogValue::EnumVariant> {
   using Restriction = EnumVariantRestriction;
   using Result = uint; // index in the combobox
 };
 
-// ====
-// Mask
-// ====
-template <> struct ValueTraits<DialogValue::Mask> {
-  using Restriction = QSize;
+// ==============
+// ComposableMask
+// ==============
+template <> struct ValueTraits<DialogValue::ComposableMask> {
+  using Restriction = std::vector<uchar>;
   using Result = cv::Mat;
 };
 
@@ -73,6 +81,7 @@ template <> struct ValueTraits<DialogValue::Mask> {
 struct MasksRestriction {
   std::vector<cv::Mat> mats;
   std::vector<QString> descriptions;
+  DELETE_DEFAULT_CONSTRUCTORS(MasksRestriction);
 };
 template <> struct ValueTraits<DialogValue::ChoosableMask> {
   using Restriction = MasksRestriction; // NOTE: this won't be a hard restriction!
@@ -85,12 +94,13 @@ template <DialogValue V> struct InputSpec {
   QString name;
   Restriction restriction;
   ValueType initialValue;
+  DELETE_DEFAULT_CONSTRUCTORS(InputSpec);
 };
 
 QDialogButtonBox *createDialogButtons(QDialog *dialog);
 QLineEdit *createValidatedIntEdit(QWidget *parent, int min, int max, int initialValue);
 QLineEdit *createValidatedDoubleEdit(QWidget *parent, int initialValue);
-QComboBox *createComboBox(QWidget *parent, std::vector<QString> variants, uint initialIndex);
+QComboBox *createComboBox(std::vector<QString> variants, uint initialIndex);
 
 // Class for declarative creation of dialog windows.
 template <DialogValue... Values> class Dialog {
@@ -104,11 +114,12 @@ public:
     dialog = new QDialog(parent);
     dialog->setWindowTitle(title);
 
-    QFormLayout form(dialog);
+    QFormLayout *form = new QFormLayout(dialog);
+    dialog->setLayout(form);
     // create appropriate inputs adding them to the form while returning "accessors"
-    accessors = std::make_tuple(createInput(inputs, form)...);
+    accessors = std::make_tuple(createInput(inputs, *form)...);
 
-    form.addRow(createDialogButtons(dialog));
+    form->addRow(createDialogButtons(dialog));
   }
 
   std::optional<ResultTuple> run() const {
@@ -119,7 +130,8 @@ public:
         std::apply([](auto &&...accessors) { return std::make_tuple(accessors()...); }, accessors);
 
     bool allOptionalsValid = true;
-    std::apply([&](const auto &...opt) { ((allOptionalsValid &= opt.has_value()), ...); }, optionals);
+    std::apply([&](const auto &...opt) { ((allOptionalsValid &= opt.has_value()), ...); },
+               optionals);
 
     if (!allOptionalsValid) {
       QMessageBox::critical(dialog, "Error", "Invalid input.");
@@ -137,10 +149,6 @@ private:
 
   QDialog *dialog;
   std::tuple<Accessor<Values>...> accessors;
-  // NOTE: Since MaskEditor is not a QWidget it's therefore not managed by Qt.
-  // So to avoid memory leaks, all of its instances have to be tied to this class so that they can
-  // be dropped once the dialog is closed.
-  std::vector<MaskEditor> maskEditors;
 
   Accessor<DialogValue::Byte> //
   createInput(const InputSpec<DialogValue::Byte> &spec, QFormLayout &form) {
@@ -148,7 +156,7 @@ private:
                                         spec.initialValue);
     form.addRow(spec.name, edit);
 
-    return [&]() -> std::optional<uchar> {
+    return [edit]() -> std::optional<uchar> {
       bool ok;
       uchar v = static_cast<uchar>(edit->text().toInt(&ok));
       if (ok)
@@ -163,7 +171,7 @@ private:
     auto *edit = createValidatedDoubleEdit(dialog, spec.initialValue);
     form.addRow(spec.name, edit);
 
-    return [&]() -> std::optional<double> {
+    return [edit]() -> std::optional<double> {
       bool ok;
       double v = static_cast<double>(edit->text().toDouble(&ok));
       if (ok)
@@ -175,10 +183,10 @@ private:
 
   Accessor<DialogValue::EnumVariant> //
   createInput(const InputSpec<DialogValue::EnumVariant> &spec, QFormLayout &form) {
-    auto *cb = createComboBox(dialog, spec.restriction.variants, spec.initialValue);
+    auto *cb = createComboBox(spec.restriction.variants, spec.initialValue);
     form.addRow(spec.name, cb);
 
-    return [&]() -> std::optional<uint> {
+    return [cb]() -> std::optional<uint> {
       int v = cb->currentIndex();
       if (v < 0)
         return std::nullopt;
@@ -187,38 +195,56 @@ private:
     };
   }
 
-  Accessor<DialogValue::Mask> //
-  createInput(const InputSpec<DialogValue::Mask> &spec, QFormLayout &form) {
+  Accessor<DialogValue::ComposableMask> //
+  createInput(const InputSpec<DialogValue::ComposableMask> &spec, QFormLayout &form) {
     cv::Mat mat = spec.initialValue;
-    auto mask = MaskEditor(dialog, QSize(mat.cols, mat.rows));
-    form.addItem(&mask.getGrid());
+    // TODO: combobox to choose size and some builtins maybe?
+    auto mask1 = new MaskEditor(dialog, QSize(mat.cols, mat.rows));
+    auto mask2 = new MaskEditor(dialog, QSize(mat.cols, mat.rows));
+    auto maskRes = new MaskEditor(dialog, QSize(mat.cols * 2 - 1, mat.rows * 2 - 1));
+    // maskRes->setReadOnly(true);
 
-    // for the accessor to be able to access the current mask we must provide it an index to
-    // maskEditors at which this mask is going to be stored
-    uint i = maskEditors.size();
-    maskEditors.push_back(mask);
+    auto masksContainer = new QWidget(dialog);
+    auto layout = new QHBoxLayout(masksContainer);
+    layout->addWidget(mask1);
+    layout->addWidget(mask2);
+    masksContainer->setLayout(layout);
+    form.addRow(masksContainer);
 
-    return [this, i]() { return maskEditors[i].getMask(); };
+    form.addRow(maskRes);
+
+
+    auto maskChanged = [mask1, mask2, maskRes]() {
+      auto m1 = mask1->getMask();
+      auto m2 = mask2->getMask();
+      if (!m1.has_value() || !m2.has_value())
+        return;
+
+      cv::Mat combined;
+      cv::filter2D(m1.value(), combined, -1, m2.value(), cv::Point(-1, -1), 0, cv::BORDER_CONSTANT);
+      maskRes->setMask(combined);
+    };
+
+    QObject::connect(mask1, &MaskEditor::maskChanged, maskChanged);
+    QObject::connect(mask2, &MaskEditor::maskChanged, maskChanged);
+
+    return [maskRes]() { return maskRes->getMask(); };
   }
 
   Accessor<DialogValue::ChoosableMask> //
   createInput(const InputSpec<DialogValue::ChoosableMask> &spec, QFormLayout &form) {
-    auto *cb = createComboBox(dialog, spec.restriction.descriptions, 0);
+    auto *cb = createComboBox(spec.restriction.descriptions, 0);
     form.addRow(spec.name, cb);
 
     cv::Mat mat = spec.initialValue;
-    auto mask = MaskEditor(dialog, QSize(mat.cols, mat.rows));
-    form.addItem(&mask.getGrid());
+    auto mask = new MaskEditor(dialog, QSize(mat.cols, mat.rows));
+    mask->setMask(mat);
+    form.addRow(mask);
 
     // we update the MaskEditor anytime a ComboBox is changed
     QObject::connect(cb, &QComboBox::currentIndexChanged,
-                     [&](uint index) { mask.setMask(spec.restriction.mats[index]); });
+                     [mask, spec](uint index) { mask->setMask(spec.restriction.mats[index]); });
 
-    // for the accessor to be able to access the current mask we must provide it an index to
-    // maskEditors at which this mask is going to be stored
-    uint i = maskEditors.size();
-    maskEditors.push_back(mask);
-
-    return [this, i]() { return maskEditors[i].getMask(); };
+    return [mask]() { return mask->getMask(); };
   }
 };

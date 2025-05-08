@@ -51,19 +51,24 @@ void MainWindow::setupMenuBar() {
   rangeStretchAction = imageContrastMenu->addAction("Range &stretch");
   posterizeAction = imageContrastMenu->addAction("&Posterize");
 
-  QMenu *imageBlurMenu = imageMenu->addMenu("&Blur");
-  blurMeanAction = imageBlurMenu->addAction("&Mean");
-  blurMedianAction = imageBlurMenu->addAction("Me&dian");
-  blurGaussianAction = imageBlurMenu->addAction("&Gaussian");
+  QMenu *filterMenu = menuBar()->addMenu("Fi&lter");
+  QMenu *filterBlurMenu = filterMenu->addMenu("&Blur");
+  blurMeanAction = filterBlurMenu->addAction("&Mean");
+  blurMedianAction = filterBlurMenu->addAction("Me&dian");
+  blurGaussianAction = filterBlurMenu->addAction("&Gaussian");
 
-  QMenu *imageEdgeDetectMenu = imageMenu->addMenu("&Edge detect");
-  edgeDetectSobelAction = imageEdgeDetectMenu->addAction("&Sobel");
-  edgeDetectLaplacianAction = imageEdgeDetectMenu->addAction("&Laplacian");
-  edgeDetectCannyAction = imageEdgeDetectMenu->addAction("&Canny");
-  edgeDetectPrewittAction = imageEdgeDetectMenu->addAction("&Prewitt");
+  QMenu *filterEdgeDetectMenu = filterMenu->addMenu("&Edge detect");
+  edgeDetectSobelAction = filterEdgeDetectMenu->addAction("&Sobel");
+  edgeDetectLaplacianAction = filterEdgeDetectMenu->addAction("&Laplacian");
+  edgeDetectCannyAction = filterEdgeDetectMenu->addAction("&Canny");
+  edgeDetectPrewittAction = filterEdgeDetectMenu->addAction("&Prewitt");
 
-  QMenu *imageSharpenMenu = imageMenu->addMenu("&Sharpen");
-  sharpenLaplacianAction = imageSharpenMenu->addAction("&Laplacian");
+  QMenu *filterSharpenMenu = filterMenu->addMenu("&Sharpen");
+  sharpenLaplacianAction = filterSharpenMenu->addAction("&Laplacian");
+
+  QMenu *filterCustomMenu = filterMenu->addMenu("&Custom");
+  customMaskAction = filterCustomMenu->addAction("&Mask");
+  custom2StageAction = filterCustomMenu->addAction("2-&Stage");
 
   QMenu *imageCombineMenu = imageMenu->addMenu("Co&mbine");
   combineAddAction = imageCombineMenu->addAction("&Add");
@@ -269,6 +274,8 @@ std::vector<ActionConnection> MainWindow::getConnections() const {
       {edgeDetectCannyAction, &MdiChild::edgeDetectCanny},
       {sharpenLaplacianAction, &MdiChild::sharpenLaplacian},
       {edgeDetectPrewittAction, &MdiChild::edgeDetectPrewitt},
+      {customMaskAction, &MdiChild::customMask},
+      {custom2StageAction, &MdiChild::customTwoStageFilter},
   };
 }
 

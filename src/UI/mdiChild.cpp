@@ -1,10 +1,13 @@
 #include "mdiChild.hpp"
 #include "../imageProcessor.hpp"
+#include "dialogs/DialogBuilder.hpp"
+#include "dialogs/utils.hpp"
 #include "imageLabel.hpp"
 #include "parametersDialog.hpp"
 #include <QFormLayout>
 #include <QLineEdit>
 #include <QPixmap>
+#include <QScrollBar>
 #include <QVBoxLayout>
 #include <opencv2/core.hpp>
 #include <opencv2/core/hal/interface.h>
@@ -12,10 +15,10 @@
 #include <qdialog.h>
 #include <qdialogbuttonbox.h>
 #include <qfiledialog.h>
-#include <QScrollBar>
 #include <qscrollarea.h>
 #include <qscrollbar.h>
 #include <stdexcept>
+#include <vector>
 
 using imageProcessor::applyLUT;
 using imageProcessor::LUT;
@@ -77,17 +80,17 @@ void MdiChild::setImage(const ImageWrapper &image) {
 }
 
 namespace {
-  struct ScrollbarsValues{
-    int horizontal, vertical;
-  };
-  ScrollbarsValues getScrollbarsValues(const QScrollArea &scrollArea) {
-    return ScrollbarsValues{scrollArea.horizontalScrollBar()->value(),
-                            scrollArea.verticalScrollBar()->value()};
-  }
-  void setScrollbarsValues(QScrollArea &scrollArea, ScrollbarsValues values) {
-    scrollArea.horizontalScrollBar()->setValue(values.horizontal);
-    scrollArea.verticalScrollBar()->setValue(values.vertical);
-  }
+struct ScrollbarsValues {
+  int horizontal, vertical;
+};
+ScrollbarsValues getScrollbarsValues(const QScrollArea &scrollArea) {
+  return ScrollbarsValues{scrollArea.horizontalScrollBar()->value(),
+                          scrollArea.verticalScrollBar()->value()};
+}
+void setScrollbarsValues(QScrollArea &scrollArea, ScrollbarsValues values) {
+  scrollArea.horizontalScrollBar()->setValue(values.horizontal);
+  scrollArea.verticalScrollBar()->setValue(values.vertical);
+}
 } // namespace
 
 // sets an image but maintains window size, image scale and scrollbars' positions
@@ -146,8 +149,7 @@ void MdiChild::setImageName(QString name) {
   setWindowTitle(QString("[%1] %2").arg(QString::fromStdString(imageFormat), name));
 }
 
-
-QScrollArea& MdiChild::getScrollArea(int index) const {
+QScrollArea &MdiChild::getScrollArea(int index) const {
   switch (index) {
   case 0:
     return *scrollArea;
@@ -162,7 +164,7 @@ QScrollArea& MdiChild::getScrollArea(int index) const {
   }
 }
 
-ImageLabel& MdiChild::getImageLabel(int index) const {
+ImageLabel &MdiChild::getImageLabel(int index) const {
   switch (index) {
   case 0:
     return *imageLabel;
@@ -177,7 +179,7 @@ ImageLabel& MdiChild::getImageLabel(int index) const {
   }
 }
 
-const ImageWrapper& MdiChild::getImageWrapper(int index) const {
+const ImageWrapper &MdiChild::getImageWrapper(int index) const {
   switch (index) {
   case 0:
     return imageWrapper;
@@ -225,7 +227,8 @@ QString MdiChild::getImageNameSuffix() const {
 void MdiChild::negate() { swapImage(applyLUT(imageWrapper, imageProcessor::negate())); }
 
 void MdiChild::regenerateChannels() {
-  if (imageWrapper.getMat().channels() != 3) return;
+  if (imageWrapper.getMat().channels() != 3)
+    return;
 
   std::vector<ImageWrapper> imageWrappers = imageWrapper.splitChannels();
 
@@ -258,6 +261,7 @@ void MdiChild::equalize() { swapImage(imageProcessor::equalizeChannels(imageWrap
 
 void MdiChild::rangeStretch() {
   auto params = rangeStretchDialog(this);
+
   if (!params.has_value())
     return;
 
@@ -407,4 +411,21 @@ void MdiChild::edgeDetectPrewitt() {
 
   cv::filter2D(imageWrapper.getMat(), out, -1, mask, cv::Point(-1, -1), 0, borderType);
   swapImage(out);
+}
+
+void MdiChild::customMask() {}
+
+void MdiChild::customTwoStageFilter() {
+  auto res = Dialog(this, QString("Enter a mask"),
+                    InputSpec<DialogValue::ComposableMask>{"Mask", KernelSizes::values,
+                                                           LaplacianMasks::mats[0]}, BorderTypes::inputSpec)
+                 .run();
+  if (!res.has_value())
+    return;
+  auto [mask, borderType] = res.value();
+  cv::Mat out;
+
+  cv::filter2D(imageWrapper.getMat(), out, -1, mask, cv::Point(-1, -1), 0, borderType);
+  swapImage(out);
+
 }

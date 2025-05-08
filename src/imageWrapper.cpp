@@ -2,7 +2,6 @@
 #include <QImage>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
-#include <qdebug.h>
 #include <stdexcept>
 
 namespace PixelFormatUtils {

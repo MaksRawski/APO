@@ -19,6 +19,7 @@ qt6_wrap_cpp(MOC_SOURCES
   src/UI/mdiChild.hpp
   src/UI/imageLabel.hpp
   src/UI/histogramWidget.hpp
+  src/UI/dialogs/MaskEditor.hpp
 )
 
 add_executable(APO
