@@ -2,8 +2,8 @@
 
 #include "../imageWrapper.hpp"
 #include "imageLabel.hpp"
-#include <QScrollArea>
 #include <QMdiSubWindow>
+#include <QScrollArea>
 #include <QTabWidget>
 #include <qscrollbar.h>
 
@@ -34,9 +34,10 @@ public:
 private:
   void updateChannelNames();
   void regenerateChannels();
-  QScrollArea& getScrollArea(int index) const;
-  ImageLabel& getImageLabel(int index) const;
-  const ImageWrapper& getImageWrapper(int index) const;
+  QScrollArea &getScrollArea(int index) const;
+  ImageLabel &getImageLabel(int index) const;
+  const ImageWrapper &getImageWrapper(int index) const;
+  void applyDialogFilter(std::optional<std::tuple<cv::Mat, int>> res);
 
 public slots:
   void toRGB();

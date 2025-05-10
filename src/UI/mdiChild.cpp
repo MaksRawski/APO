@@ -389,43 +389,35 @@ void MdiChild::edgeDetectCanny() {
   swapImage(out);
 }
 
-void MdiChild::sharpenLaplacian() {
-  auto res = choosableMaskDialog(this, LaplacianMasks::mats, LaplacianMasks::names);
-  if (!res.has_value())
+void MdiChild::applyDialogFilter(std::optional<std::tuple<cv::Mat, int>> res) {
+   if (!res.has_value())
     return;
 
-  auto [mask, borderType] = res.value();
+  auto [kernel, borderType] = res.value();
   cv::Mat out;
 
-  cv::filter2D(imageWrapper.getMat(), out, -1, mask, cv::Point(-1, -1), 0, borderType);
+  kernel /= cv::sum(kernel)[0];
+
+  cv::filter2D(imageWrapper.getMat(), out, -1, kernel, cv::Point(-1, -1), 0, borderType);
   swapImage(out);
+}
+
+void MdiChild::sharpenLaplacian() {
+  auto res = choosableMaskDialog(this, LaplacianMasks::mats, LaplacianMasks::names);
+  applyDialogFilter(res);
 }
 
 void MdiChild::edgeDetectPrewitt() {
   auto res = choosableMaskDialog(this, PrewittMasks::mats, PrewittMasks::names);
-  if (!res.has_value())
-    return;
-
-  auto [mask, borderType] = res.value();
-  cv::Mat out;
-
-  cv::filter2D(imageWrapper.getMat(), out, -1, mask, cv::Point(-1, -1), 0, borderType);
-  swapImage(out);
+  applyDialogFilter(res);
 }
 
-void MdiChild::customMask() {}
+void MdiChild::customMask() {
+  auto res = choosableMaskDialog(this, {BoxKernel::mat3}, {});
+  applyDialogFilter(res);
+}
 
 void MdiChild::customTwoStageFilter() {
-  auto res = Dialog(this, QString("Enter a mask"),
-                    InputSpec<DialogValue::ComposableMask>{"Mask", KernelSizes::values,
-                                                           LaplacianMasks::mats[0]}, BorderTypes::inputSpec)
-                 .run();
-  if (!res.has_value())
-    return;
-  auto [mask, borderType] = res.value();
-  cv::Mat out;
-
-  cv::filter2D(imageWrapper.getMat(), out, -1, mask, cv::Point(-1, -1), 0, borderType);
-  swapImage(out);
-
+  auto res = twoStageFilterDialog(this);
+  applyDialogFilter(res);
 }

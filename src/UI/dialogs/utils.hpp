@@ -55,6 +55,10 @@ const auto inputSpec = InputSpec<DialogValue::EnumVariant>{"Direction", {strings
 constexpr Enum select(uint index) { return values[index]; }
 } // namespace SobelDirections
 
+namespace BoxKernel {
+const cv::Mat mat3 = (cv::Mat_<double>(3, 3) << 1, 1, 1, 1, 1, 1, 1, 1, 1);
+}
+
 namespace LaplacianMasks {
 const std::vector<cv::Mat> mats = {(cv::Mat_<double>(3, 3) << 0, -1, 0, -1, 5, -1, 0, -1, 0),
                                    (cv::Mat_<double>(3, 3) << -1, -1, -1, -1, 9, -1, -1, -1, -1),

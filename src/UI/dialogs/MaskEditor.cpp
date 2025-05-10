@@ -69,18 +69,15 @@ void MaskEditor::setReadOnly(bool v) {
 std::optional<cv::Mat> MaskEditor::getMask() const {
   cv::Mat mask(size.height(), size.width(), CV_64FC1);
 
-  std::cout << "get mask";
   for (int row = 0; row < size.height(); ++row) {
     auto *maskRowPtr = mask.ptr<double>(row);
     for (int col = 0; col < size.width(); ++col) {
       bool conversionOk;
       double val = lineEdits[row][col]->text().toDouble(&conversionOk);
-      std::cout << val << " ";
       if (!conversionOk)
         return std::nullopt;
       maskRowPtr[col] = val;
     }
-    std::cout << std::endl;
   }
   return mask;
 }

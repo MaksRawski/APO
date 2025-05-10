@@ -78,6 +78,16 @@ choosableMaskDialog(QWidget *parent, const std::vector<cv::Mat> &mats, const std
   return mapTuple(d.run(), id<cv::Mat>, BorderTypes::select);
 }
 
+std::optional<std::tuple<cv::Mat, BorderTypes::ValueType>>
+twoStageFilterDialog(QWidget *parent) {
+  auto d = Dialog(parent, QString("Convolve a mask"),
+                  InputSpec<DialogValue::ComposableMask>{"Mask", KernelSizes::values, BoxKernel::mat3},
+                  BorderTypes::inputSpec);
+
+  return mapTuple(d.run(), id<cv::Mat>, BorderTypes::select);
+}
+
+
 std::optional<std::tuple<uint, uint>>
 windowsPairDialog(QWidget *parent, const std::vector<QString> &names, uint activeWindowIndex){
   uint secondWindowIndex = (activeWindowIndex + 1) % names.size();

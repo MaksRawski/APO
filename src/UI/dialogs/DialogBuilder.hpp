@@ -2,7 +2,9 @@
 
 #include "MaskEditor.hpp"
 #include <QMessageBox>
+#include <opencv2/core/base.hpp>
 #include <opencv2/core/mat.hpp>
+#include <opencv2/core/types.hpp>
 #include <opencv2/opencv.hpp>
 #include <optional>
 #include <qboxlayout.h>
@@ -198,11 +200,12 @@ private:
   Accessor<DialogValue::ComposableMask> //
   createInput(const InputSpec<DialogValue::ComposableMask> &spec, QFormLayout &form) {
     cv::Mat mat = spec.initialValue;
-    // TODO: combobox to choose size and some builtins maybe?
     auto mask1 = new MaskEditor(dialog, QSize(mat.cols, mat.rows));
     auto mask2 = new MaskEditor(dialog, QSize(mat.cols, mat.rows));
+    mask1->setMask(spec.initialValue);
+    mask2->setMask(spec.initialValue);
+
     auto maskRes = new MaskEditor(dialog, QSize(mat.cols * 2 - 1, mat.rows * 2 - 1));
-    // maskRes->setReadOnly(true);
 
     auto masksContainer = new QWidget(dialog);
     auto layout = new QHBoxLayout(masksContainer);
@@ -213,17 +216,26 @@ private:
 
     form.addRow(maskRes);
 
-
     auto maskChanged = [mask1, mask2, maskRes]() {
       auto m1 = mask1->getMask();
       auto m2 = mask2->getMask();
       if (!m1.has_value() || !m2.has_value())
         return;
 
+      cv::Mat k1 = m1.value();
+      cv::Mat k2 = m2.value();
+      cv::Mat k2_flipped;
+      cv::flip(k2, k2_flipped, -1);
+
+      int pad = k1.rows / 2;
+      cv::Mat k1_padded;
+      cv::copyMakeBorder(k1, k1_padded, pad, pad, pad, pad, cv::BORDER_CONSTANT, cv::Scalar(0));
+
       cv::Mat combined;
-      cv::filter2D(m1.value(), combined, -1, m2.value(), cv::Point(-1, -1), 0, cv::BORDER_CONSTANT);
+      cv::filter2D(k1_padded, combined, -1, k2_flipped, cv::Point(-1, -1), 0, cv::BORDER_CONSTANT);
       maskRes->setMask(combined);
     };
+    maskChanged();
 
     QObject::connect(mask1, &MaskEditor::maskChanged, maskChanged);
     QObject::connect(mask2, &MaskEditor::maskChanged, maskChanged);
@@ -233,17 +245,26 @@ private:
 
   Accessor<DialogValue::ChoosableMask> //
   createInput(const InputSpec<DialogValue::ChoosableMask> &spec, QFormLayout &form) {
-    auto *cb = createComboBox(spec.restriction.descriptions, 0);
-    form.addRow(spec.name, cb);
+    bool cbVisible = true;
+    QComboBox *cb;
+
+    if (spec.restriction.descriptions.size() == 0) {
+      cbVisible = false;
+    } else {
+      cb = createComboBox(spec.restriction.descriptions, 0);
+      form.addRow(spec.name, cb);
+    }
 
     cv::Mat mat = spec.initialValue;
     auto mask = new MaskEditor(dialog, QSize(mat.cols, mat.rows));
     mask->setMask(mat);
     form.addRow(mask);
 
-    // we update the MaskEditor anytime a ComboBox is changed
-    QObject::connect(cb, &QComboBox::currentIndexChanged,
-                     [mask, spec](uint index) { mask->setMask(spec.restriction.mats[index]); });
+    if (cbVisible) {
+      // we update the MaskEditor anytime a ComboBox is changed
+      QObject::connect(cb, &QComboBox::currentIndexChanged,
+                       [mask, spec](uint index) { mask->setMask(spec.restriction.mats[index]); });
+    }
 
     return [mask]() { return mask->getMask(); };
   }
