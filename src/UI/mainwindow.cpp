@@ -43,40 +43,46 @@ void MainWindow::setupMenuBar() {
   splitChannelsAction = imageTypeMenu->addAction("Split &channels");
   splitChannelsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_C));
 
-  QMenu *imageContrastMenu = imageMenu->addMenu("&Contrast");
-  negateAction = imageContrastMenu->addAction("&Negate");
+  QMenu *operateMenu = menuBar()->addMenu("&Operate");
+  QMenu *operateContrastMenu = operateMenu->addMenu("&Contrast");
+  negateAction = operateContrastMenu->addAction("&Negate");
   negateAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_I));
-  normalizeAction = imageContrastMenu->addAction("Nor&malize");
-  equalizeAction = imageContrastMenu->addAction("&Equalize");
-  rangeStretchAction = imageContrastMenu->addAction("Range &stretch");
-  posterizeAction = imageContrastMenu->addAction("&Posterize");
+  normalizeAction = operateContrastMenu->addAction("Nor&malize");
+  equalizeAction = operateContrastMenu->addAction("&Equalize");
+  rangeStretchAction = operateContrastMenu->addAction("Range &stretch");
+  posterizeAction = operateContrastMenu->addAction("&Posterize");
 
-  QMenu *filterMenu = menuBar()->addMenu("Fi&lter");
-  QMenu *filterBlurMenu = filterMenu->addMenu("&Blur");
-  blurMeanAction = filterBlurMenu->addAction("&Mean");
-  blurMedianAction = filterBlurMenu->addAction("Me&dian");
-  blurGaussianAction = filterBlurMenu->addAction("&Gaussian");
+  QMenu *operateBlurMenu = operateMenu->addMenu("&Blur");
+  blurMeanAction = operateBlurMenu->addAction("&Mean");
+  blurMedianAction = operateBlurMenu->addAction("Me&dian");
+  blurGaussianAction = operateBlurMenu->addAction("&Gaussian");
 
-  QMenu *filterEdgeDetectMenu = filterMenu->addMenu("&Edge detect");
-  edgeDetectSobelAction = filterEdgeDetectMenu->addAction("&Sobel");
-  edgeDetectLaplacianAction = filterEdgeDetectMenu->addAction("&Laplacian");
-  edgeDetectCannyAction = filterEdgeDetectMenu->addAction("&Canny");
-  edgeDetectPrewittAction = filterEdgeDetectMenu->addAction("&Prewitt");
+  QMenu *operateEdgeDetectMenu = operateMenu->addMenu("&Edge detect");
+  edgeDetectSobelAction = operateEdgeDetectMenu->addAction("&Sobel");
+  edgeDetectLaplacianAction = operateEdgeDetectMenu->addAction("&Laplacian");
+  edgeDetectCannyAction = operateEdgeDetectMenu->addAction("&Canny");
+  edgeDetectPrewittAction = operateEdgeDetectMenu->addAction("&Prewitt");
 
-  QMenu *filterSharpenMenu = filterMenu->addMenu("&Sharpen");
-  sharpenLaplacianAction = filterSharpenMenu->addAction("&Laplacian");
+  QMenu *operateSharpenMenu = operateMenu->addMenu("&Sharpen");
+  sharpenLaplacianAction = operateSharpenMenu->addAction("&Laplacian");
 
-  QMenu *filterCustomMenu = filterMenu->addMenu("&Custom");
-  customMaskAction = filterCustomMenu->addAction("&Mask");
-  custom2StageAction = filterCustomMenu->addAction("2-&Stage");
+  QMenu *operateCustomMenu = operateMenu->addMenu("&Custom");
+  customMaskAction = operateCustomMenu->addAction("&Mask");
+  custom2StageAction = operateCustomMenu->addAction("2-&Stage filtering");
 
-  QMenu *imageCombineMenu = imageMenu->addMenu("Co&mbine");
+  QMenu *imageCombineMenu = imageMenu->addMenu("&Combine");
   combineAddAction = imageCombineMenu->addAction("&Add");
   combineSubAction = imageCombineMenu->addAction("&Sub");
   combineBlendAction = imageCombineMenu->addAction("&Blend");
   combineANDAction = imageCombineMenu->addAction("A&ND");
   combineORAction = imageCombineMenu->addAction("&OR");
   combineXORAction = imageCombineMenu->addAction("&XOR");
+
+  QMenu *operateMorphologyMenu = operateMenu->addMenu("&Morphology");
+  morphologyErosionAction = operateMorphologyMenu->addAction("&Erosion");
+  morphologyDilationAction = operateMorphologyMenu->addAction("&Dilation");
+  morphologyOpenAction = operateMorphologyMenu->addAction("&Open");
+  morphologyCloseAction = operateMorphologyMenu->addAction("&Close");
 
   QMenu *aboutMenu = menuBar()->addMenu("Info");
   aboutAction = aboutMenu->addAction("About");
@@ -276,6 +282,10 @@ std::vector<ActionConnection> MainWindow::getConnections() const {
       {edgeDetectPrewittAction, &MdiChild::edgeDetectPrewitt},
       {customMaskAction, &MdiChild::customMask},
       {custom2StageAction, &MdiChild::customTwoStageFilter},
+      {morphologyErosionAction, &MdiChild::morphologyErode},
+      {morphologyDilationAction, &MdiChild::morphologyDilate},
+      {morphologyOpenAction, &MdiChild::morphologyOpen},
+      {morphologyCloseAction, &MdiChild::morphologyClose},
   };
 }
 

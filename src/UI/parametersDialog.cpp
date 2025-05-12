@@ -70,7 +70,8 @@ cannyDialog(QWidget *parent) {
 }
 
 std::optional<std::tuple<cv::Mat, BorderTypes::ValueType>>
-choosableMaskDialog(QWidget *parent, const std::vector<cv::Mat> &mats, const std::vector<QString> &names) {
+choosableMaskDialog(QWidget *parent, const std::vector<cv::Mat> &mats,
+                    const std::vector<QString> &names) {
   auto d = Dialog(parent, QString("Select a mask"),
                   InputSpec<DialogValue::ChoosableMask>{"Masks", {mats, names}, mats[0]},
                   BorderTypes::inputSpec);
@@ -78,18 +79,17 @@ choosableMaskDialog(QWidget *parent, const std::vector<cv::Mat> &mats, const std
   return mapTuple(d.run(), id<cv::Mat>, BorderTypes::select);
 }
 
-std::optional<std::tuple<cv::Mat, BorderTypes::ValueType>>
-twoStageFilterDialog(QWidget *parent) {
-  auto d = Dialog(parent, QString("Convolve a mask"),
-                  InputSpec<DialogValue::ComposableMask>{"Mask", KernelSizes::values, BoxKernel::mat3},
-                  BorderTypes::inputSpec);
+std::optional<std::tuple<cv::Mat, BorderTypes::ValueType>> twoStageFilterDialog(QWidget *parent) {
+  auto d =
+      Dialog(parent, QString("Convolve a mask"),
+             InputSpec<DialogValue::ComposableMask>{"Mask", KernelSizes::values, BoxKernel::mat3},
+             BorderTypes::inputSpec);
 
   return mapTuple(d.run(), id<cv::Mat>, BorderTypes::select);
 }
 
-
 std::optional<std::tuple<uint, uint>>
-windowsPairDialog(QWidget *parent, const std::vector<QString> &names, uint activeWindowIndex){
+windowsPairDialog(QWidget *parent, const std::vector<QString> &names, uint activeWindowIndex) {
   uint secondWindowIndex = (activeWindowIndex + 1) % names.size();
   auto d =
       Dialog(parent, QString("Select two windows"),                                           //
@@ -109,4 +109,11 @@ windowsPairBlendDialog(QWidget *parent, const std::vector<QString> &names, uint 
              InputSpec<DialogValue::Byte>{"Blend percentage", {0, 100}, 50});
 
   return d.run();
+}
+
+std::optional<std::tuple<cv::Mat, BorderTypes::ValueType>>
+structuringElementDialog(QWidget *parent) {
+  auto d = Dialog(parent, QString("Select a structuring element"), StructuringElement::inputSpec,
+                  BorderTypes::inputSpec);
+  return mapTuple(d.run(), StructuringElement::select, BorderTypes::select);
 }

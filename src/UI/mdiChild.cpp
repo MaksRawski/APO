@@ -1,6 +1,5 @@
 #include "mdiChild.hpp"
 #include "../imageProcessor.hpp"
-#include "dialogs/DialogBuilder.hpp"
 #include "dialogs/utils.hpp"
 #include "imageLabel.hpp"
 #include "parametersDialog.hpp"
@@ -390,7 +389,7 @@ void MdiChild::edgeDetectCanny() {
 }
 
 void MdiChild::applyDialogFilter(std::optional<std::tuple<cv::Mat, int>> res) {
-   if (!res.has_value())
+  if (!res.has_value())
     return;
 
   auto [kernel, borderType] = res.value();
@@ -420,4 +419,54 @@ void MdiChild::customMask() {
 void MdiChild::customTwoStageFilter() {
   auto res = twoStageFilterDialog(this);
   applyDialogFilter(res);
+}
+
+void MdiChild::morphologyErode() {
+  auto res = structuringElementDialog(this);
+  if (!res.has_value())
+    return;
+
+  auto [kernel, borderType] = res.value();
+
+  cv::Mat out;
+  cv::erode(imageWrapper.getMat(), out, kernel, cv::Point(-1, -1), 1, borderType);
+  swapImage(out);
+}
+
+void MdiChild::morphologyDilate() {
+  auto res = structuringElementDialog(this);
+  if (!res.has_value())
+    return;
+
+  auto [kernel, borderType] = res.value();
+
+  cv::Mat out;
+  cv::dilate(imageWrapper.getMat(), out, kernel, cv::Point(-1, -1), 1, borderType);
+  swapImage(out);
+}
+
+void MdiChild::morphologyOpen() {
+  auto res = structuringElementDialog(this);
+  if (!res.has_value())
+    return;
+
+  auto [kernel, borderType] = res.value();
+
+  cv::Mat out;
+  cv::morphologyEx(imageWrapper.getMat(), out, cv::MORPH_OPEN, kernel, cv::Point(-1, -1), 1,
+                   borderType);
+  swapImage(out);
+}
+
+void MdiChild::morphologyClose() {
+  auto res = structuringElementDialog(this);
+  if (!res.has_value())
+    return;
+
+  auto [kernel, borderType] = res.value();
+
+  cv::Mat out;
+  cv::morphologyEx(imageWrapper.getMat(), out, cv::MORPH_CLOSE, kernel, cv::Point(-1, -1), 1,
+                   borderType);
+  swapImage(out);
 }

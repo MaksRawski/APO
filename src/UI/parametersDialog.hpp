@@ -33,3 +33,6 @@ windowsPairDialog(QWidget *parent, const std::vector<QString> &names, uint activ
 
 std::optional<std::tuple<uint, uint, uchar>>
 windowsPairBlendDialog(QWidget *parent, const std::vector<QString> &names, uint activeWindowIndex);
+
+std::optional<std::tuple<cv::Mat, BorderTypes::ValueType>>
+structuringElementDialog(QWidget *parent);

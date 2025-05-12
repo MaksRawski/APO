@@ -61,6 +61,10 @@ public slots:
   void edgeDetectPrewitt();
   void customMask();
   void customTwoStageFilter();
+  void morphologyErode();
+  void morphologyDilate();
+  void morphologyOpen();
+  void morphologyClose();
 
 signals:
   void imageUpdated(const ImageWrapper &image) const;

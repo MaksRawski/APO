@@ -66,6 +66,10 @@ private:
   QAction *combineXORAction;
   QAction *customMaskAction;
   QAction *custom2StageAction;
+  QAction *morphologyErosionAction;
+  QAction *morphologyDilationAction;
+  QAction *morphologyOpenAction;
+  QAction *morphologyCloseAction;
 
   void connectActions(const MdiChild &child);
   void disconnectActions(const MdiChild &child);

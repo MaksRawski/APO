@@ -1,5 +1,7 @@
 #pragma once
 #include "DialogBuilder.hpp"
+#include <opencv2/core/types.hpp>
+#include <opencv2/opencv.hpp>
 #include <vector>
 
 #include <QComboBox>
@@ -87,6 +89,14 @@ const std::vector<cv::Mat> mats = {
 };
 const std::vector<QString> names{"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
 } // namespace PrewittMasks
+
+namespace StructuringElement {
+const std::vector<std::tuple<cv::MorphShapes, cv::Size>> values = {
+    {cv::MorphShapes::MORPH_CROSS, cv::Size(3, 3)}, {cv::MorphShapes::MORPH_RECT, cv::Size(3,3)}};
+const std::vector<QString> names{"Cross 3x3", "Square 3x3"};
+const auto inputSpec = InputSpec<DialogValue::EnumVariant>{"Structuring element", {names}, 0};
+cv::Mat select(uint index);
+} // namespace StructuringElement
 
 namespace DialogResultsUtils {
 template <typename Tuple, typename... Funcs, std::size_t... Is>
