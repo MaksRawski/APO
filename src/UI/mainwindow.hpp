@@ -70,6 +70,7 @@ private:
   QAction *morphologyDilationAction;
   QAction *morphologyOpenAction;
   QAction *morphologyCloseAction;
+  QAction *morphologySkeletonizeAction;
 
   void connectActions(const MdiChild &child);
   void disconnectActions(const MdiChild &child);

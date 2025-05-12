@@ -129,22 +129,44 @@ cv::Mat applyToChannels(const cv::Mat &mat, std::function<cv::Mat(const cv::Mat)
 }
 
 cv::Mat normalizeChannels(const cv::Mat &mat) {
-  return applyToChannels(mat, [](const cv::Mat &channel){
+  return applyToChannels(mat, [](const cv::Mat &channel) {
     double min, max;
     cv::minMaxLoc(channel, &min, &max);
-    LUT stretched = imageProcessor::stretch(static_cast<uchar>(min), static_cast<uchar>(max), 0, 255);
+    LUT stretched =
+        imageProcessor::stretch(static_cast<uchar>(min), static_cast<uchar>(max), 0, 255);
     return applyLUTcv(channel, stretched);
   });
 }
 
 cv::Mat equalizeChannels(const cv::Mat &mat) {
-  return applyToChannels(mat, [](const cv::Mat &channel){
-    return applyLUTcv(channel, equalizeLUT(channel));
-  });
+  return applyToChannels(
+      mat, [](const cv::Mat &channel) { return applyLUTcv(channel, equalizeLUT(channel)); });
 }
 cv::Mat rangeStretchChannels(const cv::Mat &mat, uchar p1, uchar p2, uchar q3, uchar q4) {
-  return applyToChannels(mat, [=](const cv::Mat &channel){
+  return applyToChannels(mat, [=](const cv::Mat &channel) {
     return applyLUTcv(channel, imageProcessor::stretch(p1, p2, q3, q4));
+  });
+}
+
+cv::Mat skeletonize(const cv::Mat &mat, const cv::Mat &structuringElement, int borderType) {
+  return applyToChannels(mat, [structuringElement, borderType](cv::Mat channel) {
+    cv::Mat skel(channel.size(), CV_8UC1, cv::Scalar(0));
+    cv::Mat temp;
+    cv::Mat eroded;
+    cv::Mat img = channel.clone();
+
+    while (true) {
+      cv::erode(img, eroded, structuringElement, cv::Point(-1, -1), 1, borderType);
+      cv::dilate(eroded, temp, structuringElement, cv::Point(-1, -1), 1, borderType);
+      cv::subtract(img, temp, temp);
+      cv::bitwise_or(skel, temp, skel);
+      eroded.copyTo(img);
+
+      if (cv::countNonZero(img) == 0)
+        break;
+    }
+
+    return skel;
   });
 }
 } // namespace imageProcessor

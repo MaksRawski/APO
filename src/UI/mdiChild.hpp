@@ -65,6 +65,7 @@ public slots:
   void morphologyDilate();
   void morphologyOpen();
   void morphologyClose();
+  void morphologySkeletonize();
 
 signals:
   void imageUpdated(const ImageWrapper &image) const;

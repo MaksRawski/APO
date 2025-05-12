@@ -470,3 +470,14 @@ void MdiChild::morphologyClose() {
                    borderType);
   swapImage(out);
 }
+
+void MdiChild::morphologySkeletonize() {
+  auto res = structuringElementDialog(this);
+  if (!res.has_value())
+    return;
+
+  auto [kernel, borderType] = res.value();
+
+  cv::Mat out = imageProcessor::skeletonize(imageWrapper.getMat(), kernel, borderType);
+  swapImage(out);
+}

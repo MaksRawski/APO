@@ -83,6 +83,7 @@ void MainWindow::setupMenuBar() {
   morphologyDilationAction = operateMorphologyMenu->addAction("&Dilation");
   morphologyOpenAction = operateMorphologyMenu->addAction("&Open");
   morphologyCloseAction = operateMorphologyMenu->addAction("&Close");
+  morphologySkeletonizeAction = operateMorphologyMenu->addAction("&Skeletonize");
 
   QMenu *aboutMenu = menuBar()->addMenu("Info");
   aboutAction = aboutMenu->addAction("About");
@@ -286,6 +287,7 @@ std::vector<ActionConnection> MainWindow::getConnections() const {
       {morphologyDilationAction, &MdiChild::morphologyDilate},
       {morphologyOpenAction, &MdiChild::morphologyOpen},
       {morphologyCloseAction, &MdiChild::morphologyClose},
+      {morphologySkeletonizeAction, &MdiChild::morphologySkeletonize},
   };
 }
 
