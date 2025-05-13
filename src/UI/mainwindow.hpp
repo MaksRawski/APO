@@ -71,6 +71,7 @@ private:
   QAction *morphologyOpenAction;
   QAction *morphologyCloseAction;
   QAction *morphologySkeletonizeAction;
+  QAction *operateHoughAction;
 
   void connectActions(const MdiChild &child);
   void disconnectActions(const MdiChild &child);

@@ -85,6 +85,8 @@ void MainWindow::setupMenuBar() {
   morphologyCloseAction = operateMorphologyMenu->addAction("&Close");
   morphologySkeletonizeAction = operateMorphologyMenu->addAction("&Skeletonize");
 
+  operateHoughAction = operateMenu->addAction("&Hough transform");
+
   QMenu *aboutMenu = menuBar()->addMenu("Info");
   aboutAction = aboutMenu->addAction("About");
 
@@ -288,6 +290,7 @@ std::vector<ActionConnection> MainWindow::getConnections() const {
       {morphologyOpenAction, &MdiChild::morphologyOpen},
       {morphologyCloseAction, &MdiChild::morphologyClose},
       {morphologySkeletonizeAction, &MdiChild::morphologySkeletonize},
+      {operateHoughAction, &MdiChild::houghTransform},
   };
 }
 
@@ -302,9 +305,9 @@ std::vector<MainWindowActionConnection> MainWindow::getMainWindowActions() const
           {combineXORAction, &MainWindow::combineXOR}};
 }
 
-std::vector<MdiChild*> MainWindow::getMdiChildren() const {
+std::vector<MdiChild *> MainWindow::getMdiChildren() const {
   const QList<QMdiSubWindow *> subWindows = mdiArea->subWindowList();
-  std::vector<MdiChild*> mdiChildren;
+  std::vector<MdiChild *> mdiChildren;
   mdiChildren.reserve(subWindows.size());
 
   for (QMdiSubWindow *window : subWindows) {
@@ -332,7 +335,8 @@ void MainWindow::limitWindowSize(MdiChild &child) const {
 }
 
 void MainWindow::createImageWindow(const ImageWrapper &image) {
-  disconnectActions(*activeChild);
+  if (activeChild != nullptr)
+    disconnectActions(*activeChild);
   activeChild = new MdiChild(image);
   connectActions(*activeChild);
 
@@ -402,7 +406,7 @@ int getActiveWindowIndex(MdiChild *activeChild, const std::vector<QString> names
 } // namespace
 
 void MainWindow::combineBlend() {
-  std::vector<MdiChild*> windows = getMdiChildren();
+  std::vector<MdiChild *> windows = getMdiChildren();
   std::vector<QString> names = getWindowNames(windows);
   int activeWindowIndex = getActiveWindowIndex(activeChild, names);
 
@@ -414,7 +418,8 @@ void MainWindow::combineBlend() {
   std::tie(firstI, secondI, blendValue) = res.value();
   cv::Mat first = windows[firstI]->getImage().getMat();
   cv::Mat second = windows[secondI]->getImage().getMat();
-  if (!checkDimensions(this, first, second)) return;
+  if (!checkDimensions(this, first, second))
+    return;
 
   double blendFactor = blendValue / 100.0;
   cv::Mat out = first * blendFactor + second * (1 - blendFactor);
@@ -423,7 +428,7 @@ void MainWindow::combineBlend() {
 }
 
 void MainWindow::combine(cv::Mat (*op)(cv::Mat, cv::Mat)) {
-  std::vector<MdiChild*> windows = getMdiChildren();
+  std::vector<MdiChild *> windows = getMdiChildren();
   std::vector<QString> names = getWindowNames(windows);
   int activeWindowIndex = getActiveWindowIndex(activeChild, names);
 
@@ -435,7 +440,8 @@ void MainWindow::combine(cv::Mat (*op)(cv::Mat, cv::Mat)) {
   std::tie(firstI, secondI) = res.value();
   cv::Mat first = windows[firstI]->getImage().getMat();
   cv::Mat second = windows[secondI]->getImage().getMat();
-  if (!checkDimensions(this, first, second)) return;
+  if (!checkDimensions(this, first, second))
+    return;
 
   cv::Mat out = op(first, second);
   createImageWindow(ImageWrapper(out));

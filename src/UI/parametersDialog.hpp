@@ -23,10 +23,10 @@ std::optional<std::tuple<KernelSizes::ValueType, BorderTypes::ValueType, uchar, 
 cannyDialog(QWidget *parent);
 
 std::optional<std::tuple<cv::Mat, BorderTypes::ValueType>>
-choosableMaskDialog(QWidget *parent, const std::vector<cv::Mat> &mats, const std::vector<QString> &names);
+choosableMaskDialog(QWidget *parent, const std::vector<cv::Mat> &mats,
+                    const std::vector<QString> &names);
 
-std::optional<std::tuple<cv::Mat, BorderTypes::ValueType>>
-twoStageFilterDialog(QWidget *parent);
+std::optional<std::tuple<cv::Mat, BorderTypes::ValueType>> twoStageFilterDialog(QWidget *parent);
 
 std::optional<std::tuple<uint, uint>>
 windowsPairDialog(QWidget *parent, const std::vector<QString> &names, uint activeWindowIndex);
@@ -36,3 +36,5 @@ windowsPairBlendDialog(QWidget *parent, const std::vector<QString> &names, uint 
 
 std::optional<std::tuple<cv::Mat, BorderTypes::ValueType>>
 structuringElementDialog(QWidget *parent);
+
+std::optional<HoughLines::Parameters> houghLinesDialog(QWidget *parent);

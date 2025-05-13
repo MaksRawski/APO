@@ -66,6 +66,7 @@ public slots:
   void morphologyOpen();
   void morphologyClose();
   void morphologySkeletonize();
+  void houghTransform();
 
 signals:
   void imageUpdated(const ImageWrapper &image) const;

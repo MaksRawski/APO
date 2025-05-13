@@ -481,3 +481,36 @@ void MdiChild::morphologySkeletonize() {
   cv::Mat out = imageProcessor::skeletonize(imageWrapper.getMat(), kernel, borderType);
   swapImage(out);
 }
+
+void MdiChild::houghTransform() {
+  // TODO: add parameters for display
+  auto res = houghLinesDialog(this);
+  if (!res.has_value())
+    return;
+
+  auto params = res.value();
+
+  const double theta = CV_PI * params.thetaDeg / 180.0;
+  std::vector<cv::Vec4i> lines;
+
+  std::vector<cv::Vec2f> linesPolar;
+  cv::HoughLines(imageWrapper.getMat(), linesPolar, params.rho, theta, params.threshold);
+
+  // Convert to endpoints (approx)
+  for (const auto &l : linesPolar) {
+    float r = l[0], t = l[1];
+    double a = std::cos(t), b = std::sin(t);
+    double x0 = a * r, y0 = b * r;
+    int x1 = cvRound(x0 + 1000 * (-b));
+    int y1 = cvRound(y0 + 1000 * (a));
+    int x2 = cvRound(x0 - 1000 * (-b));
+    int y2 = cvRound(y0 - 1000 * (a));
+    lines.push_back(cv::Vec4i(x1, y1, x2, y2));
+  }
+
+  cv::Mat out = imageWrapper.getMat();
+  for (const auto &l : lines)
+    cv::line(out, {l[0], l[1]}, {l[2], l[3]}, cv::Scalar(255, 0, 0), 2);
+
+  swapImage(out);
+}
