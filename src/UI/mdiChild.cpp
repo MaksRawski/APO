@@ -445,7 +445,7 @@ void MdiChild::houghTransform() {
                        lines.push_back(cv::Vec4i(x1, y1, x2, y2));
                      }
 
-                     cv::Mat out = imageWrapper.getMat();
+                     cv::Mat out = imageWrapper.getMat().clone();
                      for (const auto &l : lines)
                        cv::line(out, {l[0], l[1]}, {l[2], l[3]}, cv::Scalar(255, 0, 0), 2);
                      return out;

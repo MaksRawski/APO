@@ -216,8 +216,10 @@ void MainWindow::toggleOptions(const ImageWrapper &image) {
   PixelFormat format = image.getFormat();
   if (format == PixelFormat::Grayscale8) {
     splitChannelsAction->setEnabled(false);
+    operateHoughAction->setEnabled(true);
   } else {
     splitChannelsAction->setEnabled(true);
+    operateHoughAction->setEnabled(false);
   }
 }
 
