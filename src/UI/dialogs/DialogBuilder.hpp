@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../../imageWrapper.hpp"
+#include "../ImageViewer.hpp"
 #include "MaskEditor.hpp"
 #include <QMessageBox>
 #include <opencv2/core/base.hpp>
@@ -15,6 +17,7 @@
 #include <qformlayout.h>
 #include <qlineedit.h>
 #include <qobject.h>
+#include <qpixmap.h>
 #include <qtypes.h>
 #include <qvalidator.h>
 #include <qwidget.h>
@@ -27,77 +30,111 @@
 // This enum holds all possible abstract types of values that a dialog
 // may want to get from the user.
 enum class DialogValue {
-  Byte,           // a value in range 0-255 with potentially additional restriction
+  Int,            // an integer with range restriction
   Double,         // a double precision value with no restrictions whatsoever
   EnumVariant,    // any variant chosen from a provided list
-  ComposableMask, // a mask that is entered via 2 smaller masks
-  ChoosableMask,  // same as Mask but with option of choosing a builtin
+  ComposableMask, // a 5x5 mask that is achieved by convolution of two 3x3 masks
+  ChoosableMask,  // a mask that can be chosen from a list and modified by the user
 };
 
-// This weird template struct allows for associating some more data
-// with each variant of the Value value
-template <DialogValue V> struct ValueTraits;
+// This weird template struct allows for associating data
+// with each variant of the DialogValue through specializations.
+// Second template argument allows those specializations to also be generic.
+template <DialogValue V, typename T> struct ValueTraits;
 
 // ====
 // Byte
 // ====
-struct ByteRestriction {
-  uchar low, high;
+struct IntRestriction {
+  int low, high;
 };
-template <> struct ValueTraits<DialogValue::Byte> {
-  using Restriction = ByteRestriction;
-  using Result = uchar;
+template <> struct ValueTraits<DialogValue::Int, void> {
+  using Restriction = IntRestriction;
+  using RawResult = int;
+  using MappedResult = RawResult;
 };
 
 // ======
 // Double
 // ======
-template <> struct ValueTraits<DialogValue::Double> {
+template <> struct ValueTraits<DialogValue::Double, void> {
   using Restriction = struct {};
-  using Result = double;
+  using RawResult = double;
+  using MappedResult = RawResult;
 };
 
 // =======
 // Variant
 // =======
 struct EnumVariantRestriction {
-  std::vector<QString> variants;
+  std::vector<QString> names;
   DELETE_DEFAULT_CONSTRUCTORS(EnumVariantRestriction);
 };
-template <> struct ValueTraits<DialogValue::EnumVariant> {
+template <typename T> struct ValueTraits<DialogValue::EnumVariant, T> {
   using Restriction = EnumVariantRestriction;
-  using Result = uint; // index in the combobox
+  using RawResult = uint;
+  using MappedResult = T;
 };
 
 // ==============
 // ComposableMask
 // ==============
-template <> struct ValueTraits<DialogValue::ComposableMask> {
-  using Restriction = std::vector<uchar>;
-  using Result = cv::Mat;
+template <> struct ValueTraits<DialogValue::ComposableMask, void> {
+  using Restriction = std::vector<uint>;
+  using RawResult = cv::Mat;
+  using MappedResult = RawResult;
 };
 
 // =============
 // ChoosableMask
 // =============
-struct MasksRestriction {
+struct ChoosableMasks {
   std::vector<cv::Mat> mats;
   std::vector<QString> descriptions;
-  DELETE_DEFAULT_CONSTRUCTORS(MasksRestriction);
+  DELETE_DEFAULT_CONSTRUCTORS(ChoosableMasks);
 };
-template <> struct ValueTraits<DialogValue::ChoosableMask> {
-  using Restriction = MasksRestriction; // NOTE: this won't be a hard restriction!
-  using Result = cv::Mat;
+template <> struct ValueTraits<DialogValue::ChoosableMask, void> {
+  using Restriction = ChoosableMasks; // NOTE: this won't be a hard restriction!
+  using RawResult = uint;
+  using MappedResult = cv::Mat;
 };
 
-template <DialogValue V> struct InputSpec {
-  using Restriction = typename ValueTraits<V>::Restriction;
-  using ValueType = typename ValueTraits<V>::Result;
+// InputSpec
+template <DialogValue V, typename T> struct DialogParam {
+  static constexpr DialogValue value = V;
+  using MappedResult = typename ValueTraits<V, T>::MappedResult;
+};
+
+// generic InputSpec to be specialized later with `DialogParam`s
+template <typename Param> struct InputSpec;
+
+template <DialogValue V, typename T> struct InputSpec<DialogParam<V, T>> {
+  using Restriction = typename ValueTraits<V, T>::Restriction;
+  using RawResult = typename ValueTraits<V, T>::RawResult;
+  using MappedResult = typename ValueTraits<V, T>::MappedResult;
   QString name;
   Restriction restriction;
-  ValueType initialValue;
+  RawResult initialValue;
   DELETE_DEFAULT_CONSTRUCTORS(InputSpec);
 };
+
+template <typename T> struct InputSpec<DialogParam<DialogValue::EnumVariant, T>> {
+  using Restriction = typename ValueTraits<DialogValue::EnumVariant, T>::Restriction;
+  using RawResult = typename ValueTraits<DialogValue::EnumVariant, T>::RawResult;
+  using MappedResult = typename ValueTraits<DialogValue::EnumVariant, T>::MappedResult;
+  QString name;
+  Restriction restriction;
+  RawResult initialValue;
+  // function which maps chosen index to a value
+  std::function<MappedResult(RawResult)> mapFn;
+  DELETE_DEFAULT_CONSTRUCTORS(InputSpec);
+};
+
+using IntParam = DialogParam<DialogValue::Int, void>;
+using DoubleParam = DialogParam<DialogValue::Double, void>;
+template <typename T> using EnumVariantParam = DialogParam<DialogValue::EnumVariant, T>;
+using ComposableMaskParam = DialogParam<DialogValue::ComposableMask, void>;
+using ChoosableMaskParam = DialogParam<DialogValue::ChoosableMask, void>;
 
 QDialogButtonBox *createDialogButtons(QDialog *dialog);
 QLineEdit *createValidatedIntEdit(QWidget *parent, int min, int max, int initialValue);
@@ -105,14 +142,16 @@ QLineEdit *createValidatedDoubleEdit(QWidget *parent, int initialValue);
 QComboBox *createComboBox(std::vector<QString> variants, uint initialIndex);
 
 // Class for declarative creation of dialog windows.
-template <DialogValue... Values> class Dialog {
+template <typename... Params> class Dialog {
 public:
   Dialog() = delete;
 
-  template <DialogValue V> using ResultType = typename ValueTraits<V>::Result;
-  using ResultTuple = std::tuple<ResultType<Values>...>;
+  template <typename Param> using RawResultType = typename Param::RawResult;
+  template <typename Param> using ResultType = typename Param::MappedResult;
 
-  Dialog(QWidget *parent, QString title, InputSpec<Values>... inputs) {
+  using ResultTuple = std::tuple<ResultType<Params>...>;
+
+  Dialog(QWidget *parent, QString title, InputSpec<Params>... inputs) {
     dialog = new QDialog(parent);
     dialog->setWindowTitle(title);
 
@@ -121,13 +160,29 @@ public:
     // create appropriate inputs adding them to the form while returning "accessors"
     accessors = std::make_tuple(createInput(inputs, *form)...);
 
+    previewImage = new ImageViewer(dialog);
+    paramChanged = [this]() {
+      if (previewFn == nullptr)
+        return;
+      auto params = readParams();
+      if (!params.has_value()) {
+        previewImage->clear();
+        return;
+      }
+      auto mat =
+          std::apply([this](const auto &...param) { return previewFn(param...); }, params.value());
+      if (!mat.has_value()) {
+        previewImage->clear();
+        return;
+      }
+      QPixmap pixmap = QPixmap::fromImage(ImageWrapper(mat.value()).generateQImage());
+      previewImage->setImage(pixmap);
+    };
+    form->addRow(previewImage);
     form->addRow(createDialogButtons(dialog));
   }
 
-  std::optional<ResultTuple> run() const {
-    if (dialog->exec() != QDialog::Accepted)
-      return std::nullopt;
-
+  std::optional<ResultTuple> readParams() const {
     auto optionals =
         std::apply([](auto &&...accessors) { return std::make_tuple(accessors()...); }, accessors);
 
@@ -136,7 +191,6 @@ public:
                optionals);
 
     if (!allOptionalsValid) {
-      QMessageBox::critical(dialog, "Error", "Invalid input.");
       return std::nullopt;
     }
 
@@ -146,21 +200,58 @@ public:
     return results;
   }
 
+  std::optional<ResultTuple> run1() const {
+    if (dialog->exec() != QDialog::Accepted)
+      return std::nullopt;
+
+    auto params = readParams();
+
+    if (!params.has_value()) {
+      QMessageBox::critical(dialog, "Error", "Invalid input.");
+      return std::nullopt;
+    }
+
+    return params.value();
+  }
+
+  using PreviewFunction = std::function<std::optional<cv::Mat>(ResultType<Params>...)>;
+  std::optional<cv::Mat> runWithPreview(PreviewFunction previewFn,
+                                        PreviewFunction finalFn = nullptr) {
+    if (finalFn == nullptr)
+      finalFn = previewFn;
+
+    this->previewFn = previewFn;
+    dialog->resize(800, 800);
+    paramChanged();
+
+    auto params = run1();
+    if (!params.has_value())
+      return std::nullopt;
+    return std::apply([finalFn](const auto &...param) { return finalFn(param...); },
+                      params.value());
+  }
+
 private:
-  template <DialogValue V> using Accessor = std::function<std::optional<ResultType<V>>()>;
-
   QDialog *dialog;
-  std::tuple<Accessor<Values>...> accessors;
+  ImageViewer *previewImage;
+  std::function<void()> paramChanged = {};
+  PreviewFunction previewFn = {};
 
-  Accessor<DialogValue::Byte> //
-  createInput(const InputSpec<DialogValue::Byte> &spec, QFormLayout &form) {
+  template <typename Param>
+  using Accessor = std::function<std::optional<typename InputSpec<Param>::MappedResult>()>;
+
+  std::tuple<Accessor<Params>...> accessors;
+
+  Accessor<IntParam> //
+  createInput(const InputSpec<IntParam> &spec, QFormLayout &form) {
     auto *edit = createValidatedIntEdit(dialog, spec.restriction.low, spec.restriction.high,
                                         spec.initialValue);
     form.addRow(spec.name, edit);
+    QObject::connect(edit, &QLineEdit::textChanged, [this](auto _) { this->paramChanged(); });
 
-    return [edit]() -> std::optional<uchar> {
+    return [edit]() -> std::optional<int> {
       bool ok;
-      uchar v = static_cast<uchar>(edit->text().toInt(&ok));
+      int v = static_cast<int>(edit->text().toInt(&ok));
       if (ok)
         return v;
       else
@@ -168,10 +259,11 @@ private:
     };
   }
 
-  Accessor<DialogValue::Double> //
-  createInput(const InputSpec<DialogValue::Double> &spec, QFormLayout &form) {
+  Accessor<DoubleParam> //
+  createInput(const InputSpec<DoubleParam> &spec, QFormLayout &form) {
     auto *edit = createValidatedDoubleEdit(dialog, spec.initialValue);
     form.addRow(spec.name, edit);
+    QObject::connect(edit, &QLineEdit::textChanged, [this](auto _) { this->paramChanged(); });
 
     return [edit]() -> std::optional<double> {
       bool ok;
@@ -183,22 +275,25 @@ private:
     };
   }
 
-  Accessor<DialogValue::EnumVariant> //
-  createInput(const InputSpec<DialogValue::EnumVariant> &spec, QFormLayout &form) {
-    auto *cb = createComboBox(spec.restriction.variants, spec.initialValue);
+  template <typename T>
+  Accessor<EnumVariantParam<T>> //
+  createInput(const InputSpec<EnumVariantParam<T>> &spec, QFormLayout &form) {
+    auto *cb = createComboBox(spec.restriction.names, spec.initialValue);
     form.addRow(spec.name, cb);
+    QObject::connect(cb, &QComboBox::currentIndexChanged, [this](auto _) { this->paramChanged(); });
 
-    return [cb]() -> std::optional<uint> {
+    return [cb, spec]() -> std::optional<T> {
       int v = cb->currentIndex();
       if (v < 0)
         return std::nullopt;
-      else
-        return static_cast<uint>(v);
+      else {
+        return spec.mapFn(v);
+      }
     };
   }
 
-  Accessor<DialogValue::ComposableMask> //
-  createInput(const InputSpec<DialogValue::ComposableMask> &spec, QFormLayout &form) {
+  Accessor<ComposableMaskParam> //
+  createInput(const InputSpec<ComposableMaskParam> &spec, QFormLayout &form) {
     cv::Mat mat = spec.initialValue;
     auto mask1 = new MaskEditor(dialog, QSize(mat.cols, mat.rows));
     auto mask2 = new MaskEditor(dialog, QSize(mat.cols, mat.rows));
@@ -237,14 +332,13 @@ private:
     };
     maskChanged();
 
-    QObject::connect(mask1, &MaskEditor::maskChanged, maskChanged);
-    QObject::connect(mask2, &MaskEditor::maskChanged, maskChanged);
+    QObject::QObject::connect(mask1, &MaskEditor::maskChanged, maskChanged);
+    QObject::QObject::connect(mask2, &MaskEditor::maskChanged, maskChanged);
 
-    return [maskRes]() { return maskRes->getMask(); };
+    return [maskRes]() -> std::optional<cv::Mat> { return maskRes->getMask(); };
   }
-
-  Accessor<DialogValue::ChoosableMask> //
-  createInput(const InputSpec<DialogValue::ChoosableMask> &spec, QFormLayout &form) {
+  Accessor<ChoosableMaskParam> //
+  createInput(const InputSpec<ChoosableMaskParam> &spec, QFormLayout &form) {
     bool cbVisible = true;
     QComboBox *cb;
 
@@ -255,17 +349,18 @@ private:
       form.addRow(spec.name, cb);
     }
 
-    cv::Mat mat = spec.initialValue;
+    cv::Mat mat = spec.restriction.mats[spec.initialValue];
     auto mask = new MaskEditor(dialog, QSize(mat.cols, mat.rows));
     mask->setMask(mat);
     form.addRow(mask);
 
     if (cbVisible) {
       // we update the MaskEditor anytime a ComboBox is changed
-      QObject::connect(cb, &QComboBox::currentIndexChanged,
-                       [mask, spec](uint index) { mask->setMask(spec.restriction.mats[index]); });
+      QObject::QObject::connect(cb, &QComboBox::currentIndexChanged, [mask, spec](uint index) {
+        mask->setMask(spec.restriction.mats[index]);
+      });
     }
 
-    return [mask]() { return mask->getMask(); };
+    return [mask]() -> std::optional<cv::Mat> { return mask->getMask(); };
   }
 };

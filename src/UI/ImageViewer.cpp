@@ -15,12 +15,20 @@ void ImageViewer::setImage(const QPixmap &pixmap) {
   pixmapItem = scene.addPixmap(pixmap);
   scene.setSceneRect(pixmap.rect());
 }
+
 void ImageViewer::useImageTransform(const ImageViewer &other) {
   this->setTransform(other.transform());
   this->horizontalScrollBar()->setValue(other.horizontalScrollBar()->value());
   this->verticalScrollBar()->setValue(other.verticalScrollBar()->value());
 }
-void ImageViewer::fit() { fitInView(scene.sceneRect(), Qt::KeepAspectRatio); }
+
+void ImageViewer::fit() {
+  if (pixmapItem) {
+    QRectF bounds = pixmapItem->boundingRect();
+    scene.setSceneRect(bounds);
+    fitInView(bounds, Qt::KeepAspectRatio);
+  }
+}
 
 void ImageViewer::clear() { scene.clear(); }
 

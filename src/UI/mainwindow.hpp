@@ -85,8 +85,8 @@ private:
   // utils
   std::vector<MdiChild *> getMdiChildren() const;
   void limitWindowSize(MdiChild &child) const;
-  void combine(cv::Mat (*op)(cv::Mat, cv::Mat));
-  void createImageWindow(const ImageWrapper &image);
+  void combine(std::function<cv::Mat(cv::Mat, cv::Mat)> op, const QString &name);
+  void createImageWindow(const ImageWrapper &image, const QString &name);
 
 private slots:
   void openAboutWindow();

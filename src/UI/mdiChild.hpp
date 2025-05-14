@@ -2,6 +2,7 @@
 
 #include "../imageWrapper.hpp"
 #include "ImageViewer.hpp"
+#include "dialogs/utils.hpp"
 #include <QMdiSubWindow>
 #include <QScrollArea>
 #include <QTabWidget>
@@ -18,6 +19,7 @@ public:
   // difference between `swapImage` and `setImage` is that this maintains
   // the same size of the window whereas the previous one adjusts the size to fit the unscaled image
   void swapImage(const ImageWrapper &image);
+  void trySwapImage(const std::optional<ImageWrapper> &image);
   void setImageName(QString name);
   void fitImage();
 
@@ -35,7 +37,9 @@ private:
   void regenerateChannels();
   ImageViewer &getImageViewer(int index) const;
   const ImageWrapper &getImageWrapper(int index) const;
-  void applyDialogFilter(std::optional<std::tuple<cv::Mat, int>> res);
+  void ask4maskAndApply(const std::vector<cv::Mat> &mats, const std::vector<QString> &names);
+  void ask4structuringElementAndApply(
+      std::function<std::optional<cv::Mat>(StructuringElement::ValueType, BorderTypes::ValueType)> fn);
 
 public slots:
   void toRGB();

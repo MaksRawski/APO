@@ -28,7 +28,6 @@ add_executable(APO
   src/UI/mdiChild.cpp
   src/UI/ImageViewer.cpp
   src/UI/histogramWidget.cpp
-  src/UI/parametersDialog.cpp
   src/UI/dialogs/MaskEditor.cpp
   src/UI/dialogs/DialogBuilder.cpp
   src/UI/dialogs/utils.cpp

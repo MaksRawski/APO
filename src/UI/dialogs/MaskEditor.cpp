@@ -5,7 +5,6 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QString>
-#include <iostream>
 #include <opencv2/core/base.hpp>
 #include <qcombobox.h>
 #include <qgridlayout.h>

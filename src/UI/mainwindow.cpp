@@ -1,7 +1,6 @@
 #include "mainwindow.hpp"
 #include "histogramWidget.hpp"
 #include "mdiChild.hpp"
-#include "parametersDialog.hpp"
 #include <QFileDialog>
 #include <QMenu>
 #include <QMenuBar>
@@ -139,12 +138,12 @@ void MainWindow::openImage() {
     return;
 
   QString fileName = QFileInfo(filePath).fileName();
-  createImageWindow(ImageWrapper::fromPath(filePath));
-  activeChild->setImageName(fileName);
+  createImageWindow(ImageWrapper::fromPath(filePath), fileName);
 }
 
 void MainWindow::mdiSubWindowActivated(QMdiSubWindow *window) {
-  disconnectActions(*activeChild);
+  if (activeChild)
+    disconnectActions(*activeChild);
   // if last window has been closed
   if (window == nullptr) {
     histogramWidget->reset();
@@ -208,10 +207,7 @@ void MainWindow::splitChannels() {
   std::vector<ImageWrapper> channels = activeChild->getImage().splitChannels();
   int c = 0;
   for (ImageWrapper image : channels) {
-
-    // create new window
-    createImageWindow(image);
-    activeChild->setImageName(baseName + '_' + format[c] + '.' + suffix);
+    createImageWindow(image, baseName + '_' + format[c] + '.' + suffix);
     ++c;
   }
 }
@@ -330,7 +326,7 @@ void MainWindow::limitWindowSize(MdiChild &child) const {
   }
 }
 
-void MainWindow::createImageWindow(const ImageWrapper &image) {
+void MainWindow::createImageWindow(const ImageWrapper &image, const QString &name = nullptr) {
   if (activeChild != nullptr)
     disconnectActions(*activeChild);
   activeChild = new MdiChild(image);
@@ -339,31 +335,28 @@ void MainWindow::createImageWindow(const ImageWrapper &image) {
   limitWindowSize(*activeChild);
   mdiArea->addSubWindow(activeChild);
   activeChild->show();
+  if (name != nullptr)
+    activeChild->setImageName(name);
 }
 
 void MainWindow::combineAdd() {
-  combine([](cv::Mat f, cv::Mat s) -> cv::Mat { return f + s; });
-  activeChild->setImageName("Result of Add");
+  combine([](cv::Mat f, cv::Mat s) -> cv::Mat { return f + s; }, "Result of Add");
 }
 void MainWindow::combineSub() {
-  combine([](cv::Mat f, cv::Mat s) -> cv::Mat { return f - s; });
-  activeChild->setImageName("Result of Sub");
+  combine([](cv::Mat f, cv::Mat s) -> cv::Mat { return f - s; }, "Result of Sub");
 }
 void MainWindow::combineAND() {
-  combine([](cv::Mat f, cv::Mat s) -> cv::Mat { return f & s; });
-  activeChild->setImageName("Result of AND");
+  combine([](cv::Mat f, cv::Mat s) -> cv::Mat { return f & s; }, "Result of AND");
 }
 void MainWindow::combineOR() {
-  combine([](cv::Mat f, cv::Mat s) -> cv::Mat { return f | s; });
-  activeChild->setImageName("Result of OR");
+  combine([](cv::Mat f, cv::Mat s) -> cv::Mat { return f | s; }, "Result of OR");
 }
 void MainWindow::combineXOR() {
-  combine([](cv::Mat f, cv::Mat s) -> cv::Mat { return f ^ s; });
-  activeChild->setImageName("Result of XOR");
+  combine([](cv::Mat f, cv::Mat s) -> cv::Mat { return f ^ s; }, "Result of XOR");
 }
 
 namespace {
-bool checkDimensions(QWidget *parent, const cv::Mat &first, const cv::Mat &second) {
+bool haveSameDimensions(QWidget *parent, const cv::Mat &first, const cv::Mat &second) {
   if (first.channels() != second.channels()) {
     QMessageBox::critical(parent, "Error", "Images must have the same number of channels!");
     return false;
@@ -404,41 +397,51 @@ int getActiveWindowIndex(MdiChild *activeChild, const std::vector<QString> names
 void MainWindow::combineBlend() {
   std::vector<MdiChild *> windows = getMdiChildren();
   std::vector<QString> names = getWindowNames(windows);
-  int activeWindowIndex = getActiveWindowIndex(activeChild, names);
+  uint activeWindowIndex = getActiveWindowIndex(activeChild, names);
+  uint secondWindowIndex = (activeWindowIndex + 1) % names.size();
 
-  auto res = windowsPairBlendDialog(this, names, activeWindowIndex);
-  if (!res.has_value())
-    return;
+  auto id = [](auto i) { return i; };
+  auto mat =
+      Dialog(this, QString("Select two windows"),                                               //
+             InputSpec<EnumVariantParam<uint>>{"First window", {names}, activeWindowIndex, id}, //
+             InputSpec<EnumVariantParam<uint>>{"Second window", {names}, secondWindowIndex, id},
+             InputSpec<IntParam>{"Blend percentage", {0, 100}, 50})
+          .runWithPreview(
+              [this, windows](uint i1, uint i2, int blendValue) -> std::optional<cv::Mat> {
+                cv::Mat first = windows[i1]->getImage().getMat();
+                cv::Mat second = windows[i2]->getImage().getMat();
+                if (!haveSameDimensions(this, first, second))
+                  return std::nullopt;
 
-  uchar firstI, secondI, blendValue;
-  std::tie(firstI, secondI, blendValue) = res.value();
-  cv::Mat first = windows[firstI]->getImage().getMat();
-  cv::Mat second = windows[secondI]->getImage().getMat();
-  if (!checkDimensions(this, first, second))
-    return;
+                double blendFactor = blendValue / 100.0;
+                return first * blendFactor + second * (1 - blendFactor);
+              });
 
-  double blendFactor = blendValue / 100.0;
-  cv::Mat out = first * blendFactor + second * (1 - blendFactor);
-  createImageWindow(ImageWrapper(out));
-  activeChild->setImageName("Result of Blend");
+  if (mat.has_value())
+    createImageWindow(mat.value(), "Result of Blend");
 }
 
-void MainWindow::combine(cv::Mat (*op)(cv::Mat, cv::Mat)) {
+void MainWindow::combine(std::function<cv::Mat(cv::Mat, cv::Mat)> op,
+                         const QString &name = nullptr) {
   std::vector<MdiChild *> windows = getMdiChildren();
   std::vector<QString> names = getWindowNames(windows);
-  int activeWindowIndex = getActiveWindowIndex(activeChild, names);
+  uint activeWindowIndex = getActiveWindowIndex(activeChild, names);
+  uint secondWindowIndex = (activeWindowIndex + 1) % names.size();
 
-  auto res = windowsPairDialog(this, names, activeWindowIndex);
-  if (!res.has_value())
-    return;
+  auto id = [](auto i) { return i; };
+  auto mat =
+      Dialog(this, QString("Select two windows"),                                               //
+             InputSpec<EnumVariantParam<uint>>{"First window", {names}, activeWindowIndex, id}, //
+             InputSpec<EnumVariantParam<uint>>{"Second window", {names}, secondWindowIndex, id})
+          .runWithPreview([this, windows, op](uint i1, uint i2) -> std::optional<cv::Mat> {
+            cv::Mat first = windows[i1]->getImage().getMat();
+            cv::Mat second = windows[i2]->getImage().getMat();
+            if (!haveSameDimensions(this, first, second))
+              return std::nullopt;
 
-  uchar firstI, secondI;
-  std::tie(firstI, secondI) = res.value();
-  cv::Mat first = windows[firstI]->getImage().getMat();
-  cv::Mat second = windows[secondI]->getImage().getMat();
-  if (!checkDimensions(this, first, second))
-    return;
+            return op(first, second);
+          });
 
-  cv::Mat out = op(first, second);
-  createImageWindow(ImageWrapper(out));
+  if (mat.has_value())
+    createImageWindow(mat.value(), name);
 }

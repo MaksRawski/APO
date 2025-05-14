@@ -2,7 +2,6 @@
 #include "../imageProcessor.hpp"
 #include "ImageViewer.hpp"
 #include "dialogs/utils.hpp"
-#include "parametersDialog.hpp"
 #include <QFormLayout>
 #include <QLineEdit>
 #include <QPixmap>
@@ -20,6 +19,7 @@
 #include <vector>
 
 using imageProcessor::applyLUT;
+using imageProcessor::applyLUTcv;
 using imageProcessor::LUT;
 
 MdiChild::MdiChild(ImageWrapper imageWrapper) {
@@ -65,6 +65,11 @@ void MdiChild::swapImage(const ImageWrapper &image) {
   updateChannelNames();
   regenerateChannels();
   emitImageUpdatedSignal();
+}
+
+void MdiChild::trySwapImage(const std::optional<ImageWrapper> &image) {
+  if (image.has_value())
+    swapImage(image.value());
 }
 
 void MdiChild::updateChannelNames() {
@@ -242,225 +247,207 @@ void MdiChild::rename() {
 }
 
 void MdiChild::posterize() {
-  auto res = posterizeDialog(this);
-  if (!res.has_value())
-    return;
-  LUT lut = imageProcessor::posterize(res.value());
-  swapImage(applyLUT(imageWrapper, lut));
+  trySwapImage(
+      Dialog(this, QString("Enter number of levels"), InputSpec<IntParam>{"N", {1, 255}, 2})
+          .runWithPreview([this](int n) {
+            LUT lut = imageProcessor::posterize(n);
+            return applyLUTcv(imageWrapper.getMat(), lut);
+          }));
 }
 
 void MdiChild::blurMean() {
-  auto res = kernelBorderDialog(this);
-
-  if (!res.has_value())
-    return;
-  uchar k;
-  int borderType;
-  std::tie(k, borderType) = res.value();
-
-  cv::Mat out;
-  cv::blur(imageWrapper.getMat(), out, cv::Size(k, k), cv::Point(-1, -1), borderType);
-  swapImage(out);
+  trySwapImage(Dialog(this, QString("Select kernel size and border type"), //
+                      KernelSizes::inputSpec,                              //
+                      BorderTypes::inputSpec)
+                   .runWithPreview([this](int k, int borderType) {
+                     cv::Mat out;
+                     cv::blur(imageWrapper.getMat(), out, cv::Size(k, k), cv::Point(-1, -1),
+                              borderType);
+                     return out;
+                   }));
 }
 
 void MdiChild::blurMedian() {
-  auto res = kernelBorderDialog(this);
-  if (!res.has_value())
-    return;
-  uchar k;
-  int borderType;
-  std::tie(k, borderType) = res.value();
-
-  cv::Mat out;
-  cv::medianBlur(imageWrapper.getMat(), out, k);
-  swapImage(out);
+  trySwapImage(Dialog(this, QString("Select kernel size"), KernelSizes::inputSpec)
+                   .runWithPreview([this](int k) {
+                     cv::Mat out;
+                     cv::medianBlur(imageWrapper.getMat(), out, k);
+                     return out;
+                   }));
 }
 
 void MdiChild::blurGaussian() {
-  auto res = gaussianBlurDialog(this);
-  if (!res.has_value())
-    return;
-  uchar k;
-  double sigma;
-  int borderType;
-  std::tie(k, sigma, borderType) = res.value();
+  auto mat =
+      Dialog(this, QString("Enter Gaussian blur parameters"), //
+             KernelSizes::inputSpec,                          //
+             BorderTypes::inputSpec,                          //
+             InputSpec<DoubleParam>{"σ (std dev)", {}, 1.0})
+          .runWithPreview([this](int k, int borderType, double sigma) {
+            cv::Mat out;
+            cv::GaussianBlur(imageWrapper.getMat(), out, cv::Size(k, k), sigma, 0, borderType);
+            return out;
+          });
 
-  cv::Mat mat;
-  cv::GaussianBlur(imageWrapper.getMat(), mat, cv::Size(k, k), sigma, 0, borderType);
-  swapImage(mat);
+  if (mat.has_value())
+    swapImage(mat.value());
 }
 
 void MdiChild::edgeDetectSobel() {
-  auto res = sobelDialog(this);
-  if (!res.has_value())
-    return;
-  auto [k, dir, borderType] = res.value();
-  cv::Mat mat;
-  if (dir == SobelDirections::Horizontal)
-    cv::Sobel(imageWrapper.getMat(), mat, CV_8UC1, 1, 0, k, 1, 0, borderType);
-  else
-    cv::Sobel(imageWrapper.getMat(), mat, CV_8UC1, 0, 1, k, 1, 0, borderType);
-
-  swapImage(mat);
+  trySwapImage(Dialog(this, QString("Enter Sobel's filter parameters"),
+                      KernelSizes::inputSpec, //
+                      BorderTypes::inputSpec, //
+                      SobelDirections::inputSpec)
+                   .runWithPreview([this](int k, int borderType, SobelDirections::Enum dir) {
+                     cv::Mat out;
+                     if (dir == SobelDirections::Horizontal)
+                       cv::Sobel(imageWrapper.getMat(), out, CV_8UC1, 0, 1, k, 1, 0, borderType);
+                     else
+                       cv::Sobel(imageWrapper.getMat(), out, CV_8UC1, 1, 0, k, 1, 0, borderType);
+                     return out;
+                   }));
 }
 void MdiChild::edgeDetectLaplacian() {
-  auto res = kernelBorderDialog(this);
-  if (!res.has_value())
-    return;
-  uchar k;
-  int borderType;
-  std::tie(k, borderType) = res.value();
-  cv::Mat mat;
-  cv::Laplacian(imageWrapper.getMat(), mat, CV_8UC1, k, 1, 0, borderType);
-  swapImage(mat);
+  trySwapImage(Dialog(this, QString("Select kernel size and border type"),
+                      KernelSizes::inputSpec, //
+                      BorderTypes::inputSpec)
+                   .runWithPreview([this](int k, int borderType) {
+                     cv::Mat out;
+                     cv::Laplacian(imageWrapper.getMat(), out, CV_8UC1, k, 1, 0, borderType);
+                     return out;
+                   }));
 }
 
 void MdiChild::edgeDetectCanny() {
-  auto res = cannyDialog(this);
-  if (!res.has_value())
-    return;
-  uchar k, start, end;
-  int borderType;
-  std::tie(k, start, end, borderType) = res.value();
+  auto mat =
+      Dialog(this, QString("Enter Canny's filter parameters"),
+             KernelSizes::inputSpec, //
+             BorderTypes::inputSpec, //
+             InputSpec<IntParam>{"Start (0-255)", {0, 255}, 0},
+             InputSpec<IntParam>{"End (0-255)", {0, 255}, 255})
+          .runWithPreview([this](int k, int borderType, int start, int end) {
+            // manually padding
+            int pad = k / 2;
+            cv::Mat padded;
+            cv::copyMakeBorder(imageWrapper.getMat(), padded, pad, pad, pad, pad, borderType);
 
-  // manually padding
-  int pad = k / 2;
-  cv::Mat padded;
-  cv::copyMakeBorder(imageWrapper.getMat(), padded, pad, pad, pad, pad, borderType);
+            cv::Mat out;
+            cv::Canny(padded, out, start, end, k);
+            return out;
+          });
 
-  cv::Mat out;
-  cv::Canny(padded, out, start, end, k);
-  swapImage(out);
+  trySwapImage(mat);
 }
 
-void MdiChild::applyDialogFilter(std::optional<std::tuple<cv::Mat, int>> res) {
-  if (!res.has_value())
-    return;
+void MdiChild::ask4maskAndApply(const std::vector<cv::Mat> &mats,
+                                const std::vector<QString> &names) {
+  Dialog(this, QString("Select a mask"), InputSpec<ChoosableMaskParam>{"Masks", {mats, names}, 0},
+         BorderTypes::inputSpec)
+      .runWithPreview([this](cv::Mat kernel, int borderType) {
+        cv::Mat out;
 
-  auto [kernel, borderType] = res.value();
-  cv::Mat out;
+        kernel /= cv::sum(kernel)[0];
+        cv::filter2D(imageWrapper.getMat(), out, -1, kernel, cv::Point(-1, -1), 0, borderType);
 
-  kernel /= cv::sum(kernel)[0];
-
-  cv::filter2D(imageWrapper.getMat(), out, -1, kernel, cv::Point(-1, -1), 0, borderType);
-  swapImage(out);
+        return out;
+      });
 }
 
-void MdiChild::sharpenLaplacian() {
-  auto res = choosableMaskDialog(this, LaplacianMasks::mats, LaplacianMasks::names);
-  applyDialogFilter(res);
-}
+void MdiChild::sharpenLaplacian() { ask4maskAndApply(LaplacianMasks::mats, LaplacianMasks::names); }
 
-void MdiChild::edgeDetectPrewitt() {
-  auto res = choosableMaskDialog(this, PrewittMasks::mats, PrewittMasks::names);
-  applyDialogFilter(res);
-}
+void MdiChild::edgeDetectPrewitt() { ask4maskAndApply(PrewittMasks::mats, PrewittMasks::names); }
 
-void MdiChild::customMask() {
-  auto res = choosableMaskDialog(this, {BoxKernel::mat3}, {});
-  applyDialogFilter(res);
-}
+void MdiChild::customMask() { ask4maskAndApply({BoxKernel::mat3}, {}); }
 
 void MdiChild::customTwoStageFilter() {
-  auto res = Dialog(this, QString("Convolve a mask"),
-                    InputSpec<DialogParam<DialogValue::ComposableMask, void>>{
-                        "Mask", KernelSizes::values, BoxKernel::mat3},
-                    BorderTypes::inputSpec)
-                 .run();
+  auto mat =
+      Dialog(this, QString("Convolve a mask"),
+             InputSpec<DialogParam<DialogValue::ComposableMask, void>>{"Mask", KernelSizes::values,
+                                                                       BoxKernel::mat3},
+             BorderTypes::inputSpec)
+          .runWithPreview([this](cv::Mat kernel, int borderType) {
+            cv::Mat out;
+            kernel /= cv::sum(kernel)[0];
+            cv::filter2D(imageWrapper.getMat(), out, -1, kernel, cv::Point(-1, -1), 0, borderType);
+            return out;
+          });
 
-  applyDialogFilter(res);
+  trySwapImage(mat);
+}
+void MdiChild::ask4structuringElementAndApply(
+    std::function<std::optional<cv::Mat>(StructuringElement::ValueType, BorderTypes::ValueType)>
+        fn) {
+  trySwapImage(Dialog(this, QString("Select a structuring element"), StructuringElement::inputSpec,
+                      BorderTypes::inputSpec)
+                   .runWithPreview(fn));
 }
 
 void MdiChild::morphologyErode() {
-  auto res = structuringElementDialog(this);
-  if (!res.has_value())
-    return;
-
-  auto [kernel, borderType] = res.value();
-
-  cv::Mat out;
-  cv::erode(imageWrapper.getMat(), out, kernel, cv::Point(-1, -1), 1, borderType);
-  swapImage(out);
+  ask4structuringElementAndApply([this](cv::Mat kernel, int borderType) {
+    cv::Mat out;
+    cv::erode(imageWrapper.getMat(), out, kernel, cv::Point(-1, -1), 1, borderType);
+    return out;
+  });
 }
 
 void MdiChild::morphologyDilate() {
-  auto res = structuringElementDialog(this);
-  if (!res.has_value())
-    return;
-
-  auto [kernel, borderType] = res.value();
-
-  cv::Mat out;
-  cv::dilate(imageWrapper.getMat(), out, kernel, cv::Point(-1, -1), 1, borderType);
-  swapImage(out);
+  ask4structuringElementAndApply([this](cv::Mat kernel, int borderType) {
+    cv::Mat out;
+    cv::dilate(imageWrapper.getMat(), out, kernel, cv::Point(-1, -1), 1, borderType);
+    return out;
+  });
 }
 
 void MdiChild::morphologyOpen() {
-  auto res = structuringElementDialog(this);
-  if (!res.has_value())
-    return;
-
-  auto [kernel, borderType] = res.value();
-
-  cv::Mat out;
-  cv::morphologyEx(imageWrapper.getMat(), out, cv::MORPH_OPEN, kernel, cv::Point(-1, -1), 1,
-                   borderType);
-  swapImage(out);
+  ask4structuringElementAndApply([this](cv::Mat kernel, int borderType) {
+    cv::Mat out;
+    cv::morphologyEx(imageWrapper.getMat(), out, cv::MORPH_OPEN, kernel, cv::Point(-1, -1), 1,
+                     borderType);
+    return out;
+  });
 }
 
 void MdiChild::morphologyClose() {
-  auto res = structuringElementDialog(this);
-  if (!res.has_value())
-    return;
-
-  auto [kernel, borderType] = res.value();
-
-  cv::Mat out;
-  cv::morphologyEx(imageWrapper.getMat(), out, cv::MORPH_CLOSE, kernel, cv::Point(-1, -1), 1,
-                   borderType);
-  swapImage(out);
+  ask4structuringElementAndApply([this](cv::Mat kernel, int borderType) {
+    cv::Mat out;
+    cv::morphologyEx(imageWrapper.getMat(), out, cv::MORPH_CLOSE, kernel, cv::Point(-1, -1), 1,
+                     borderType);
+    return out;
+  });
 }
 
 void MdiChild::morphologySkeletonize() {
-  auto res = structuringElementDialog(this);
-  if (!res.has_value())
-    return;
-
-  auto [kernel, borderType] = res.value();
-
-  cv::Mat out = imageProcessor::skeletonize(imageWrapper.getMat(), kernel, borderType);
-  swapImage(out);
+  ask4structuringElementAndApply([this](cv::Mat kernel, int borderType) {
+    return imageProcessor::skeletonize(imageWrapper.getMat(), kernel, borderType);
+  });
 }
 
 void MdiChild::houghTransform() {
-  // TODO: add parameters for display
-  auto res = houghLinesDialog(this);
-  if (!res.has_value())
-    return;
+  trySwapImage(Dialog(this, QString("Hough Transform"), //
+                      InputSpec<IntParam>{"Rho (px)", {1, 10}, 1},
+                      InputSpec<IntParam>{"Theta (°)", {1, 180}, 1},
+                      InputSpec<IntParam>{"Threshold", {1, 200}, 100})
+                   .runWithPreview([this](int rho, int thetaDeg, int threshold) {
+                     const double theta = CV_PI * thetaDeg / 180.0;
+                     std::vector<cv::Vec4i> lines;
 
-  auto params = res.value();
+                     std::vector<cv::Vec2f> linesPolar;
+                     cv::HoughLines(imageWrapper.getMat(), linesPolar, rho, theta, threshold);
 
-  const double theta = CV_PI * params.thetaDeg / 180.0;
-  std::vector<cv::Vec4i> lines;
+                     // Convert to endpoints (approx)
+                     for (const auto &l : linesPolar) {
+                       float r = l[0], t = l[1];
+                       double a = std::cos(t), b = std::sin(t);
+                       double x0 = a * r, y0 = b * r;
+                       int x1 = cvRound(x0 + 1000 * (-b));
+                       int y1 = cvRound(y0 + 1000 * (a));
+                       int x2 = cvRound(x0 - 1000 * (-b));
+                       int y2 = cvRound(y0 - 1000 * (a));
+                       lines.push_back(cv::Vec4i(x1, y1, x2, y2));
+                     }
 
-  std::vector<cv::Vec2f> linesPolar;
-  cv::HoughLines(imageWrapper.getMat(), linesPolar, params.rho, theta, params.threshold);
-
-  // Convert to endpoints (approx)
-  for (const auto &l : linesPolar) {
-    float r = l[0], t = l[1];
-    double a = std::cos(t), b = std::sin(t);
-    double x0 = a * r, y0 = b * r;
-    int x1 = cvRound(x0 + 1000 * (-b));
-    int y1 = cvRound(y0 + 1000 * (a));
-    int x2 = cvRound(x0 - 1000 * (-b));
-    int y2 = cvRound(y0 - 1000 * (a));
-    lines.push_back(cv::Vec4i(x1, y1, x2, y2));
-  }
-
-  cv::Mat out = imageWrapper.getMat();
-  for (const auto &l : lines)
-    cv::line(out, {l[0], l[1]}, {l[2], l[3]}, cv::Scalar(255, 0, 0), 2);
-
-  swapImage(out);
+                     cv::Mat out = imageWrapper.getMat();
+                     for (const auto &l : lines)
+                       cv::line(out, {l[0], l[1]}, {l[2], l[3]}, cv::Scalar(255, 0, 0), 2);
+                     return out;
+                   }));
 }

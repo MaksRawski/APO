@@ -34,16 +34,16 @@ const std::vector<QString> strings{
     "Reflect 101 (gfedcb|abcdefgh|gfedcba)",
     "Isolated",
 };
-const auto inputSpec = InputSpec<DialogValue::EnumVariant>{"Border type", {strings}, 3};
-constexpr ValueType select(uint index) { return values[index]; }
+const auto inputSpec = InputSpec<DialogParam<DialogValue::EnumVariant, ValueType>>{
+    "Border type", {strings}, 3, [](uint index) { return values[index]; }};
 } // namespace BorderTypes
 
 namespace KernelSizes {
-using ValueType = uchar;
+using ValueType = uint;
 const std::vector<ValueType> values{1, 3, 5, 7};
 const std::vector<QString> strings{"1x1", "3x3", "5x5", "7x7"};
-const auto inputSpec = InputSpec<DialogValue::EnumVariant>{"Kernel size", {strings}, 1};
-constexpr ValueType select(uint index) { return values[index]; }
+const auto inputSpec = InputSpec<DialogParam<DialogValue::EnumVariant, ValueType>>{
+    "Kernel size", {strings}, 1, [](uint index) { return values[index]; }};
 } // namespace KernelSizes
 
 namespace SobelDirections {
@@ -53,8 +53,8 @@ enum Enum {
 };
 const std::vector<Enum> values{Enum::Horizontal, Enum::Vertical};
 const std::vector<QString> strings{"Horizontal", "Vertical"};
-const auto inputSpec = InputSpec<DialogValue::EnumVariant>{"Direction", {strings}, 0};
-constexpr Enum select(uint index) { return values[index]; }
+const auto inputSpec = InputSpec<DialogParam<DialogValue::EnumVariant, Enum>>{
+    "Direction", {strings}, 0, [](uint index) { return values[index]; }};
 } // namespace SobelDirections
 
 namespace BoxKernel {
@@ -92,11 +92,21 @@ const std::vector<QString> names{"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
 
 namespace StructuringElement {
 const std::vector<std::tuple<cv::MorphShapes, cv::Size>> values = {
-    {cv::MorphShapes::MORPH_CROSS, cv::Size(3, 3)}, {cv::MorphShapes::MORPH_RECT, cv::Size(3,3)}};
+    {cv::MorphShapes::MORPH_CROSS, cv::Size(3, 3)}, {cv::MorphShapes::MORPH_RECT, cv::Size(3, 3)}};
 const std::vector<QString> names{"Cross 3x3", "Square 3x3"};
-const auto inputSpec = InputSpec<DialogValue::EnumVariant>{"Structuring element", {names}, 0};
-cv::Mat select(uint index);
+using ValueType = cv::Mat;
+ValueType select(uint index);
+const auto inputSpec = InputSpec<DialogParam<DialogValue::EnumVariant, ValueType>>{
+    "Structuring element", {names}, 0, select};
 } // namespace StructuringElement
+
+namespace HoughLines {
+struct Parameters {
+  int rho;
+  int thetaDeg;
+  int threshold;
+};
+} // namespace HoughLines
 
 namespace DialogResultsUtils {
 template <typename Tuple, typename... Funcs, std::size_t... Is>
