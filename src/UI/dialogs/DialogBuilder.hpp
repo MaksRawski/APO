@@ -334,6 +334,8 @@ private:
 
     QObject::QObject::connect(mask1, &MaskEditor::maskChanged, maskChanged);
     QObject::QObject::connect(mask2, &MaskEditor::maskChanged, maskChanged);
+    QObject::QObject::connect(maskRes, &MaskEditor::maskChanged,
+                              [this]() { this->paramChanged(); });
 
     return [maskRes]() -> std::optional<cv::Mat> { return maskRes->getMask(); };
   }
@@ -353,6 +355,7 @@ private:
     auto mask = new MaskEditor(dialog, QSize(mat.cols, mat.rows));
     mask->setMask(mat);
     form.addRow(mask);
+    QObject::QObject::connect(mask, &MaskEditor::maskChanged, [this]() { this->paramChanged(); });
 
     if (cbVisible) {
       // we update the MaskEditor anytime a ComboBox is changed
