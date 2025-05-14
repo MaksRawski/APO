@@ -1,7 +1,7 @@
 #include "mdiChild.hpp"
 #include "../imageProcessor.hpp"
+#include "ImageViewer.hpp"
 #include "dialogs/utils.hpp"
-#include "imageLabel.hpp"
 #include "parametersDialog.hpp"
 #include <QFormLayout>
 #include <QLineEdit>
@@ -27,35 +27,20 @@ MdiChild::MdiChild(ImageWrapper imageWrapper) {
   tabWidget->setTabBarAutoHide(true);
 
   // all channels tab
-  scrollArea = new QScrollArea;
-  scrollArea->setWidgetResizable(true);
-  imageLabel = new ImageLabel(scrollArea);
-  scrollArea->setWidget(imageLabel);
-  tabWidget->insertTab(0, scrollArea, "All");
+  mainImage = new ImageViewer;
+  tabWidget->insertTab(0, mainImage, "All");
 
   // 1st channel, Red by default
-  scrollArea1 = new QScrollArea;
-  scrollArea1->setWidgetResizable(true);
-  // stub imageLabel, will be properly set on the first change to any channel
-  imageLabel1 = new ImageLabel(scrollArea1);
-  scrollArea1->setWidget(imageLabel1);
-  tabWidget->insertTab(1, scrollArea1, "Red");
+  image1 = new ImageViewer;
+  tabWidget->insertTab(1, image1, "Red");
 
   // 2nd channel, Green by default
-  scrollArea2 = new QScrollArea;
-  scrollArea2->setWidgetResizable(true);
-  // stub imageLabel, will be properly set on the first change to any channel
-  imageLabel2 = new ImageLabel(scrollArea2);
-  scrollArea2->setWidget(imageLabel2);
-  tabWidget->insertTab(2, scrollArea2, "Green");
+  image2 = new ImageViewer;
+  tabWidget->insertTab(2, image2, "Green");
 
   // 3rd channel, Blue by default
-  scrollArea3 = new QScrollArea;
-  scrollArea3->setWidgetResizable(true);
-  // stub imageLabel, will be properly set on the first change to any channel
-  imageLabel3 = new ImageLabel(scrollArea3);
-  scrollArea1->setWidget(imageLabel3);
-  tabWidget->insertTab(3, scrollArea3, "Blue");
+  image3 = new ImageViewer;
+  tabWidget->insertTab(3, image3, "Blue");
 
   connect(tabWidget, &QTabWidget::currentChanged, this, &MdiChild::tabChanged);
 
@@ -65,47 +50,22 @@ MdiChild::MdiChild(ImageWrapper imageWrapper) {
 }
 
 void MdiChild::setImage(const ImageWrapper &image) {
+  swapImage(image);
+  mainImage->fit();
+}
+
+void MdiChild::swapImage(const ImageWrapper &image) {
   imageWrapper = image;
   QImage qimage = imageWrapper.generateQImage();
   if (qimage.isNull())
     throw new std::runtime_error("Failed to generate a QImage!");
 
   QPixmap pixmap = QPixmap::fromImage(qimage);
-  imageLabel->setImage(pixmap);
-  resize(pixmap.size() + CHILD_IMAGE_MARGIN);
+  mainImage->setImage(pixmap);
   updateChannelNames();
   regenerateChannels();
   emitImageUpdatedSignal();
 }
-
-namespace {
-struct ScrollbarsValues {
-  int horizontal, vertical;
-};
-ScrollbarsValues getScrollbarsValues(const QScrollArea &scrollArea) {
-  return ScrollbarsValues{scrollArea.horizontalScrollBar()->value(),
-                          scrollArea.verticalScrollBar()->value()};
-}
-void setScrollbarsValues(QScrollArea &scrollArea, ScrollbarsValues values) {
-  scrollArea.horizontalScrollBar()->setValue(values.horizontal);
-  scrollArea.verticalScrollBar()->setValue(values.vertical);
-}
-} // namespace
-
-// sets an image but maintains window size, image scale and scrollbars' positions
-void MdiChild::swapImage(const ImageWrapper &image) {
-  QSize size = this->size();
-  double prevScale = getImageScale();
-  auto oldScrollbarValues = getScrollbarsValues(getScrollArea(tabIndex));
-
-  setImage(image);
-  resize(size);
-  setImageScale(prevScale);
-  setScrollbarsValues(getScrollArea(tabIndex), oldScrollbarValues);
-}
-
-double MdiChild::getImageScale() const { return getImageLabel(tabIndex).getImageScale(); }
-void MdiChild::setImageScale(double scale) { getImageLabel(tabIndex).setImageScale(scale); }
 
 void MdiChild::updateChannelNames() {
   auto imageFormat = imageWrapper.getFormat();
@@ -115,9 +75,9 @@ void MdiChild::updateChannelNames() {
     tabWidget->removeTab(1);
   } else if (tabWidget->count() < 3) {
     auto names = PixelFormatUtils::channelNmaes(imageFormat);
-    tabWidget->addTab(scrollArea1, QString::fromStdString(names[0]));
-    tabWidget->addTab(scrollArea2, QString::fromStdString(names[1]));
-    tabWidget->addTab(scrollArea3, QString::fromStdString(names[2]));
+    tabWidget->addTab(image1, QString::fromStdString(names[0]));
+    tabWidget->addTab(image2, QString::fromStdString(names[1]));
+    tabWidget->addTab(image3, QString::fromStdString(names[2]));
   }
 }
 
@@ -148,31 +108,23 @@ void MdiChild::setImageName(QString name) {
   setWindowTitle(QString("[%1] %2").arg(QString::fromStdString(imageFormat), name));
 }
 
-QScrollArea &MdiChild::getScrollArea(int index) const {
-  switch (index) {
-  case 0:
-    return *scrollArea;
-  case 1:
-    return *scrollArea1;
-  case 2:
-    return *scrollArea2;
-  case 3:
-    return *scrollArea3;
-  default:
-    throw std::invalid_argument("Invalid tab index " + std::to_string(index));
-  }
+void MdiChild::fitImage() {
+  mainImage->fit();
+  image1->fit();
+  image2->fit();
+  image3->fit();
 }
 
-ImageLabel &MdiChild::getImageLabel(int index) const {
+ImageViewer &MdiChild::getImageViewer(int index) const {
   switch (index) {
   case 0:
-    return *imageLabel;
+    return *mainImage;
   case 1:
-    return *imageLabel1;
+    return *image1;
   case 2:
-    return *imageLabel2;
+    return *image2;
   case 3:
-    return *imageLabel3;
+    return *image3;
   default:
     throw std::invalid_argument("Invalid tab index " + std::to_string(index));
   }
@@ -199,13 +151,8 @@ void MdiChild::tabChanged(int newTabIndex) {
   if (newTabIndex < 0)
     return;
 
-  // set the image scale to whatever the user had in the previous tab
-  double prevScale = getImageLabel(tabIndex).getImageScale();
-  getImageLabel(newTabIndex).setImageScale(prevScale);
-
-  // set the scrollbars to the position they were in the previous tab
-  auto prevScrollbarsValues = getScrollbarsValues(getScrollArea(tabIndex));
-  setScrollbarsValues(getScrollArea(newTabIndex), prevScrollbarsValues);
+  // set the image's zoom and pan to whatever the user had in the previous tab
+  getImageViewer(newTabIndex).useImageTransform(getImageViewer(tabIndex));
 
   tabIndex = newTabIndex;
   emitImageUpdatedSignal();
@@ -238,20 +185,13 @@ void MdiChild::regenerateChannels() {
   imageWrapper2 = imageWrappers[1];
   imageWrapper3 = imageWrappers[2];
 
-  imageLabel1 = new ImageLabel;
-  imageLabel2 = new ImageLabel;
-  imageLabel3 = new ImageLabel;
-
   QPixmap pixmap1 = QPixmap::fromImage(imageWrapper1.generateQImage());
   QPixmap pixmap2 = QPixmap::fromImage(imageWrapper2.generateQImage());
   QPixmap pixmap3 = QPixmap::fromImage(imageWrapper3.generateQImage());
 
-  imageLabel1->setImage(pixmap1);
-  imageLabel2->setImage(pixmap2);
-  imageLabel3->setImage(pixmap3);
-  scrollArea1->setWidget(imageLabel1);
-  scrollArea2->setWidget(imageLabel2);
-  scrollArea3->setWidget(imageLabel3);
+  image1->setImage(pixmap1);
+  image2->setImage(pixmap2);
+  image3->setImage(pixmap3);
 }
 
 void MdiChild::normalize() { swapImage(imageProcessor::normalizeChannels(imageWrapper.getMat())); }
@@ -259,15 +199,20 @@ void MdiChild::normalize() { swapImage(imageProcessor::normalizeChannels(imageWr
 void MdiChild::equalize() { swapImage(imageProcessor::equalizeChannels(imageWrapper.getMat())); }
 
 void MdiChild::rangeStretch() {
-  auto params = rangeStretchDialog(this);
+  cv::Mat mat = imageWrapper.getMat();
+  auto previewFn = [mat](uchar p1, uchar p2, uchar q3, uchar q4) {
+    return imageProcessor::rangeStretchChannels(mat, p1, p2, q3, q4);
+  };
 
-  if (!params.has_value())
+  auto im = Dialog(this, QString("Enter parameters"), //
+                   InputSpec<IntParam>{"p1", {0, 255}, 0}, InputSpec<IntParam>{"p2", {0, 255}, 255},
+                   InputSpec<IntParam>{"q3", {0, 255}, 0}, InputSpec<IntParam>{"q4", {0, 255}, 255})
+                .runWithPreview(previewFn);
+
+  if (!im.has_value())
     return;
 
-  uchar p1, p2, q3, q4;
-  std::tie(p1, p2, q3, q4) = params.value();
-
-  swapImage(imageProcessor::rangeStretchChannels(imageWrapper.getMat(), p1, p2, q3, q4));
+  swapImage(im.value());
 }
 
 void MdiChild::save() {
@@ -417,7 +362,12 @@ void MdiChild::customMask() {
 }
 
 void MdiChild::customTwoStageFilter() {
-  auto res = twoStageFilterDialog(this);
+  auto res = Dialog(this, QString("Convolve a mask"),
+                    InputSpec<DialogParam<DialogValue::ComposableMask, void>>{
+                        "Mask", KernelSizes::values, BoxKernel::mat3},
+                    BorderTypes::inputSpec)
+                 .run();
+
   applyDialogFilter(res);
 }
 

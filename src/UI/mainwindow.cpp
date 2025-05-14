@@ -66,7 +66,7 @@ void MainWindow::setupMenuBar() {
   QMenu *operateSharpenMenu = operateMenu->addMenu("&Sharpen");
   sharpenLaplacianAction = operateSharpenMenu->addAction("&Laplacian");
 
-  QMenu *operateCustomMenu = operateMenu->addMenu("&Custom");
+  QMenu *operateCustomMenu = operateMenu->addMenu("C&ustom");
   customMaskAction = operateCustomMenu->addAction("&Mask");
   custom2StageAction = operateCustomMenu->addAction("2-&Stage filtering");
 
@@ -212,7 +212,6 @@ void MainWindow::splitChannels() {
     // create new window
     createImageWindow(image);
     activeChild->setImageName(baseName + '_' + format[c] + '.' + suffix);
-    activeChild->setImageScale(activeChild->getImageScale());
     ++c;
   }
 }
@@ -234,8 +233,6 @@ void MainWindow::duplicateImage() {
 
   auto dupName = activeChild->getImageBasename() + "_dup." + activeChild->getImageNameSuffix();
   dupChild->setImageName(dupName);
-
-  dupChild->setImageScale(activeChild->getImageScale());
   dupChild->resize(activeChild->size());
 
   mdiArea->addSubWindow(dupChild);
@@ -328,9 +325,8 @@ void MainWindow::limitWindowSize(MdiChild &child) const {
 
   // prevent upscaling
   if (scaleFactor < 1.0) {
-    child.setImageScale(scaleFactor);
     child.resize(scaledSize + CHILD_IMAGE_MARGIN);
-    child.setMaximumSize(scaledSize + CHILD_IMAGE_MARGIN);
+    child.fitImage();
   }
 }
 

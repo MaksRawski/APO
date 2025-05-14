@@ -17,7 +17,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 qt6_wrap_cpp(MOC_SOURCES
   src/UI/mainwindow.hpp
   src/UI/mdiChild.hpp
-  src/UI/imageLabel.hpp
+  src/UI/ImageViewer.hpp
   src/UI/histogramWidget.hpp
   src/UI/dialogs/MaskEditor.hpp
 )
@@ -26,7 +26,7 @@ add_executable(APO
   src/main.cpp
   src/UI/mainwindow.cpp
   src/UI/mdiChild.cpp
-  src/UI/imageLabel.cpp
+  src/UI/ImageViewer.cpp
   src/UI/histogramWidget.cpp
   src/UI/parametersDialog.cpp
   src/UI/dialogs/MaskEditor.cpp

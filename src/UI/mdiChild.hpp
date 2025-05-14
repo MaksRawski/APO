@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../imageWrapper.hpp"
-#include "imageLabel.hpp"
+#include "ImageViewer.hpp"
 #include <QMdiSubWindow>
 #include <QScrollArea>
 #include <QTabWidget>
@@ -19,9 +19,8 @@ public:
   // the same size of the window whereas the previous one adjusts the size to fit the unscaled image
   void swapImage(const ImageWrapper &image);
   void setImageName(QString name);
-  void setImageScale(double zoom);
+  void fitImage();
 
-  double getImageScale() const;
   QString getImageName() const { return imageName; }
   QString getImageBasename() const;
   QString getImageNameSuffix() const;
@@ -34,8 +33,7 @@ public:
 private:
   void updateChannelNames();
   void regenerateChannels();
-  QScrollArea &getScrollArea(int index) const;
-  ImageLabel &getImageLabel(int index) const;
+  ImageViewer &getImageViewer(int index) const;
   const ImageWrapper &getImageWrapper(int index) const;
   void applyDialogFilter(std::optional<std::tuple<cv::Mat, int>> res);
 
@@ -78,14 +76,11 @@ private:
   QTabWidget *tabWidget;
   // entire image
   ImageWrapper imageWrapper;
-  QScrollArea *scrollArea;
-  ImageLabel *imageLabel;
+  ImageViewer *mainImage;
   // channels
   ImageWrapper imageWrapper1, imageWrapper2, imageWrapper3;
-  QScrollArea *scrollArea1, *scrollArea2, *scrollArea3;
-  ImageLabel *imageLabel1, *imageLabel2, *imageLabel3;
+  ImageViewer *image1, *image2, *image3;
 
-  double zoom = 1.0;
   QString imageName;
   int tabIndex = 0;
 };
