@@ -8,12 +8,11 @@ QDialogButtonBox *createDialogButtons(QDialog *dialog) {
   return buttonBox;
 }
 
-QLineEdit *createValidatedIntEdit(QWidget *parent, int min, int max, int initialValue) {
-  QLineEdit *lineEdit = new QLineEdit;
-  QIntValidator *validator = new QIntValidator(min, max, parent);
-  lineEdit->setValidator(validator);
-  lineEdit->setText(QString::number(initialValue));
-  return lineEdit;
+QSpinBox *createValidatedIntEdit(QWidget *parent, int min, int max, int initialValue) {
+  QSpinBox *spinbox = new QSpinBox(parent);
+  spinbox->setValue(initialValue);
+  spinbox->setRange(min, max);
+  return spinbox;
 }
 
 QLineEdit *createValidatedDoubleEdit(QWidget *parent, int initialValue) {

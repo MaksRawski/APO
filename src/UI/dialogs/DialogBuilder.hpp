@@ -4,6 +4,7 @@
 #include "../ImageViewer.hpp"
 #include "MaskEditor.hpp"
 #include <QMessageBox>
+#include <QPushButton>
 #include <opencv2/core/base.hpp>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/types.hpp>
@@ -18,6 +19,7 @@
 #include <qlineedit.h>
 #include <qobject.h>
 #include <qpixmap.h>
+#include <qspinbox.h>
 #include <qtypes.h>
 #include <qvalidator.h>
 #include <qwidget.h>
@@ -80,7 +82,7 @@ template <typename T> struct ValueTraits<DialogValue::EnumVariant, T> {
 // ComposableMask
 // ==============
 template <> struct ValueTraits<DialogValue::ComposableMask, void> {
-  using Restriction = std::vector<uint>;
+  using Restriction = struct {};
   using RawResult = cv::Mat;
   using MappedResult = RawResult;
 };
@@ -137,7 +139,7 @@ using ComposableMaskParam = DialogParam<DialogValue::ComposableMask, void>;
 using ChoosableMaskParam = DialogParam<DialogValue::ChoosableMask, void>;
 
 QDialogButtonBox *createDialogButtons(QDialog *dialog);
-QLineEdit *createValidatedIntEdit(QWidget *parent, int min, int max, int initialValue);
+QSpinBox *createValidatedIntEdit(QWidget *parent, int min, int max, int initialValue);
 QLineEdit *createValidatedDoubleEdit(QWidget *parent, int initialValue);
 QComboBox *createComboBox(std::vector<QString> variants, uint initialIndex);
 
@@ -161,25 +163,32 @@ public:
     accessors = std::make_tuple(createInput(inputs, *form)...);
 
     previewImage = new ImageViewer(dialog);
-    paramChanged = [this]() {
+    form->addRow(previewImage);
+
+    QDialogButtonBox *buttons = createDialogButtons(dialog);
+    form->addRow(buttons);
+
+    auto invalidInput = [this, buttons]() {};
+    paramChanged = [this, buttons]() {
       if (previewFn == nullptr)
         return;
       auto params = readParams();
       if (!params.has_value()) {
         previewImage->clear();
+        buttons->button(QDialogButtonBox::Ok)->setEnabled(false);
         return;
       }
       auto mat =
           std::apply([this](const auto &...param) { return previewFn(param...); }, params.value());
       if (!mat.has_value()) {
         previewImage->clear();
+        buttons->button(QDialogButtonBox::Ok)->setEnabled(false);
         return;
       }
       QPixmap pixmap = QPixmap::fromImage(ImageWrapper(mat.value()).generateQImage());
       previewImage->setImage(pixmap);
+      buttons->button(QDialogButtonBox::Ok)->setEnabled(true);
     };
-    form->addRow(previewImage);
-    form->addRow(createDialogButtons(dialog));
   }
 
   std::optional<ResultTuple> readParams() const {
@@ -247,15 +256,10 @@ private:
     auto *edit = createValidatedIntEdit(dialog, spec.restriction.low, spec.restriction.high,
                                         spec.initialValue);
     form.addRow(spec.name, edit);
-    QObject::connect(edit, &QLineEdit::textChanged, [this](auto _) { this->paramChanged(); });
+    QObject::connect(edit, &QSpinBox::textChanged, [this](auto _) { this->paramChanged(); });
 
     return [edit]() -> std::optional<int> {
-      bool ok;
-      int v = static_cast<int>(edit->text().toInt(&ok));
-      if (ok)
-        return v;
-      else
-        return std::nullopt;
+      return static_cast<int>(edit->value());
     };
   }
 
@@ -294,13 +298,13 @@ private:
 
   Accessor<ComposableMaskParam> //
   createInput(const InputSpec<ComposableMaskParam> &spec, QFormLayout &form) {
-    cv::Mat mat = spec.initialValue;
-    auto mask1 = new MaskEditor(dialog, QSize(mat.cols, mat.rows));
-    auto mask2 = new MaskEditor(dialog, QSize(mat.cols, mat.rows));
-    mask1->setMask(spec.initialValue);
-    mask2->setMask(spec.initialValue);
+    cv::Mat initMat = spec.initialValue;
+    auto mask1 = new MaskEditor(dialog, QSize(initMat.cols, initMat.rows));
+    auto mask2 = new MaskEditor(dialog, QSize(initMat.cols, initMat.rows));
+    mask1->setMask(initMat);
+    mask2->setMask(initMat);
 
-    auto maskRes = new MaskEditor(dialog, QSize(mat.cols * 2 - 1, mat.rows * 2 - 1));
+    auto maskRes = new MaskEditor(dialog, QSize(initMat.cols * 2 - 1, initMat.rows * 2 - 1));
 
     auto masksContainer = new QWidget(dialog);
     auto layout = new QHBoxLayout(masksContainer);
