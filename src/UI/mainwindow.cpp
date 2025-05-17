@@ -42,54 +42,68 @@ void MainWindow::setupMenuBar() {
   splitChannelsAction = imageTypeMenu->addAction("Split &channels");
   splitChannelsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_C));
 
-  QMenu *operateMenu = menuBar()->addMenu("&Operate");
-  QMenu *operateContrastMenu = operateMenu->addMenu("&Contrast");
-  negateAction = operateContrastMenu->addAction("&Negate");
+  /// PRE PROCESSING
+  QMenu *preMenu = menuBar()->addMenu("P&reprocessing");
+
+  QMenu *contrastMenu = preMenu->addMenu("&Contrast");
+  negateAction = contrastMenu->addAction("&Negate");
   negateAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_I));
-  normalizeAction = operateContrastMenu->addAction("Nor&malize");
-  equalizeAction = operateContrastMenu->addAction("&Equalize");
-  rangeStretchAction = operateContrastMenu->addAction("Range &stretch");
-  posterizeAction = operateContrastMenu->addAction("&Posterize");
+  normalizeAction = contrastMenu->addAction("Nor&malize");
+  equalizeAction = contrastMenu->addAction("&Equalize");
+  rangeStretchAction = contrastMenu->addAction("Range &stretch");
+  posterizeAction = contrastMenu->addAction("&Posterize");
 
-  QMenu *operateBlurMenu = operateMenu->addMenu("&Blur");
-  blurMeanAction = operateBlurMenu->addAction("&Mean");
-  blurMedianAction = operateBlurMenu->addAction("Me&dian");
-  blurGaussianAction = operateBlurMenu->addAction("&Gaussian");
+  QMenu *blurMenu = preMenu->addMenu("&Blur");
+  blurMeanAction = blurMenu->addAction("&Mean");
+  blurMedianAction = blurMenu->addAction("Me&dian");
+  blurGaussianAction = blurMenu->addAction("&Gaussian");
 
-  QMenu *operateEdgeDetectMenu = operateMenu->addMenu("&Edge detect");
-  edgeDetectSobelAction = operateEdgeDetectMenu->addAction("&Sobel");
-  edgeDetectLaplacianAction = operateEdgeDetectMenu->addAction("&Laplacian");
-  edgeDetectCannyAction = operateEdgeDetectMenu->addAction("&Canny");
-  edgeDetectPrewittAction = operateEdgeDetectMenu->addAction("&Prewitt");
+  QMenu *sharpenMenu = preMenu->addMenu("&Sharpen");
+  sharpenLaplacianAction = sharpenMenu->addAction("&Laplacian");
 
-  QMenu *operateSharpenMenu = operateMenu->addMenu("&Sharpen");
-  sharpenLaplacianAction = operateSharpenMenu->addAction("&Laplacian");
+  QMenu *customMenu = preMenu->addMenu("C&ustom");
+  customMaskAction = customMenu->addAction("&Mask");
+  custom2StageAction = customMenu->addAction("2-&Stage filtering");
 
-  QMenu *operateCustomMenu = operateMenu->addMenu("C&ustom");
-  customMaskAction = operateCustomMenu->addAction("&Mask");
-  custom2StageAction = operateCustomMenu->addAction("2-&Stage filtering");
+  QMenu *morphMenu = preMenu->addMenu("&Morphology");
+  morphologyErosionAction = morphMenu->addAction("&Erosion");
+  morphologyDilationAction = morphMenu->addAction("&Dilation");
+  morphologyOpenAction = morphMenu->addAction("&Open");
+  morphologyCloseAction = morphMenu->addAction("&Close");
+  morphologySkeletonizeAction = morphMenu->addAction("&Skeletonize");
 
-  QMenu *imageCombineMenu = imageMenu->addMenu("&Combine");
-  combineAddAction = imageCombineMenu->addAction("&Add");
-  combineSubAction = imageCombineMenu->addAction("&Sub");
-  combineBlendAction = imageCombineMenu->addAction("&Blend");
-  combineANDAction = imageCombineMenu->addAction("A&ND");
-  combineORAction = imageCombineMenu->addAction("&OR");
-  combineXORAction = imageCombineMenu->addAction("&XOR");
+  /// SEGMENTATION
+  QMenu *segmentationMenu = menuBar()->addMenu("&Segmentation");
 
-  QMenu *operateMorphologyMenu = operateMenu->addMenu("&Morphology");
-  morphologyErosionAction = operateMorphologyMenu->addAction("&Erosion");
-  morphologyDilationAction = operateMorphologyMenu->addAction("&Dilation");
-  morphologyOpenAction = operateMorphologyMenu->addAction("&Open");
-  morphologyCloseAction = operateMorphologyMenu->addAction("&Close");
-  morphologySkeletonizeAction = operateMorphologyMenu->addAction("&Skeletonize");
+  QMenu *thresholdingMenu = segmentationMenu->addMenu("&Thresholding");
+  thresholdingMenu->addAction("&Manual");
+  thresholdingMenu->addAction("&Adaptive");
+  thresholdingMenu->addAction("&Otsu");
 
-  operateHoughAction = operateMenu->addAction("&Hough transform");
+  QMenu *edgeDetectMenu = segmentationMenu->addMenu("&Edge detection");
+  edgeDetectSobelAction = edgeDetectMenu->addAction("&Sobel");
+  edgeDetectLaplacianAction = edgeDetectMenu->addAction("&Laplacian");
+  edgeDetectCannyAction = edgeDetectMenu->addAction("&Canny");
+  edgeDetectPrewittAction = edgeDetectMenu->addAction("&Prewitt");
+
+  /// POST PROCESSING
+  QMenu *postMenu = menuBar()->addMenu("P&ostprocessing");
+  QMenu *combineMenu = postMenu->addMenu("&Combine");
+  combineAddAction = combineMenu->addAction("&Add");
+  combineSubAction = combineMenu->addAction("&Sub");
+  combineBlendAction = combineMenu->addAction("&Blend");
+  combineANDAction = combineMenu->addAction("A&ND");
+  combineORAction = combineMenu->addAction("&OR");
+  combineXORAction = combineMenu->addAction("&XOR");
+
+  /// ANALYSIS
+  QMenu *analysisMenu = menuBar()->addMenu("&Analysis");
+  houghAction = analysisMenu->addAction("&Hough transform");
 
   QMenu *aboutMenu = menuBar()->addMenu("Info");
   aboutAction = aboutMenu->addAction("About");
 
-  // actions that operate on single window
+  // actions that operate on a single window
   for (auto c : getConnections())
     c.action->setEnabled(false);
 
@@ -216,10 +230,10 @@ void MainWindow::toggleOptions(const ImageWrapper &image) {
   PixelFormat format = image.getFormat();
   if (format == PixelFormat::Grayscale8) {
     splitChannelsAction->setEnabled(false);
-    operateHoughAction->setEnabled(true);
+    houghAction->setEnabled(true);
   } else {
     splitChannelsAction->setEnabled(true);
-    operateHoughAction->setEnabled(false);
+    houghAction->setEnabled(false);
   }
 }
 
@@ -285,7 +299,7 @@ std::vector<ActionConnection> MainWindow::getConnections() const {
       {morphologyOpenAction, &MdiChild::morphologyOpen},
       {morphologyCloseAction, &MdiChild::morphologyClose},
       {morphologySkeletonizeAction, &MdiChild::morphologySkeletonize},
-      {operateHoughAction, &MdiChild::houghTransform},
+      {houghAction, &MdiChild::houghTransform},
   };
 }
 
