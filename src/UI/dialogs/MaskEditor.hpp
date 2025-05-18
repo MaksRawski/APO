@@ -3,6 +3,7 @@
 #include <opencv2/core/mat.hpp>
 #include <qgridlayout.h>
 #include <qlineedit.h>
+#include <qspinbox.h>
 #include <qtmetamacros.h>
 #include <qwidget.h>
 
@@ -18,7 +19,7 @@ public:
 private:
   QGridLayout *gridLayout;
   QSize size;
-  std::vector<std::vector<QLineEdit *>> lineEdits;
+  std::vector<std::vector<QSpinBox *>> spinboxes;
 
 signals:
   void maskChanged();

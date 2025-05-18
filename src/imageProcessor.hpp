@@ -20,4 +20,6 @@ cv::Mat normalizeChannels(const cv::Mat &mat);
 cv::Mat equalizeChannels(const cv::Mat &mat);
 cv::Mat rangeStretchChannels(const cv::Mat &mat, uchar p1, uchar p2, uchar q3, uchar q4);
 cv::Mat skeletonize(const cv::Mat &mat, const cv::Mat &structuringElement, int borderType);
+cv::Mat convolve(cv::Mat image, cv::Mat kernel, int borderType);
+
 } // namespace imageProcessor

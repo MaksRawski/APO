@@ -323,6 +323,9 @@ private:
 
       cv::Mat k1 = m1.value();
       cv::Mat k2 = m2.value();
+      k1.convertTo(k1, CV_32FC1);
+      k2.convertTo(k2, CV_32FC1);
+
       cv::Mat k2_flipped;
       cv::flip(k2, k2_flipped, -1);
 
@@ -332,6 +335,8 @@ private:
 
       cv::Mat combined;
       cv::filter2D(k1_padded, combined, -1, k2_flipped, cv::Point(-1, -1), 0, cv::BORDER_CONSTANT);
+      combined.convertTo(combined, CV_8SC1);
+      
       maskRes->setMask(combined);
     };
     maskChanged();

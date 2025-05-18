@@ -57,35 +57,35 @@ const auto inputSpec = InputSpec<DialogParam<DialogValue::EnumVariant, Enum>>{
     "Direction", {strings}, 0, [](uint index) { return values[index]; }};
 } // namespace SobelDirections
 
-namespace BoxKernel {
-const cv::Mat mat3 = (cv::Mat_<double>(3, 3) << 1, 1, 1, 1, 1, 1, 1, 1, 1);
+namespace UnitKernel {
+const cv::Mat mat3 = (cv::Mat_<char>(3, 3) << 0, 0, 0, 0, 1, 0, 0, 0, 0);
 }
 
 namespace LaplacianMasks {
-const std::vector<cv::Mat> mats = {(cv::Mat_<double>(3, 3) << 0, -1, 0, -1, 5, -1, 0, -1, 0),
-                                   (cv::Mat_<double>(3, 3) << -1, -1, -1, -1, 9, -1, -1, -1, -1),
-                                   (cv::Mat_<double>(3, 3) << 1, -2, 1, -2, 5, -2, 1, -2, 1)};
+const std::vector<cv::Mat> mats = {(cv::Mat_<char>(3, 3) << 0, -1, 0, -1, 5, -1, 0, -1, 0),
+                                   (cv::Mat_<char>(3, 3) << -1, -1, -1, -1, 9, -1, -1, -1, -1),
+                                   (cv::Mat_<char>(3, 3) << 1, -2, 1, -2, 5, -2, 1, -2, 1)};
 const std::vector<QString> names{"1", "2", "3"};
 } // namespace LaplacianMasks
 
 namespace PrewittMasks {
 const std::vector<cv::Mat> mats = {
     // N
-    (cv::Mat_<double>(3, 3) << -1, -1, -1, 0, 0, 0, 1, 1, 1),
+    (cv::Mat_<char>(3, 3) << -1, -1, -1, 0, 0, 0, 1, 1, 1),
     // NE
-    (cv::Mat_<double>(3, 3) << 0, -1, -1, 1, 0, -1, 1, 1, 0),
+    (cv::Mat_<char>(3, 3) << 0, -1, -1, 1, 0, -1, 1, 1, 0),
     // E
-    (cv::Mat_<double>(3, 3) << 1, 0, -1, 1, 0, -1, 1, 0, -1),
+    (cv::Mat_<char>(3, 3) << 1, 0, -1, 1, 0, -1, 1, 0, -1),
     // SE
-    (cv::Mat_<double>(3, 3) << 1, 1, 0, 1, 0, -1, 0, -1, -1),
+    (cv::Mat_<char>(3, 3) << 1, 1, 0, 1, 0, -1, 0, -1, -1),
     // S
-    (cv::Mat_<double>(3, 3) << 1, 1, 1, 0, 0, 0, -1, -1, -1),
+    (cv::Mat_<char>(3, 3) << 1, 1, 1, 0, 0, 0, -1, -1, -1),
     // SW
-    (cv::Mat_<double>(3, 3) << 0, 1, 1, -1, 0, 1, -1, -1, 0),
+    (cv::Mat_<char>(3, 3) << 0, 1, 1, -1, 0, 1, -1, -1, 0),
     // W
-    (cv::Mat_<double>(3, 3) << -1, 0, 1, -1, 0, 1, -1, 0, 1),
+    (cv::Mat_<char>(3, 3) << -1, 0, 1, -1, 0, 1, -1, 0, 1),
     // NW
-    (cv::Mat_<double>(3, 3) << -1, -1, 0, -1, 0, 1, 0, 1, 1),
+    (cv::Mat_<char>(3, 3) << -1, -1, 0, -1, 0, 1, 0, 1, 1),
 };
 const std::vector<QString> names{"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
 } // namespace PrewittMasks
@@ -99,14 +99,6 @@ ValueType select(uint index);
 const auto inputSpec = InputSpec<DialogParam<DialogValue::EnumVariant, ValueType>>{
     "Structuring element", {names}, 0, select};
 } // namespace StructuringElement
-
-namespace HoughLines {
-struct Parameters {
-  int rho;
-  int thetaDeg;
-  int threshold;
-};
-} // namespace HoughLines
 
 namespace DialogResultsUtils {
 template <typename Tuple, typename... Funcs, std::size_t... Is>

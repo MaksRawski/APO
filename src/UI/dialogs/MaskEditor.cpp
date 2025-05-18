@@ -19,24 +19,22 @@ MaskEditor::MaskEditor(QDialog *dialog, QSize size) : QWidget(dialog) {
   gridLayout = new QGridLayout;
   setLayout(gridLayout);
 
-  QDoubleValidator *validator = new QDoubleValidator(-100'000.0, 100'000.0, 8, dialog);
-
   if (size.width() < 1 || size.height() < 1)
     throw new std::invalid_argument("MaskEditor's size must be positive!");
 
   this->size = size;
 
   for (int row = 0; row < size.height(); ++row) {
-    std::vector<QLineEdit *> lineEditsRow;
+    std::vector<QSpinBox *> spinboxRow;
     for (int col = 0; col < size.width(); ++col) {
-      QLineEdit *edit = new QLineEdit("0.0", dialog);
-      QObject::connect(edit, &QLineEdit::textChanged, [this]() { emit maskChanged(); });
-      edit->setFixedWidth(50);
-      edit->setValidator(validator);
-      gridLayout->addWidget(edit, row, col);
-      lineEditsRow.push_back(edit);
+      QSpinBox *spinbox = new QSpinBox(dialog);
+      spinbox->setRange(-100, 100);
+      QObject::connect(spinbox, &QSpinBox::textChanged, [this]() { emit maskChanged(); });
+      spinbox->setFixedWidth(50);
+      gridLayout->addWidget(spinbox, row, col);
+      spinboxRow.push_back(spinbox);
     }
-    lineEdits.push_back(lineEditsRow);
+    spinboxes.push_back(spinboxRow);
   }
 }
 
@@ -49,10 +47,9 @@ void MaskEditor::setMask(const cv::Mat &mat) {
   }
 
   for (int row = 0; row < mat.rows; ++row) {
-    // TODO: suuport raw bytes
-    auto *rowPtr = mat.ptr<double>(row);
+    auto *rowPtr = mat.ptr<char>(row);
     for (int col = 0; col < mat.cols; ++col) {
-      lineEdits[row][col]->setText(QString::number(rowPtr[col]));
+      spinboxes[row][col]->setValue(rowPtr[col]);
     }
   }
 }
@@ -60,21 +57,18 @@ void MaskEditor::setMask(const cv::Mat &mat) {
 void MaskEditor::setReadOnly(bool v) {
   for (int row = 0; row < size.height(); ++row) {
     for (int col = 0; col < size.width(); ++col) {
-      lineEdits[row][col]->setReadOnly(v);
+      spinboxes[row][col]->setReadOnly(v);
     }
   }
 }
 
 std::optional<cv::Mat> MaskEditor::getMask() const {
-  cv::Mat mask(size.height(), size.width(), CV_64FC1);
+  cv::Mat mask(size.height(), size.width(), CV_8SC1);
 
   for (int row = 0; row < size.height(); ++row) {
-    auto *maskRowPtr = mask.ptr<double>(row);
+    auto *maskRowPtr = mask.ptr<char>(row);
     for (int col = 0; col < size.width(); ++col) {
-      bool conversionOk;
-      double val = lineEdits[row][col]->text().toDouble(&conversionOk);
-      if (!conversionOk)
-        return std::nullopt;
+      signed char val = spinboxes[row][col]->value();
       maskRowPtr[col] = val;
     }
   }

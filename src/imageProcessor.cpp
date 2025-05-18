@@ -169,4 +169,36 @@ cv::Mat skeletonize(const cv::Mat &mat, const cv::Mat &structuringElement, int b
     return skel;
   });
 }
+
+namespace {
+cv::Mat convolveNormalize(cv::Mat image, cv::Mat kernel, int borderType) {
+  cv::Mat kernelScaled;
+  kernel.convertTo(kernelScaled, CV_32FC1);
+  kernelScaled /= cv::sum(kernel)[0];
+
+  return imageProcessor::applyToChannels(image, [kernelScaled, borderType](cv::Mat channel) {
+    cv::Mat convertedChannel;
+    channel.convertTo(convertedChannel, CV_32FC1);
+
+    cv::Mat temp;
+    cv::filter2D(convertedChannel, temp, CV_32FC1, kernelScaled, cv::Point(-1, -1), 0, borderType);
+
+    cv::Mat out;
+    cv::convertScaleAbs(temp, out);
+    return out;
+  });
+}
+} // namespace
+
+cv::Mat convolve(cv::Mat image, cv::Mat kernel, int borderType) {
+  int sum = cv::sum(kernel)[0];
+  if (sum == 0 || sum == 1) {
+    cv::Mat out;
+    // TODO: should probably ensure that kernel is CV_32F?
+    cv::filter2D(image, out, -1, kernel, cv::Point(-1, -1), 0, borderType);
+    return out;
+  } else {
+    return convolveNormalize(image, kernel, borderType);
+  }
+}
 } // namespace imageProcessor

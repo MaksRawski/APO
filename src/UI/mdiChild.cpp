@@ -1,6 +1,7 @@
 #include "mdiChild.hpp"
 #include "../imageProcessor.hpp"
 #include "ImageViewer.hpp"
+#include "dialogs/DialogBuilder.hpp"
 #include "dialogs/utils.hpp"
 #include <QFormLayout>
 #include <QLineEdit>
@@ -20,6 +21,7 @@
 
 using imageProcessor::applyLUT;
 using imageProcessor::applyLUTcv;
+using imageProcessor::convolve;
 using imageProcessor::LUT;
 
 MdiChild::MdiChild(ImageWrapper imageWrapper) {
@@ -340,15 +342,11 @@ void MdiChild::edgeDetectCanny() {
 
 void MdiChild::ask4maskAndApply(const std::vector<cv::Mat> &mats,
                                 const std::vector<QString> &names) {
-  Dialog(this, QString("Select a mask"), InputSpec<ChoosableMaskParam>{"Masks", {mats, names}, 0},
+  Dialog(this, QString("Select a mask"),                           //
+         InputSpec<ChoosableMaskParam>{"Masks", {mats, names}, 0}, //
          BorderTypes::inputSpec)
       .runWithPreview([this](cv::Mat kernel, int borderType) {
-        cv::Mat out;
-
-        kernel /= cv::sum(kernel)[0];
-        cv::filter2D(imageWrapper.getMat(), out, -1, kernel, cv::Point(-1, -1), 0, borderType);
-
-        return out;
+        return convolve(imageWrapper.getMat(), kernel, borderType);
       });
 }
 
@@ -356,22 +354,15 @@ void MdiChild::sharpenLaplacian() { ask4maskAndApply(LaplacianMasks::mats, Lapla
 
 void MdiChild::edgeDetectPrewitt() { ask4maskAndApply(PrewittMasks::mats, PrewittMasks::names); }
 
-void MdiChild::customMask() { ask4maskAndApply({BoxKernel::mat3}, {}); }
+void MdiChild::customMask() { ask4maskAndApply({UnitKernel::mat3}, {}); }
 
 void MdiChild::customTwoStageFilter() {
-  auto mat =
-      Dialog(this, QString("Convolve a mask"),
-             InputSpec<DialogParam<DialogValue::ComposableMask, void>>{"Mask", KernelSizes::values,
-                                                                       BoxKernel::mat3},
-             BorderTypes::inputSpec)
-          .runWithPreview([this](cv::Mat kernel, int borderType) {
-            cv::Mat out;
-            kernel /= cv::sum(kernel)[0];
-            cv::filter2D(imageWrapper.getMat(), out, -1, kernel, cv::Point(-1, -1), 0, borderType);
-            return out;
-          });
-
-  trySwapImage(mat);
+  trySwapImage(Dialog(this, QString("Convolve a mask"),
+                      InputSpec<ComposableMaskParam>{"Mask", {}, UnitKernel::mat3},
+                      BorderTypes::inputSpec)
+                   .runWithPreview([this](cv::Mat kernel, int borderType) {
+                     return convolve(imageWrapper.getMat(), kernel, borderType);
+                   }));
 }
 void MdiChild::ask4structuringElementAndApply(
     std::function<std::optional<cv::Mat>(StructuringElement::ValueType, BorderTypes::ValueType)>
@@ -423,7 +414,7 @@ void MdiChild::morphologySkeletonize() {
 
 void MdiChild::houghTransform() {
   trySwapImage(Dialog(this, QString("Hough Transform"), //
-                      InputSpec<IntParam>{"Rho (px)", {1, 10}, 1},
+                      InputSpec<IntParam>{"Rho (px)", {1, 100}, 1},
                       InputSpec<IntParam>{"Theta (°)", {1, 180}, 1},
                       InputSpec<IntParam>{"Threshold", {1, 200}, 100})
                    .runWithPreview([this](int rho, int thetaDeg, int threshold) {
@@ -445,7 +436,7 @@ void MdiChild::houghTransform() {
                        lines.push_back(cv::Vec4i(x1, y1, x2, y2));
                      }
 
-                     cv::Mat out = imageWrapper.getMat().clone();
+                     cv::Mat out = imageWrapper.toRGB().getMat();
                      for (const auto &l : lines)
                        cv::line(out, {l[0], l[1]}, {l[2], l[3]}, cv::Scalar(255, 0, 0), 2);
                      return out;
