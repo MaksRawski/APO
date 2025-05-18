@@ -72,6 +72,9 @@ private:
   QAction *morphologyCloseAction;
   QAction *morphologySkeletonizeAction;
   QAction *houghAction;
+  QAction *thresholdManualAction;
+  QAction *thresholdAdaptiveAction;
+  QAction *thresholdOtsuAction;
 
   void connectActions(const MdiChild &child);
   void disconnectActions(const MdiChild &child);

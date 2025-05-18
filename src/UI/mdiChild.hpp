@@ -69,6 +69,9 @@ public slots:
   void morphologyClose();
   void morphologySkeletonize();
   void houghTransform();
+  void thresholdManual();
+  void thresholdAdaptive();
+  void thresholdOtsu();
 
 signals:
   void imageUpdated(const ImageWrapper &image) const;

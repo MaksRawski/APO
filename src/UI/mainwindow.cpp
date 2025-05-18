@@ -76,9 +76,9 @@ void MainWindow::setupMenuBar() {
   QMenu *segmentationMenu = menuBar()->addMenu("&Segmentation");
 
   QMenu *thresholdingMenu = segmentationMenu->addMenu("&Thresholding");
-  thresholdingMenu->addAction("&Manual");
-  thresholdingMenu->addAction("&Adaptive");
-  thresholdingMenu->addAction("&Otsu");
+  thresholdManualAction = thresholdingMenu->addAction("&Manual");
+  thresholdAdaptiveAction = thresholdingMenu->addAction("&Adaptive");
+  thresholdOtsuAction = thresholdingMenu->addAction("&Otsu");
 
   QMenu *edgeDetectMenu = segmentationMenu->addMenu("&Edge detection");
   edgeDetectSobelAction = edgeDetectMenu->addAction("&Sobel");
@@ -300,6 +300,9 @@ std::vector<ActionConnection> MainWindow::getConnections() const {
       {morphologyCloseAction, &MdiChild::morphologyClose},
       {morphologySkeletonizeAction, &MdiChild::morphologySkeletonize},
       {houghAction, &MdiChild::houghTransform},
+      {thresholdManualAction, &MdiChild::thresholdManual},
+      {thresholdAdaptiveAction, &MdiChild::thresholdAdaptive},
+      {thresholdOtsuAction, &MdiChild::thresholdOtsu},
   };
 }
 

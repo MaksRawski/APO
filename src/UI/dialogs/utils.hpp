@@ -99,6 +99,13 @@ ValueType select(uint index);
 const auto inputSpec = InputSpec<DialogParam<DialogValue::EnumVariant, ValueType>>{
     "Structuring element", {names}, 0, select};
 } // namespace StructuringElement
+namespace AdaptiveThresholdTypes {
+using ValueType = cv::AdaptiveThresholdTypes;
+const std::vector<QString> names{"Mean", "Gaussian"};
+const std::vector<ValueType> values{cv::ADAPTIVE_THRESH_MEAN_C, cv::ADAPTIVE_THRESH_GAUSSIAN_C};
+const auto inputSpec = InputSpec<DialogParam<DialogValue::EnumVariant, ValueType>>{
+    "Method", {names}, 0, [](uint index) { return values[index]; }};
+} // namespace AdaptiveThresholdTypes
 
 namespace DialogResultsUtils {
 template <typename Tuple, typename... Funcs, std::size_t... Is>

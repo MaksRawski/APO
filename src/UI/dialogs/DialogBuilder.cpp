@@ -8,10 +8,12 @@ QDialogButtonBox *createDialogButtons(QDialog *dialog) {
   return buttonBox;
 }
 
-QSpinBox *createValidatedIntEdit(QWidget *parent, int min, int max, int initialValue) {
+QSpinBox *createValidatedIntEdit(QWidget *parent, int min, int max, int initialValue,
+                                 int stepSize) {
   QSpinBox *spinbox = new QSpinBox(parent);
   spinbox->setValue(initialValue);
   spinbox->setRange(min, max);
+  spinbox->setSingleStep(stepSize);
   return spinbox;
 }
 

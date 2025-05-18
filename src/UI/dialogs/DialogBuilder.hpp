@@ -50,8 +50,11 @@ template <DialogValue V, typename T> struct ValueTraits;
 struct IntRestriction {
   int low, high;
 };
-template <> struct ValueTraits<DialogValue::Int, void> {
-  using Restriction = IntRestriction;
+struct SteppedIntRestriction {
+  int low, high, step;
+};
+template <typename R> struct ValueTraits<DialogValue::Int, R> {
+  using Restriction = R;
   using RawResult = int;
   using MappedResult = RawResult;
 };
@@ -132,14 +135,15 @@ template <typename T> struct InputSpec<DialogParam<DialogValue::EnumVariant, T>>
   DELETE_DEFAULT_CONSTRUCTORS(InputSpec);
 };
 
-using IntParam = DialogParam<DialogValue::Int, void>;
+using IntParam = DialogParam<DialogValue::Int, IntRestriction>;
+using SteppedIntParam = DialogParam<DialogValue::Int, SteppedIntRestriction>;
 using DoubleParam = DialogParam<DialogValue::Double, void>;
 template <typename T> using EnumVariantParam = DialogParam<DialogValue::EnumVariant, T>;
 using ComposableMaskParam = DialogParam<DialogValue::ComposableMask, void>;
 using ChoosableMaskParam = DialogParam<DialogValue::ChoosableMask, void>;
 
 QDialogButtonBox *createDialogButtons(QDialog *dialog);
-QSpinBox *createValidatedIntEdit(QWidget *parent, int min, int max, int initialValue);
+QSpinBox *createValidatedIntEdit(QWidget *parent, int min, int max, int initialValue, int stepSize = 1);
 QLineEdit *createValidatedDoubleEdit(QWidget *parent, int initialValue);
 QComboBox *createComboBox(std::vector<QString> variants, uint initialIndex);
 
@@ -255,6 +259,18 @@ private:
   createInput(const InputSpec<IntParam> &spec, QFormLayout &form) {
     auto *edit = createValidatedIntEdit(dialog, spec.restriction.low, spec.restriction.high,
                                         spec.initialValue);
+    form.addRow(spec.name, edit);
+    QObject::connect(edit, &QSpinBox::textChanged, [this](auto _) { this->paramChanged(); });
+
+    return [edit]() -> std::optional<int> {
+      return static_cast<int>(edit->value());
+    };
+  }
+
+  Accessor<SteppedIntParam> //
+  createInput(const InputSpec<SteppedIntParam> &spec, QFormLayout &form) {
+    auto *edit = createValidatedIntEdit(dialog, spec.restriction.low, spec.restriction.high,
+                                        spec.initialValue, spec.restriction.step);
     form.addRow(spec.name, edit);
     QObject::connect(edit, &QSpinBox::textChanged, [this](auto _) { this->paramChanged(); });
 

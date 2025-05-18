@@ -442,3 +442,37 @@ void MdiChild::houghTransform() {
                      return out;
                    }));
 }
+
+void MdiChild::thresholdManual() {
+  trySwapImage(Dialog(this, QString("Threshold"), //
+                      InputSpec<IntParam>{"Threshold", {0, 255}, 42})
+                   .runWithPreview([this](int t) {
+                     cv::Mat out;
+                     cv::threshold(imageWrapper.getMat(), out, t, 255,
+                                   cv::ThresholdTypes::THRESH_BINARY);
+                     return out;
+                   }));
+}
+void MdiChild::thresholdAdaptive() {
+  trySwapImage(Dialog(this, QString("Adaptive threshold"),                      //
+                      AdaptiveThresholdTypes::inputSpec,                        //
+                      InputSpec<SteppedIntParam>{"block size", {3, 255, 2}, 3}, //
+                      InputSpec<IntParam>{"C (valua to subtract from mean)", {0, 255}, 0})
+                   .runWithPreview([this](cv::AdaptiveThresholdTypes type, int blockSize, int c) {
+                     return imageProcessor::applyToChannels(
+                         imageWrapper.getMat(), [type, blockSize, c](cv::Mat channel) {
+                           cv::Mat out;
+                           cv::adaptiveThreshold(channel, out, 255, type,
+                                                 cv::ThresholdTypes::THRESH_BINARY, blockSize, c);
+                           return out;
+                         });
+                   }));
+}
+void MdiChild::thresholdOtsu() {
+  trySwapImage(imageProcessor::applyToChannels(imageWrapper.getMat(), [](cv::Mat channel) {
+    cv::Mat out;
+    double t = cv::threshold(channel, out, 0, 255, cv::ThresholdTypes::THRESH_OTSU);
+    cv::threshold(channel, out, t, 255, cv::ThresholdTypes::THRESH_BINARY);
+    return out;
+  }));
+}
