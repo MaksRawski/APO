@@ -5,6 +5,8 @@
 #include <QLabel>
 #include <QPixmap>
 #include <QWheelEvent>
+#include <qgraphicsitem.h>
+#include <qpoint.h>
 #include <qscrollarea.h>
 #include <qtmetamacros.h>
 #include <qwidget.h>
@@ -17,14 +19,32 @@ public:
   void useImageTransform(const ImageViewer &other);
   void fit();
   void clear();
+  // will allow lineSelected signal to be emitted once
+  void getLineFromUser();
+  // will cancel any pending line selections
+  void cancelGetLineFromUser();
+  void deleteLine();
 
   QPixmap getImage() const;
 
+private:
+  QGraphicsEllipseItem *drawPoint(QPointF point);
+
 protected:
   void wheelEvent(QWheelEvent *event) override;
+  void mousePressEvent(QMouseEvent *event) override;
+
+signals:
+  void lineSelected(QLineF line);
 
 private:
   QGraphicsScene scene;
-  QGraphicsPixmapItem *pixmapItem = nullptr;
+  QGraphicsPixmapItem *imageItem = nullptr;
   const qreal zoomFactor;
+
+  QPointF firstPoint;
+  QGraphicsLineItem *lineItem = nullptr;
+  QGraphicsEllipseItem *firstPointItem = nullptr;
+  QGraphicsEllipseItem *secondPointItem = nullptr;
+  bool selectingLine = false;
 };

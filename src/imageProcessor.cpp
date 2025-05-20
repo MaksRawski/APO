@@ -201,4 +201,14 @@ cv::Mat convolve(cv::Mat image, cv::Mat kernel, int borderType) {
     return convolveNormalize(image, kernel, borderType);
   }
 }
+std::vector<uchar> extractLineProfile(const cv::Mat &img, cv::Point p1, cv::Point p2) {
+  std::vector<uchar> profile;
+
+  cv::LineIterator it(img, p1, p2, 8);
+  for (int i = 0; i < it.count; i++, ++it) {
+    profile.push_back(**it);
+  }
+
+  return profile;
+}
 } // namespace imageProcessor

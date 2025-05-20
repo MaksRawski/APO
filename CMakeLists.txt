@@ -5,8 +5,8 @@ project(APO LANGUAGES CXX)
 # so let's instead define MOC_SOURCES directly
 set(CMAKE_AUTOMOC OFF)
 
-set(Qt6_LIBS Qt6::Core Qt6::Gui Qt6::Widgets)
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
+set(Qt6_LIBS Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Charts)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Charts)
 if(WIN32)
   set(Qt6_DIR C:/Qt/6.9.0/msvc_2022_64/lib/cmake)
   set(OpenCV_DIR C:/opencv/build/x64/vc16/lib)

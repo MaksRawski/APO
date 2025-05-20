@@ -72,6 +72,7 @@ public slots:
   void thresholdManual();
   void thresholdAdaptive();
   void thresholdOtsu();
+  void profileLine();
 
 signals:
   void imageUpdated(const ImageWrapper &image) const;

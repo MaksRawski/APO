@@ -8,6 +8,11 @@
 #include <QPixmap>
 #include <QScrollBar>
 #include <QVBoxLayout>
+#include <QtCharts/QChart>
+#include <QtCharts/QChartView>
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QValueAxis>
+#include <QtCharts/qchartview.h>
 #include <opencv2/core.hpp>
 #include <opencv2/core/hal/interface.h>
 #include <opencv2/opencv.hpp>
@@ -457,7 +462,7 @@ void MdiChild::thresholdAdaptive() {
   trySwapImage(Dialog(this, QString("Adaptive threshold"),                      //
                       AdaptiveThresholdTypes::inputSpec,                        //
                       InputSpec<SteppedIntParam>{"block size", {3, 255, 2}, 3}, //
-                      InputSpec<IntParam>{"C (valua to subtract from mean)", {0, 255}, 0})
+                      InputSpec<IntParam>{"C (value to subtract from mean)", {0, 255}, 0})
                    .runWithPreview([this](cv::AdaptiveThresholdTypes type, int blockSize, int c) {
                      return imageProcessor::applyToChannels(
                          imageWrapper.getMat(), [type, blockSize, c](cv::Mat channel) {
@@ -475,4 +480,52 @@ void MdiChild::thresholdOtsu() {
     cv::threshold(channel, out, t, 255, cv::ThresholdTypes::THRESH_BINARY);
     return out;
   }));
+}
+
+namespace {
+QChartView *createLineProfileChart(const std::vector<uchar> &profile) {
+
+  QLineSeries *series = new QLineSeries();
+  for (int i = 0; i < static_cast<int>(profile.size()); ++i) {
+    series->append(i, profile[i]);
+  }
+
+  QChart *chart = new QChart();
+  chart->addSeries(series);
+  chart->setTitle("Line Intensity Profile");
+  chart->createDefaultAxes();
+  chart->legend()->hide();
+
+  QAbstractAxis *xAxis = chart->axes(Qt::Horizontal).first();
+  QAbstractAxis *yAxis = chart->axes(Qt::Vertical).first();
+  if (auto *axisX = qobject_cast<QValueAxis *>(xAxis)) {
+    axisX->setTitleText("Distance (pixels)");
+  }
+  if (auto *axisY = qobject_cast<QValueAxis *>(yAxis)) {
+    axisY->setTitleText("Intensity");
+  }
+
+  QChartView *chartView = new QChartView(chart);
+  chartView->setRenderHint(QPainter::Antialiasing);
+  return chartView;
+}
+} // namespace
+
+void MdiChild::profileLine() {
+  const cv::Mat &mat = getImageWrapper(tabIndex).getMat();
+  ImageViewer &imageViewer = getImageViewer(tabIndex);
+
+  disconnect(&imageViewer, &ImageViewer::lineSelected, this, nullptr);
+
+  connect(&imageViewer, &ImageViewer::lineSelected, this, [&](QLineF line) {
+    cv::Point p1(line.p1().x(), line.p1().y());
+    cv::Point p2(line.p2().x(), line.p2().y());
+    auto profile = imageProcessor::extractLineProfile(mat, p1, p2);
+    QChartView *chart = createLineProfileChart(profile);
+    chart->resize(600, 300);
+    chart->setAttribute(Qt::WA_DeleteOnClose);
+    connect(chart, &QObject::destroyed, this, [&imageViewer]() { imageViewer.deleteLine(); });
+    chart->show();
+  });
+  imageViewer.getLineFromUser();
 }

@@ -99,6 +99,8 @@ void MainWindow::setupMenuBar() {
   /// ANALYSIS
   QMenu *analysisMenu = menuBar()->addMenu("&Analysis");
   houghAction = analysisMenu->addAction("&Hough transform");
+  profileLineAction = analysisMenu->addAction("&Line intensity profile");
+  profileLineAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_K));
 
   QMenu *aboutMenu = menuBar()->addMenu("Info");
   aboutAction = aboutMenu->addAction("About");
@@ -231,9 +233,11 @@ void MainWindow::toggleOptions(const ImageWrapper &image) {
   if (format == PixelFormat::Grayscale8) {
     splitChannelsAction->setEnabled(false);
     houghAction->setEnabled(true);
+    profileLineAction->setEnabled(true);
   } else {
     splitChannelsAction->setEnabled(true);
     houghAction->setEnabled(false);
+    profileLineAction->setEnabled(false);
   }
 }
 
@@ -303,6 +307,7 @@ std::vector<ActionConnection> MainWindow::getConnections() const {
       {thresholdManualAction, &MdiChild::thresholdManual},
       {thresholdAdaptiveAction, &MdiChild::thresholdAdaptive},
       {thresholdOtsuAction, &MdiChild::thresholdOtsu},
+      {profileLineAction, &MdiChild::profileLine},
   };
 }
 

@@ -75,6 +75,7 @@ private:
   QAction *thresholdManualAction;
   QAction *thresholdAdaptiveAction;
   QAction *thresholdOtsuAction;
+  QAction *profileLineAction;
 
   void connectActions(const MdiChild &child);
   void disconnectActions(const MdiChild &child);

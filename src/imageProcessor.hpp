@@ -21,5 +21,5 @@ cv::Mat equalizeChannels(const cv::Mat &mat);
 cv::Mat rangeStretchChannels(const cv::Mat &mat, uchar p1, uchar p2, uchar q3, uchar q4);
 cv::Mat skeletonize(const cv::Mat &mat, const cv::Mat &structuringElement, int borderType);
 cv::Mat convolve(cv::Mat image, cv::Mat kernel, int borderType);
-
+std::vector<uchar> extractLineProfile(const cv::Mat &img, cv::Point p1, cv::Point p2);
 } // namespace imageProcessor
