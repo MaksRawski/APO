@@ -2,6 +2,8 @@
 #include <QImage>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
+#include <optional>
+#include <qpixmap.h>
 #include <stdexcept>
 
 namespace PixelFormatUtils {
@@ -44,7 +46,7 @@ std::string toString(const PixelFormat &format) {
     return "Lab";
   }
 }
-std::vector<std::string> channelNmaes(const PixelFormat &format) {
+std::vector<std::string> channelNames(const PixelFormat &format) {
   switch (format) {
   case PixelFormat::Binary:
   case PixelFormat::Grayscale8:
@@ -61,7 +63,8 @@ std::vector<std::string> channelNmaes(const PixelFormat &format) {
 }
 } // namespace PixelFormatUtils
 
-ImageWrapper::ImageWrapper(const ImageWrapper &other) : format_(other.format_), mat_(other.mat_.clone()) {}
+ImageWrapper::ImageWrapper(const ImageWrapper &other)
+    : format_(other.format_), mat_(other.mat_.clone()) {}
 
 ImageWrapper &ImageWrapper::operator=(const ImageWrapper &rhs) {
   mat_ = rhs.mat_.clone();
@@ -70,7 +73,7 @@ ImageWrapper &ImageWrapper::operator=(const ImageWrapper &rhs) {
 }
 
 ImageWrapper ImageWrapper::fromPath(QString filePath) {
-    return ImageWrapper(cv::imread(filePath.toStdString(), cv::IMREAD_ANYCOLOR));
+  return ImageWrapper(cv::imread(filePath.toStdString(), cv::IMREAD_ANYCOLOR));
 }
 
 ImageWrapper::ImageWrapper(cv::Mat mat) : mat_(std::move(mat)) {
@@ -83,18 +86,14 @@ QImage ImageWrapper::generateQImage() const {
   case PixelFormat::Binary:
   case PixelFormat::Grayscale8: {
     CV_Assert(mat_.type() == CV_8UC1);
-    img = QImage(mat_.data, mat_.cols, mat_.rows, mat_.step,
-                 QImage::Format_Grayscale8)
-              .copy();
+    img = QImage(mat_.data, mat_.cols, mat_.rows, mat_.step, QImage::Format_Grayscale8).copy();
     break;
   }
   case PixelFormat::BGR24: {
     CV_Assert(mat_.type() == CV_8UC3);
     cv::Mat rgbMat;
     cv::cvtColor(mat_, rgbMat, cv::COLOR_BGR2RGB);
-    img = QImage(rgbMat.data, rgbMat.cols, rgbMat.rows, rgbMat.step,
-                 QImage::Format_RGB888)
-              .copy();
+    img = QImage(rgbMat.data, rgbMat.cols, rgbMat.rows, rgbMat.step, QImage::Format_RGB888).copy();
     break;
   }
 
@@ -102,9 +101,7 @@ QImage ImageWrapper::generateQImage() const {
     CV_Assert(mat_.type() == CV_8UC3);
     cv::Mat rgbMat;
     cv::cvtColor(mat_, rgbMat, cv::COLOR_HSV2RGB);
-    img = QImage(rgbMat.data, rgbMat.cols, rgbMat.rows, rgbMat.step,
-                 QImage::Format_RGB888)
-              .copy();
+    img = QImage(rgbMat.data, rgbMat.cols, rgbMat.rows, rgbMat.step, QImage::Format_RGB888).copy();
     break;
   }
 
@@ -112,13 +109,19 @@ QImage ImageWrapper::generateQImage() const {
     CV_Assert(mat_.type() == CV_8UC3);
     cv::Mat rgbMat;
     cv::cvtColor(mat_, rgbMat, cv::COLOR_Lab2RGB);
-    img = QImage(rgbMat.data, rgbMat.cols, rgbMat.rows, rgbMat.step,
-                 QImage::Format_RGB888)
-              .copy();
+    img = QImage(rgbMat.data, rgbMat.cols, rgbMat.rows, rgbMat.step, QImage::Format_RGB888).copy();
     break;
   }
   }
   return img;
+}
+
+QPixmap ImageWrapper::generateQPixmap() const {
+  QImage im = generateQImage();
+  if (im.isNull()) {
+    throw new std::runtime_error("Failed to generate a QImage!");
+  }
+  return QPixmap::fromImage(im);
 }
 
 std::vector<ImageWrapper> ImageWrapper::splitChannels() const {
@@ -267,5 +270,30 @@ ImageWrapper ImageWrapper::toGrayscale() const {
     throw new std::runtime_error("not yet implemented!");
   }
   out.format_ = PixelFormat::Grayscale8;
+  return out;
+}
+
+// will return an ImageWrapper with a Binary format only if
+// the image is grayscale and doesn't contain any other value than 0 and 255
+std::optional<ImageWrapper> ImageWrapper::toBinary() const {
+  if (format_ != PixelFormat::Grayscale8)
+    return std::nullopt;
+
+  double minVal, maxVal;
+  cv::minMaxLoc(mat_, &minVal, &maxVal);
+
+  if ((minVal != 0 && minVal != 255) || (maxVal != 0 && maxVal != 255))
+    return std::nullopt;
+
+  // check that all pixels are either 0 or 255
+  cv::Mat nonZero, non255;
+  cv::compare(mat_, 0, nonZero, cv::CMP_NE);
+  cv::compare(mat_, 255, non255, cv::CMP_NE);
+  cv::bitwise_and(nonZero, non255, nonZero);
+  if (cv::countNonZero(nonZero) > 0)
+    return std::nullopt;
+
+  ImageWrapper out(*this);
+  out.format_ = PixelFormat::Binary;
   return out;
 }

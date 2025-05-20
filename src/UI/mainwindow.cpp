@@ -1,4 +1,5 @@
 #include "mainwindow.hpp"
+#include "dialogs/DialogBuilder.hpp"
 #include "histogramWidget.hpp"
 #include "mdiChild.hpp"
 #include <QFileDialog>
@@ -8,10 +9,14 @@
 #include <QPixmap>
 #include <QSplitter>
 #include <QTimer>
+#include <opencv2/opencv.hpp>
+#include <optional>
 #include <qaction.h>
 #include <qboxlayout.h>
+#include <qcontainerfwd.h>
 #include <qfileinfo.h>
 #include <qkeysequence.h>
+#include <qtypes.h>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   setupMenuBar();
@@ -85,6 +90,8 @@ void MainWindow::setupMenuBar() {
   edgeDetectLaplacianAction = edgeDetectMenu->addAction("&Laplacian");
   edgeDetectCannyAction = edgeDetectMenu->addAction("&Canny");
   edgeDetectPrewittAction = edgeDetectMenu->addAction("&Prewitt");
+
+  grabCutAction = segmentationMenu->addAction("&GrabCut");
 
   /// POST PROCESSING
   QMenu *postMenu = menuBar()->addMenu("P&ostprocessing");
@@ -230,15 +237,16 @@ void MainWindow::splitChannels() {
 
 void MainWindow::toggleOptions(const ImageWrapper &image) {
   PixelFormat format = image.getFormat();
-  if (format == PixelFormat::Grayscale8) {
-    splitChannelsAction->setEnabled(false);
-    houghAction->setEnabled(true);
-    profileLineAction->setEnabled(true);
-  } else {
-    splitChannelsAction->setEnabled(true);
-    houghAction->setEnabled(false);
-    profileLineAction->setEnabled(false);
-  }
+
+  bool isBGR24 = format == PixelFormat::BGR24;
+  grabCutAction->setEnabled(isBGR24);
+
+  bool isGrayscale = format == PixelFormat::Grayscale8;
+  houghAction->setEnabled(isGrayscale);
+
+  bool isSingleChannel = PixelFormatUtils::toCvType(format) == CV_8UC1;
+  splitChannelsAction->setEnabled(!isSingleChannel);
+  profileLineAction->setEnabled(isSingleChannel);
 }
 
 void MainWindow::duplicateImage() {
@@ -312,14 +320,17 @@ std::vector<ActionConnection> MainWindow::getConnections() const {
 }
 
 std::vector<MainWindowActionConnection> MainWindow::getMainWindowActions() const {
-  return {{duplicateAction, &MainWindow::duplicateImage},
-          {splitChannelsAction, &MainWindow::splitChannels},
-          {combineAddAction, &MainWindow::combineAdd},
-          {combineSubAction, &MainWindow::combineSub},
-          {combineBlendAction, &MainWindow::combineBlend},
-          {combineANDAction, &MainWindow::combineAND},
-          {combineORAction, &MainWindow::combineOR},
-          {combineXORAction, &MainWindow::combineXOR}};
+  return {
+      {duplicateAction, &MainWindow::duplicateImage},
+      {splitChannelsAction, &MainWindow::splitChannels},
+      {combineAddAction, &MainWindow::combineAdd},
+      {combineSubAction, &MainWindow::combineSub},
+      {combineBlendAction, &MainWindow::combineBlend},
+      {combineANDAction, &MainWindow::combineAND},
+      {combineORAction, &MainWindow::combineOR},
+      {combineXORAction, &MainWindow::combineXOR},
+      {grabCutAction, &MainWindow::grabCut},
+  };
 }
 
 std::vector<MdiChild *> MainWindow::getMdiChildren() const {
@@ -345,7 +356,7 @@ void MainWindow::limitWindowSize(MdiChild &child) const {
 
   // prevent upscaling
   if (scaleFactor < 1.0) {
-    child.resize(scaledSize + CHILD_IMAGE_MARGIN);
+    child.resize(scaledSize);
     child.fitImage();
   }
 }
@@ -468,4 +479,33 @@ void MainWindow::combine(std::function<cv::Mat(cv::Mat, cv::Mat)> op,
 
   if (mat.has_value())
     createImageWindow(mat.value(), name);
+}
+
+void MainWindow::grabCut() {
+  cv::Mat currentImage = activeChild->getImage().getMat();
+
+  auto res =
+      Dialog(this, QString("GrabCut"), //
+             InputSpec<ROIParam>{"Select Region Of Interest", currentImage, {}},
+             InputSpec<IntParam>{"Iterations count", {1, 100}, 1})
+          .runWithPreview([currentImage](cv::Rect roi, int iterCount) -> std::optional<cv::Mat> {
+            if (roi.size() == cv::Size(0, 0))
+              return std::nullopt;
+            cv::Mat mask(currentImage.size(), CV_8UC1, cv::GC_BGD);
+            mask(roi).setTo(cv::Scalar(cv::GC_PR_FGD));
+
+            cv::Mat bgModel, fgModel;
+            cv::grabCut(currentImage, mask, roi, bgModel, fgModel, iterCount,
+                        cv::GC_INIT_WITH_MASK);
+            cv::Mat binaryMask = (mask == cv::GC_FGD) | (mask == cv::GC_PR_FGD);
+
+            binaryMask.convertTo(binaryMask, CV_8U, 255);
+            cv::Mat result;
+            currentImage.copyTo(result, binaryMask);
+
+            return result;
+          });
+
+  if (res.has_value())
+    createImageWindow(res.value(), activeChild->getImageBasename() + " GrabCut");
 }

@@ -76,6 +76,7 @@ private:
   QAction *thresholdAdaptiveAction;
   QAction *thresholdOtsuAction;
   QAction *profileLineAction;
+  QAction *grabCutAction;
 
   void connectActions(const MdiChild &child);
   void disconnectActions(const MdiChild &child);
@@ -105,6 +106,7 @@ private slots:
   void combineAND();
   void combineOR();
   void combineXOR();
+  void grabCut();
 };
 
 namespace {

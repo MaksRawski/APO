@@ -63,15 +63,12 @@ void MdiChild::setImage(const ImageWrapper &image) {
 
 void MdiChild::swapImage(const ImageWrapper &image) {
   imageWrapper = image;
-  QImage qimage = imageWrapper.generateQImage();
-  if (qimage.isNull())
-    throw new std::runtime_error("Failed to generate a QImage!");
-
-  QPixmap pixmap = QPixmap::fromImage(qimage);
+  QPixmap pixmap = imageWrapper.generateQPixmap();
   mainImage->setImage(pixmap);
   updateChannelNames();
   regenerateChannels();
   emitImageUpdatedSignal();
+  setImageName(imageName); // update type in the window title
 }
 
 void MdiChild::trySwapImage(const std::optional<ImageWrapper> &image) {
@@ -81,12 +78,12 @@ void MdiChild::trySwapImage(const std::optional<ImageWrapper> &image) {
 
 void MdiChild::updateChannelNames() {
   auto imageFormat = imageWrapper.getFormat();
-  if (imageFormat == PixelFormat::Grayscale8) {
+  if (PixelFormatUtils::toCvType(imageFormat) == CV_8UC1) {
     tabWidget->removeTab(3);
     tabWidget->removeTab(2);
     tabWidget->removeTab(1);
   } else if (tabWidget->count() < 3) {
-    auto names = PixelFormatUtils::channelNmaes(imageFormat);
+    auto names = PixelFormatUtils::channelNames(imageFormat);
     tabWidget->addTab(image1, QString::fromStdString(names[0]));
     tabWidget->addTab(image2, QString::fromStdString(names[1]));
     tabWidget->addTab(image3, QString::fromStdString(names[2]));
@@ -96,22 +93,18 @@ void MdiChild::updateChannelNames() {
 void MdiChild::toGrayscale() {
   imageWrapper = imageWrapper.toGrayscale();
   swapImage(imageWrapper);
-  setImageName(imageName); // update type in the window title
 }
 void MdiChild::toLab() {
   imageWrapper = imageWrapper.toLab();
   swapImage(imageWrapper);
-  setImageName(imageName); // update type in the window title
 }
 void MdiChild::toHSV() {
   imageWrapper = imageWrapper.toHSV();
   swapImage(imageWrapper);
-  setImageName(imageName); // update type in the window title
 }
 void MdiChild::toRGB() {
   imageWrapper = imageWrapper.toRGB();
   swapImage(imageWrapper);
-  setImageName(imageName); // update type in the window title
 }
 
 void MdiChild::setImageName(QString name) {
@@ -197,9 +190,9 @@ void MdiChild::regenerateChannels() {
   imageWrapper2 = imageWrappers[1];
   imageWrapper3 = imageWrappers[2];
 
-  QPixmap pixmap1 = QPixmap::fromImage(imageWrapper1.generateQImage());
-  QPixmap pixmap2 = QPixmap::fromImage(imageWrapper2.generateQImage());
-  QPixmap pixmap3 = QPixmap::fromImage(imageWrapper3.generateQImage());
+  QPixmap pixmap1 = imageWrapper1.generateQPixmap();
+  QPixmap pixmap2 = imageWrapper2.generateQPixmap();
+  QPixmap pixmap3 = imageWrapper3.generateQPixmap();
 
   image1->setImage(pixmap1);
   image2->setImage(pixmap2);
@@ -449,37 +442,42 @@ void MdiChild::houghTransform() {
 }
 
 void MdiChild::thresholdManual() {
-  trySwapImage(Dialog(this, QString("Threshold"), //
-                      InputSpec<IntParam>{"Threshold", {0, 255}, 42})
-                   .runWithPreview([this](int t) {
-                     cv::Mat out;
-                     cv::threshold(imageWrapper.getMat(), out, t, 255,
-                                   cv::ThresholdTypes::THRESH_BINARY);
-                     return out;
-                   }));
+  auto res =
+      Dialog(this, QString("Threshold"), //
+             InputSpec<IntParam>{"Threshold", {0, 255}, 42})
+          .runWithPreview([this](int t) {
+            cv::Mat out;
+            cv::threshold(imageWrapper.getMat(), out, t, 255, cv::ThresholdTypes::THRESH_BINARY);
+            return out;
+          });
+  if (res.has_value())
+    trySwapImage(ImageWrapper(res.value()).toBinary());
 }
 void MdiChild::thresholdAdaptive() {
-  trySwapImage(Dialog(this, QString("Adaptive threshold"),                      //
-                      AdaptiveThresholdTypes::inputSpec,                        //
-                      InputSpec<SteppedIntParam>{"block size", {3, 255, 2}, 3}, //
-                      InputSpec<IntParam>{"C (value to subtract from mean)", {0, 255}, 0})
-                   .runWithPreview([this](cv::AdaptiveThresholdTypes type, int blockSize, int c) {
-                     return imageProcessor::applyToChannels(
-                         imageWrapper.getMat(), [type, blockSize, c](cv::Mat channel) {
-                           cv::Mat out;
-                           cv::adaptiveThreshold(channel, out, 255, type,
-                                                 cv::ThresholdTypes::THRESH_BINARY, blockSize, c);
-                           return out;
-                         });
-                   }));
+  auto res = Dialog(this, QString("Adaptive threshold"),                      //
+                    AdaptiveThresholdTypes::inputSpec,                        //
+                    InputSpec<SteppedIntParam>{"block size", {3, 255, 2}, 3}, //
+                    InputSpec<IntParam>{"C (value to subtract from mean)", {0, 255}, 0})
+                 .runWithPreview([this](cv::AdaptiveThresholdTypes type, int blockSize, int c) {
+                   return imageProcessor::applyToChannels(
+                       imageWrapper.getMat(), [type, blockSize, c](cv::Mat channel) {
+                         cv::Mat out;
+                         cv::adaptiveThreshold(channel, out, 255, type,
+                                               cv::ThresholdTypes::THRESH_BINARY, blockSize, c);
+                         return out;
+                       });
+                 });
+  if (res.has_value())
+    trySwapImage(ImageWrapper(res.value()).toBinary());
 }
 void MdiChild::thresholdOtsu() {
-  trySwapImage(imageProcessor::applyToChannels(imageWrapper.getMat(), [](cv::Mat channel) {
-    cv::Mat out;
-    double t = cv::threshold(channel, out, 0, 255, cv::ThresholdTypes::THRESH_OTSU);
-    cv::threshold(channel, out, t, 255, cv::ThresholdTypes::THRESH_BINARY);
-    return out;
-  }));
+  trySwapImage(
+      ImageWrapper(imageProcessor::applyToChannels(imageWrapper.getMat(), [](cv::Mat channel) {
+        cv::Mat out;
+        double t = cv::threshold(channel, out, 0, 255, cv::ThresholdTypes::THRESH_OTSU);
+        cv::threshold(channel, out, t, 255, cv::ThresholdTypes::THRESH_BINARY);
+        return out;
+      })).toBinary());
 }
 
 namespace {

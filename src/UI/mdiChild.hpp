@@ -8,8 +8,6 @@
 #include <QTabWidget>
 #include <qscrollbar.h>
 
-const QSize CHILD_IMAGE_MARGIN = QSize(30, 70);
-
 class MdiChild : public QMdiSubWindow {
   Q_OBJECT
 

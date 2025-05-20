@@ -19,7 +19,9 @@
 #include <qlineedit.h>
 #include <qobject.h>
 #include <qpixmap.h>
+#include <qpushbutton.h>
 #include <qspinbox.h>
+#include <qtpreprocessorsupport.h>
 #include <qtypes.h>
 #include <qvalidator.h>
 #include <qwidget.h>
@@ -37,6 +39,7 @@ enum class DialogValue {
   EnumVariant,    // any variant chosen from a provided list
   ComposableMask, // a 5x5 mask that is achieved by convolution of two 3x3 masks
   ChoosableMask,  // a mask that can be chosen from a list and modified by the user
+  ROI,            // a rectangle as a Region Of Interest
 };
 
 // This weird template struct allows for associating data
@@ -104,6 +107,15 @@ template <> struct ValueTraits<DialogValue::ChoosableMask, void> {
   using MappedResult = cv::Mat;
 };
 
+// ===
+// ROI
+// ===
+template <> struct ValueTraits<DialogValue::ROI, void> {
+  using Restriction = cv::Mat; // image from which ROI can be selected
+  using RawResult = cv::Rect;
+  using MappedResult = RawResult;
+};
+
 // InputSpec
 template <DialogValue V, typename T> struct DialogParam {
   static constexpr DialogValue value = V;
@@ -135,15 +147,18 @@ template <typename T> struct InputSpec<DialogParam<DialogValue::EnumVariant, T>>
   DELETE_DEFAULT_CONSTRUCTORS(InputSpec);
 };
 
+// DialogParams
 using IntParam = DialogParam<DialogValue::Int, IntRestriction>;
 using SteppedIntParam = DialogParam<DialogValue::Int, SteppedIntRestriction>;
 using DoubleParam = DialogParam<DialogValue::Double, void>;
 template <typename T> using EnumVariantParam = DialogParam<DialogValue::EnumVariant, T>;
 using ComposableMaskParam = DialogParam<DialogValue::ComposableMask, void>;
 using ChoosableMaskParam = DialogParam<DialogValue::ChoosableMask, void>;
+using ROIParam = DialogParam<DialogValue::ROI, void>;
 
 QDialogButtonBox *createDialogButtons(QDialog *dialog);
-QSpinBox *createValidatedIntEdit(QWidget *parent, int min, int max, int initialValue, int stepSize = 1);
+QSpinBox *createValidatedIntEdit(QWidget *parent, int min, int max, int initialValue,
+                                 int stepSize = 1);
 QLineEdit *createValidatedDoubleEdit(QWidget *parent, int initialValue);
 QComboBox *createComboBox(std::vector<QString> variants, uint initialIndex);
 
@@ -189,7 +204,7 @@ public:
         buttons->button(QDialogButtonBox::Ok)->setEnabled(false);
         return;
       }
-      QPixmap pixmap = QPixmap::fromImage(ImageWrapper(mat.value()).generateQImage());
+      QPixmap pixmap = ImageWrapper(mat.value()).generateQPixmap();
       previewImage->setImage(pixmap);
       buttons->button(QDialogButtonBox::Ok)->setEnabled(true);
     };
@@ -262,9 +277,7 @@ private:
     form.addRow(spec.name, edit);
     QObject::connect(edit, &QSpinBox::textChanged, [this](auto _) { this->paramChanged(); });
 
-    return [edit]() -> std::optional<int> {
-      return static_cast<int>(edit->value());
-    };
+    return [edit]() -> std::optional<int> { return static_cast<int>(edit->value()); };
   }
 
   Accessor<SteppedIntParam> //
@@ -274,9 +287,7 @@ private:
     form.addRow(spec.name, edit);
     QObject::connect(edit, &QSpinBox::textChanged, [this](auto _) { this->paramChanged(); });
 
-    return [edit]() -> std::optional<int> {
-      return static_cast<int>(edit->value());
-    };
+    return [edit]() -> std::optional<int> { return static_cast<int>(edit->value()); };
   }
 
   Accessor<DoubleParam> //
@@ -352,7 +363,7 @@ private:
       cv::Mat combined;
       cv::filter2D(k1_padded, combined, -1, k2_flipped, cv::Point(-1, -1), 0, cv::BORDER_CONSTANT);
       combined.convertTo(combined, CV_8SC1);
-      
+
       maskRes->setMask(combined);
     };
     maskChanged();
@@ -390,5 +401,30 @@ private:
     }
 
     return [mask]() -> std::optional<cv::Mat> { return mask->getMask(); };
+  }
+
+  cv::Rect roi;
+
+  Accessor<ROIParam> //
+  createInput(const InputSpec<ROIParam> &spec, QFormLayout &form) {
+    QPushButton *selectROI = new QPushButton(dialog);
+    selectROI->setText("Select ROI");
+    form.addRow("", selectROI);
+
+    ImageViewer *imageViewer = new ImageViewer(dialog);
+    imageViewer->setImage(ImageWrapper(spec.restriction).generateQPixmap());
+    QObject::connect(imageViewer, &ImageViewer::roiSelected, [this, imageViewer](cv::Rect roi) {
+      this->roi = roi;
+      imageViewer->cancelGetROIFromUser();
+      this->paramChanged();
+    });
+
+    QObject::connect(selectROI, &QPushButton::clicked, [imageViewer](bool _) {
+      imageViewer->clearROI();
+      imageViewer->getROIFromUser();
+    });
+    form.addRow("", imageViewer);
+
+    return [this]() -> std::optional<cv::Rect> { return this->roi; };
   }
 };

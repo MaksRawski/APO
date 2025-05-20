@@ -20,7 +20,7 @@ enum class PixelFormat {
 PixelFormat fromChannelsNumber(int channels);
 int toCvType(const PixelFormat &format);
 std::string toString(const PixelFormat &format);
-std::vector<std::string> channelNmaes(const PixelFormat &format);
+std::vector<std::string> channelNames(const PixelFormat &format);
 }
 
 using PixelFormatUtils::PixelFormat;
@@ -38,12 +38,14 @@ public:
   int getHeight() const { return mat_.rows; }
   PixelFormat getFormat() const { return format_; }
   QImage generateQImage() const;
+  QPixmap generateQPixmap() const;
 
   std::vector<ImageWrapper> splitChannels() const;
   ImageWrapper toRGB() const;
   ImageWrapper toHSV() const;
   ImageWrapper toLab() const;
   ImageWrapper toGrayscale() const;
+  std::optional<ImageWrapper> toBinary() const;
 
 signals:
   void dataChanged(QPixmap pixmap);

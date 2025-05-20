@@ -4,14 +4,18 @@
 #include <qnamespace.h>
 #include <qpixmap.h>
 #include <qpoint.h>
+#include <qrubberband.h>
 #include <qscrollarea.h>
 #include <qscrollbar.h>
 #include <qsharedpointer.h>
+#include <qtpreprocessorsupport.h>
+#include <qwindowdefs.h>
 
 ImageViewer::ImageViewer(QWidget *parent) : QGraphicsView(parent), zoomFactor(1.15) {
   setScene(&scene);
   setDragMode(QGraphicsView::ScrollHandDrag);
   setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+  rubberBand = new QRubberBand(QRubberBand::Rectangle, this);
 }
 
 void ImageViewer::setImage(const QPixmap &pixmap) {
@@ -77,9 +81,40 @@ void ImageViewer::mousePressEvent(QMouseEvent *event) {
       emit lineSelected(line);
       cancelGetLineFromUser();
     }
+  } else if (selectingROI) {
+    origin = event->pos();
+    rubberBand->setGeometry(QRect(origin, QSize()));
+    rubberBand->show();
   } else {
     // if not selecting a line handle clicks normally
     QGraphicsView::mousePressEvent(event);
+  }
+}
+
+void ImageViewer::mouseMoveEvent(QMouseEvent *event) {
+  if (selectingROI)
+    rubberBand->setGeometry(QRect(origin, event->pos()).normalized());
+  QGraphicsView::mouseMoveEvent(event);
+}
+
+void ImageViewer::mouseReleaseEvent(QMouseEvent *event) {
+  Q_UNUSED(event);
+  if (selectingROI) {
+    rubberBand->hide();
+    QRect selected = rubberBand->geometry();
+    QPointF topLeftQPoint = imageItem->mapFromScene(mapToScene(selected.topLeft()));
+    QPointF bottomRightQPoint = imageItem->mapFromScene(mapToScene(selected.bottomRight()));
+    QPen pen = QPen(Qt::red, 5);
+    QBrush brush = QBrush(Qt::BrushStyle::NoBrush);
+
+    roiItem = scene.addRect(QRectF(topLeftQPoint, bottomRightQPoint), pen, brush);
+    roiItem->setZValue(1);
+
+    cv::Point topLeft = cv::Point(topLeftQPoint.x(), topLeftQPoint.y());
+    cv::Point bottomRight = cv::Point(bottomRightQPoint.x(), bottomRightQPoint.y());
+    cv::Rect roi = cv::Rect(topLeft, bottomRight);
+
+    emit roiSelected(roi);
   }
 }
 
@@ -110,5 +145,26 @@ void ImageViewer::deleteLine() {
     scene.removeItem(lineItem);
     delete lineItem;
     lineItem = nullptr;
+  }
+}
+
+void ImageViewer::getROIFromUser() {
+  clearROI();
+  cancelGetROIFromUser();
+  setDragMode(QGraphicsView::NoDrag);
+  selectingROI = true;
+}
+
+void ImageViewer::cancelGetROIFromUser() {
+  selectingROI = false;
+  origin = QPoint();
+  setDragMode(QGraphicsView::ScrollHandDrag);
+}
+
+void ImageViewer::clearROI() {
+  if (roiItem != nullptr) {
+    scene.removeItem(roiItem);
+    delete roiItem;
+    roiItem = nullptr;
   }
 }
