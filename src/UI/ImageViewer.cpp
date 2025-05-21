@@ -116,6 +116,7 @@ void ImageViewer::mouseReleaseEvent(QMouseEvent *event) {
 
     emit roiSelected(roi);
   }
+  QGraphicsView::mouseReleaseEvent(event);
 }
 
 void ImageViewer::getLineFromUser() {
