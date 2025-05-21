@@ -32,6 +32,10 @@ void MainWindow::setupMenuBar() {
   saveAction->setEnabled(false);
   saveAction->setShortcut(QKeySequence::Save);
 
+  QMenu *viewMenu = menuBar()->addMenu("&View");
+  toggleDockAction = viewMenu->addAction("Toggle &dock");
+  toggleDockAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_H));
+
   QMenu *imageMenu = menuBar()->addMenu("&Image");
   duplicateAction = imageMenu->addAction("&Duplicate");
   duplicateAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_D));
@@ -125,6 +129,9 @@ void MainWindow::setupMenuBar() {
   // always available actions
   connect(openAction, &QAction::triggered, this, &MainWindow::openImage);
   connect(aboutAction, &QAction::triggered, this, &MainWindow::openAboutWindow);
+  connect(toggleDockAction, &QAction::triggered, this, [this]() {
+    dock->setVisible(dock->isHidden());
+  });
 }
 
 void MainWindow::setupUI() {
@@ -136,7 +143,7 @@ void MainWindow::setupUI() {
   setCentralWidget(mdiArea);
 
   // create dock
-  QDockWidget *dock = new QDockWidget(this);
+  dock = new QDockWidget(this);
 
   // for now using just HistogramWidget as the entire dock
   histogramWidget = new HistogramWidget;
@@ -144,7 +151,7 @@ void MainWindow::setupUI() {
   addDockWidget(Qt::RightDockWidgetArea, dock);
 
   // wait with resizing till the UI fully renders
-  QTimer::singleShot(0, [this, dock]() {
+  QTimer::singleShot(0, [this]() {
     if (dock->isVisible()) {
       int w = static_cast<int>(0.25 * this->width());
       dock->setMinimumWidth(w);

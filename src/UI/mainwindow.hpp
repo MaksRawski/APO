@@ -32,6 +32,7 @@ public:
 
 private:
   QMdiArea *mdiArea;
+  QDockWidget *dock;
   HistogramWidget *histogramWidget;
   MdiChild *activeChild = nullptr;
 
@@ -77,6 +78,7 @@ private:
   QAction *thresholdOtsuAction;
   QAction *profileLineAction;
   QAction *grabCutAction;
+  QAction *toggleDockAction;
 
   void connectActions(const MdiChild &child);
   void disconnectActions(const MdiChild &child);
