@@ -340,12 +340,12 @@ void MdiChild::edgeDetectCanny() {
 
 void MdiChild::ask4maskAndApply(const std::vector<cv::Mat> &mats,
                                 const std::vector<QString> &names) {
-  Dialog(this, QString("Select a mask"),                           //
+  trySwapImage(Dialog(this, QString("Select a mask"),                           //
          InputSpec<ChoosableMaskParam>{"Masks", {mats, names}, 0}, //
          BorderTypes::inputSpec)
       .runWithPreview([this](cv::Mat kernel, int borderType) {
         return convolve(imageWrapper.getMat(), kernel, borderType);
-      });
+      }));
 }
 
 void MdiChild::sharpenLaplacian() { ask4maskAndApply(LaplacianMasks::mats, LaplacianMasks::names); }
