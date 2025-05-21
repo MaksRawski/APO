@@ -15,11 +15,7 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
-
-    - name: Install build tools
-      run: |
-       choco install -y strawberryperl python ninja cmake git visualstudio2022buildtools visualstudio2022-workload-vctools
-      
+    
     - name: Cache Qt
       id: cache-qt
       uses: actions/cache@v4
@@ -31,7 +27,7 @@ jobs:
       if: steps.cache-qt.outputs.cache-hit != 'true'
       run: |
         choco install -y aqt --version 3.2.1
-        aqt install-qt --timeout 30 --outputdir c:\Qt windows desktop $env:Qt6_VERSION win64_msvc2022_64
+        aqt install-qt --timeout 30 --outputdir c:\Qt windows desktop $env:Qt6_VERSION win64_msvc2022_64 -m qtcharts
    
     - name: Cache OpenCV
       id: cache-opencv
