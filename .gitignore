@@ -1,6 +1,7 @@
 .cache/
 .qtcreator/
 build*
+!build.bat
 .vs
 *.bmp
 *.jpg
