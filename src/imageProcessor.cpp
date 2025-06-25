@@ -211,4 +211,67 @@ std::vector<uchar> extractLineProfile(const cv::Mat &img, cv::Point p1, cv::Poin
 
   return profile;
 }
+
+namespace {
+// Affine transformation is by definition:
+// T = AX + B, where:
+//    T - result of a transformation
+//    X - input
+//    A, B - transformation parameters
+//
+// in case where X is a single point:
+// X = [x y]
+// A = [a00 a01]
+//     [a10 a11]
+// B = [b1]
+//     [b2]
+//
+// we can simplify the transformation equation to be in the form of matrix multiplication:
+//
+//   T  = [   A    B ] X
+//                    [x]
+// [Tx] = [a00 a01 b1][y]
+// [Ty]   [a10 a11 b2][1]
+//
+// For this equation to have a unique solution, given T and X, X must be a square matrix.
+// Plugging 3 points as input gives:
+//
+//       T       = [   A    B ]      X
+//                              [x1 x2 x3]
+// [Tx1 Tx2 Tx3] = [a00 a01 b1] [y1 y2 y3]
+// [Ty1 Ty2 Ty3]   [a10 a11 b2] [ 1  1  1]
+cv::Mat getAffineMatrix(std::vector<cv::Point2f> srcPoints, std::vector<cv::Point2f> dstPoints) {
+  assert(srcPoints.size() == 3 && "There must be exactly 3 points");
+
+  //
+  cv::Mat X = (cv::Mat_<double>(3, 3) << srcPoints[0].x, srcPoints[1].x, srcPoints[2].x,
+               srcPoints[0].y, srcPoints[1].y, srcPoints[2].y, 1, 1, 1);
+  cv::Mat T = (cv::Mat_<double>(2, 3) << dstPoints[0].x, dstPoints[1].x, dstPoints[2].x,
+               dstPoints[0].y, dstPoints[1].y, dstPoints[2].y);
+
+  if (cv::determinant(X) == 0) {
+    qDebug() << "provided points form a line";
+    return cv::Mat_<double>(2, 3) << 0, 0, 0, 0, 0, 0;
+  }
+
+  cv::Mat invX;
+  cv::invert(X, invX);
+
+  cv::Mat M = T * invX;
+
+  return M;
+}
+} // namespace
+
+cv::Mat affineTransform(const cv::Mat &mat, std::vector<cv::Point2f> srcPoints,
+                        std::vector<cv::Point2f> dstPoints) {
+  // cv::Mat warpMat = cv::getAffineTransform(srcPoints, dstPoints);
+  cv::Mat warpMat = getAffineMatrix(srcPoints, dstPoints);
+
+  // std::cout << warpMat << std::endl;
+  cv::Mat dst;
+  cv::warpAffine(mat, dst, warpMat, mat.size());
+  return dst;
+}
+
 } // namespace imageProcessor

@@ -1,4 +1,5 @@
 #include "ATImageViewer.hpp"
+#include "../imageProcessor.hpp"
 #include "ImageViewer.hpp"
 #include <opencv2/opencv.hpp>
 #include <qevent.h>
@@ -64,10 +65,6 @@ void ATImageViewer::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void ATImageViewer::affineTransform() {
-  // TODO:
-  // 1. get points
-  // 2. calculate transformation matrix
-  // 3. apply matrix
   std::vector<cv::Point2f> srcPoints;
   for (auto point : pointsOrigin)
     srcPoints.push_back(cv::Point2f(point.x(), point.y()));
@@ -76,11 +73,7 @@ void ATImageViewer::affineTransform() {
   for (auto point : pointsPos)
     dstPoints.push_back(cv::Point2f(point.x(), point.y()));
 
-  cv::Mat warpMat = cv::getAffineTransform(srcPoints, dstPoints);
-
-  cv::Mat src = image.getMat();
-  cv::Mat dst;
-  cv::warpAffine(src, dst, warpMat, src.size());
+  cv::Mat dst = imageProcessor::affineTransform(image.getMat(), srcPoints, dstPoints);
   scene.removeItem(imageItem);
   imageItem = scene.addPixmap(ImageWrapper(dst).generateQPixmap());
   imageItem->setZValue(0);

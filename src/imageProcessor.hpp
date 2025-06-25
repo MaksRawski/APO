@@ -22,4 +22,6 @@ cv::Mat rangeStretchChannels(const cv::Mat &mat, uchar p1, uchar p2, uchar q3, u
 cv::Mat skeletonize(const cv::Mat &mat, const cv::Mat &structuringElement, int borderType);
 cv::Mat convolve(cv::Mat image, cv::Mat kernel, int borderType);
 std::vector<uchar> extractLineProfile(const cv::Mat &img, cv::Point p1, cv::Point p2);
+cv::Mat affineTransform(const cv::Mat &mat, std::vector<cv::Point2f> srcPoints,
+                        std::vector<cv::Point2f> dstPoints);
 } // namespace imageProcessor
