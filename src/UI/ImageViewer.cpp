@@ -1,6 +1,7 @@
 #include "ImageViewer.hpp"
 #include <qabstractscrollarea.h>
 #include <qgraphicsitem.h>
+#include <qlogging.h>
 #include <qnamespace.h>
 #include <qpixmap.h>
 #include <qpoint.h>
@@ -36,7 +37,8 @@ void ImageViewer::fit() {
   if (imageItem) {
     QRectF bounds = imageItem->boundingRect();
     scene.setSceneRect(bounds);
-    fitInView(bounds, Qt::KeepAspectRatio);
+    setSceneRect(bounds);
+    fitInView(imageItem, Qt::KeepAspectRatio);
   }
 }
 
@@ -51,15 +53,24 @@ void ImageViewer::wheelEvent(QWheelEvent *event) {
     scale(1 / zoomFactor, 1 / zoomFactor); // zoom out
 }
 
-QGraphicsEllipseItem *ImageViewer::drawPoint(QPointF point) {
-  const double radius = 2;
-  QPen pointPen = QPen(Qt::red, 5);
-  QBrush pointBrush = QBrush(Qt::SolidPattern);
-
-  QGraphicsEllipseItem *pointItem = scene.addEllipse(
-      point.x() - radius, point.y() - radius, radius * 2.0, radius * 2.0, pointPen, pointBrush);
+QGraphicsEllipseItem *ImageViewer::drawPoint(QPointF point, const double radius, //
+                                             const QPen &pen, const QBrush &brush) {
+  QGraphicsEllipseItem *pointItem = scene.addEllipse(point.x() - radius, point.y() - radius,
+                                                     radius * 2.0, radius * 2.0, pen, brush);
   pointItem->setZValue(1);
   return pointItem;
+}
+
+namespace {
+const double radius = 2;
+const QPen pen = QPen(Qt::red, 5);
+const QBrush brush = QBrush(Qt::SolidPattern);
+} // namespace
+
+QPointF ImageViewer::getPosInImage(QMouseEvent *event) {
+  QPointF scenePos = mapToScene(event->pos());
+  QPointF imagePos = imageItem->mapFromScene(scenePos);
+  return imagePos;
 }
 
 void ImageViewer::mousePressEvent(QMouseEvent *event) {
@@ -69,10 +80,10 @@ void ImageViewer::mousePressEvent(QMouseEvent *event) {
 
     if (firstPoint.isNull()) {
       firstPoint = imagePos;
-      firstPointItem = drawPoint(firstPoint);
+      firstPointItem = drawPoint(firstPoint, radius, pen, brush);
     } else {
       QPointF secondPoint = imagePos;
-      secondPointItem = drawPoint(secondPoint);
+      secondPointItem = drawPoint(secondPoint, radius, pen, brush);
 
       QLineF line(firstPoint, secondPoint);
       lineItem = scene.addLine(line, QPen(Qt::red, 2));
@@ -86,7 +97,7 @@ void ImageViewer::mousePressEvent(QMouseEvent *event) {
     rubberBand->setGeometry(QRect(origin, QSize()));
     rubberBand->show();
   } else {
-    // if not selecting a line handle clicks normally
+    // if not selecting anything handle clicks normally
     QGraphicsView::mousePressEvent(event);
   }
 }

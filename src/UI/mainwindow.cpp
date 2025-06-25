@@ -70,16 +70,18 @@ void MainWindow::setupMenuBar() {
   QMenu *sharpenMenu = preMenu->addMenu("&Sharpen");
   sharpenLaplacianAction = sharpenMenu->addAction("&Laplacian");
 
-  QMenu *customMenu = preMenu->addMenu("C&ustom");
-  customMaskAction = customMenu->addAction("&Mask");
-  custom2StageAction = customMenu->addAction("2-&Stage filtering");
+  QMenu *maskMenu = preMenu->addMenu("&Mask");
+  customMaskAction = maskMenu->addAction("&Custom");
+  custom2StageAction = maskMenu->addAction("2-&Stage filtering");
 
-  QMenu *morphMenu = preMenu->addMenu("&Morphology");
+  QMenu *morphMenu = preMenu->addMenu("M&orphology");
   morphologyErosionAction = morphMenu->addAction("&Erosion");
   morphologyDilationAction = morphMenu->addAction("&Dilation");
   morphologyOpenAction = morphMenu->addAction("&Open");
   morphologyCloseAction = morphMenu->addAction("&Close");
   morphologySkeletonizeAction = morphMenu->addAction("&Skeletonize");
+
+  affineTransformAction = preMenu->addAction("&Affine transform");
 
   /// SEGMENTATION
   QMenu *segmentationMenu = menuBar()->addMenu("&Segmentation");
@@ -323,6 +325,7 @@ std::vector<ActionConnection> MainWindow::getConnections() const {
       {thresholdAdaptiveAction, &MdiChild::thresholdAdaptive},
       {thresholdOtsuAction, &MdiChild::thresholdOtsu},
       {profileLineAction, &MdiChild::profileLine},
+      {affineTransformAction, &MdiChild::affineTransform},
   };
 }
 

@@ -22,33 +22,38 @@ public:
   void fit();
   void clear();
 
-  // will allow lineSelected signal to be emitted once
+  // will allow lineSelected signal to be emitted after two points are selected
   void getLineFromUser();
   // will cancel any pending line selections
   void cancelGetLineFromUser();
   void deleteLine();
 
+  // will allow roiSelected signal to be emitted once a rectangle has been selected
   void getROIFromUser();
   void cancelGetROIFromUser();
   void clearROI();
 
   QPixmap getImage() const;
 
-private:
-  QGraphicsEllipseItem *drawPoint(QPointF point);
-
 protected:
   void wheelEvent(QWheelEvent *event) override;
   void mousePressEvent(QMouseEvent *event) override;
   void mouseMoveEvent(QMouseEvent *event) override;
   void mouseReleaseEvent(QMouseEvent *event) override;
+
+  QGraphicsEllipseItem *drawPoint(QPointF point, const double radius, const QPen &pen,
+                                  const QBrush &brush);
+  // get position of a mouse relative to the image
+  QPointF getPosInImage(QMouseEvent *event);
+
+  QGraphicsScene scene;
+  QGraphicsPixmapItem *imageItem = nullptr;
+
 signals:
   void lineSelected(QLineF line);
   void roiSelected(cv::Rect roi);
 
 private:
-  QGraphicsScene scene;
-  QGraphicsPixmapItem *imageItem = nullptr;
   const qreal zoomFactor;
 
   // line selection

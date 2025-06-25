@@ -18,6 +18,7 @@ qt6_wrap_cpp(MOC_SOURCES
   src/UI/mainwindow.hpp
   src/UI/mdiChild.hpp
   src/UI/ImageViewer.hpp
+  src/UI/ATImageViewer.hpp
   src/UI/histogramWidget.hpp
   src/UI/dialogs/MaskEditor.hpp
 )
@@ -27,6 +28,7 @@ add_executable(APO
   src/UI/mainwindow.cpp
   src/UI/mdiChild.cpp
   src/UI/ImageViewer.cpp
+  src/UI/ATImageViewer.cpp
   src/UI/histogramWidget.cpp
   src/UI/dialogs/MaskEditor.cpp
   src/UI/dialogs/DialogBuilder.cpp

@@ -1,6 +1,7 @@
 #include "mdiChild.hpp"
 #include "../imageProcessor.hpp"
 #include "ImageViewer.hpp"
+#include "ATImageViewer.hpp"
 #include "dialogs/DialogBuilder.hpp"
 #include "dialogs/utils.hpp"
 #include <QFormLayout>
@@ -19,6 +20,7 @@
 #include <qdialog.h>
 #include <qdialogbuttonbox.h>
 #include <qfiledialog.h>
+#include <qpushbutton.h>
 #include <qscrollarea.h>
 #include <qscrollbar.h>
 #include <stdexcept>
@@ -341,11 +343,11 @@ void MdiChild::edgeDetectCanny() {
 void MdiChild::ask4maskAndApply(const std::vector<cv::Mat> &mats,
                                 const std::vector<QString> &names) {
   trySwapImage(Dialog(this, QString("Select a mask"),                           //
-         InputSpec<ChoosableMaskParam>{"Masks", {mats, names}, 0}, //
-         BorderTypes::inputSpec)
-      .runWithPreview([this](cv::Mat kernel, int borderType) {
-        return convolve(imageWrapper.getMat(), kernel, borderType);
-      }));
+                      InputSpec<ChoosableMaskParam>{"Masks", {mats, names}, 0}, //
+                      BorderTypes::inputSpec)
+                   .runWithPreview([this](cv::Mat kernel, int borderType) {
+                     return convolve(imageWrapper.getMat(), kernel, borderType);
+                   }));
 }
 
 void MdiChild::sharpenLaplacian() { ask4maskAndApply(LaplacianMasks::mats, LaplacianMasks::names); }
@@ -526,4 +528,22 @@ void MdiChild::profileLine() {
     chart->show();
   });
   imageViewer.getLineFromUser();
+}
+
+void MdiChild::affineTransform() {
+  QDialog *dialog = new QDialog(this);
+  dialog->setWindowTitle("Affine transformation");
+  dialog->resize(800, 800);
+
+  QFormLayout *form = new QFormLayout(dialog);
+  dialog->setLayout(form);
+  QLabel *help = new QLabel("<b>Left click</b> to move the image or point<br><b>Middle click</b> to delete a point<br><b>Right click</b> to add a point\n");
+  form->addRow(help);
+
+  ATImageViewer *imageViewer = new ATImageViewer(imageWrapper, dialog);
+  form->addRow(imageViewer);
+
+  if (dialog->exec() != QDialog::Accepted)
+    return;
+  swapImage(imageViewer->getImageWrapper());
 }

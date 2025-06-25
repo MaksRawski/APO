@@ -19,6 +19,7 @@
 #include <qlineedit.h>
 #include <qobject.h>
 #include <qpixmap.h>
+#include <qpoint.h>
 #include <qpushbutton.h>
 #include <qspinbox.h>
 #include <qtpreprocessorsupport.h>
@@ -135,6 +136,7 @@ template <DialogValue V, typename T> struct InputSpec<DialogParam<V, T>> {
   DELETE_DEFAULT_CONSTRUCTORS(InputSpec);
 };
 
+// for EnumVariant a spec must additionally include a function which maps index to value
 template <typename T> struct InputSpec<DialogParam<DialogValue::EnumVariant, T>> {
   using Restriction = typename ValueTraits<DialogValue::EnumVariant, T>::Restriction;
   using RawResult = typename ValueTraits<DialogValue::EnumVariant, T>::RawResult;
@@ -228,7 +230,7 @@ public:
     return results;
   }
 
-  std::optional<ResultTuple> run1() const {
+  std::optional<ResultTuple> run() const {
     if (dialog->exec() != QDialog::Accepted)
       return std::nullopt;
 
@@ -252,7 +254,7 @@ public:
     dialog->resize(800, 800);
     paramChanged();
 
-    auto params = run1();
+    auto params = run();
     if (!params.has_value())
       return std::nullopt;
     return std::apply([finalFn](const auto &...param) { return finalFn(param...); },

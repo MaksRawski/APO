@@ -79,6 +79,7 @@ private:
   QAction *profileLineAction;
   QAction *grabCutAction;
   QAction *toggleDockAction;
+  QAction *affineTransformAction;
 
   void connectActions(const MdiChild &child);
   void disconnectActions(const MdiChild &child);
