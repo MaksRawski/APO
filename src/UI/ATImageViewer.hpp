@@ -9,18 +9,21 @@
 #include <vector>
 
 // radius of a point as a percent of the entire image
-const int POINT_RADIUS_PERCENT = 5;
+const float POINT_RADIUS_PERCENT = 5;
+
+// thickness of any annotation as a percent of the entire image
+const float THICKNESS_PERCENT = 1;
 
 // colors of the original position of a point
 const QBrush POINT_SRC_BRUSH = QBrush(QColorConstants::Transparent);
-const QPen POINT_SRC_PEN = QPen(QColor(200, 100, 100, 255), 1);
+const QPen POINT_SRC_PEN = QPen(QColor(200, 100, 100, 255));
 
 // colors of the moved position of a point
 const QBrush POINT_DST_BRUSH = QBrush(QColorConstants::Transparent);
-const QPen POINT_DST_PEN = QPen(QColor(100, 100, 200, 255), 1);
+const QPen POINT_DST_PEN = QPen(QColor(100, 100, 200, 255));
 
 // line between points color
-const QPen LINE_PEN = QPen(QColor(150, 100, 200, 255), 5);
+const QPen LINE_PEN = QPen(QColor(150, 100, 200, 255));
 
 // Affine Transformation Image Viewer
 // wrapper around ImageViewer that allows affine transformation to be done
@@ -42,6 +45,8 @@ private:
   ImageWrapper ogImage, transformedImage;
   // real value of a radius of a point as a POINT_RADIUS_PERCENT with respect to the current image
   float pointRadius;
+  // real value of a thickness of any annotation as a THICKNESS_PERCENT with respect to the current image
+  float thickness;
   // -1 means no point is being moved, otherwise indicates index of a point being moved
   int movingPoint = -1;
   // positions of points when they were added

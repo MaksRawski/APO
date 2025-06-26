@@ -16,7 +16,9 @@ void ATImageViewer::setImage(const ImageWrapper &image) {
   QPixmap pixmap = image.generateQPixmap();
   ImageViewer::setImage(pixmap);
   this->ogImage = image;
-  pointRadius = std::min(image.getWidth(), image.getHeight()) * POINT_RADIUS_PERCENT / 100.0;
+  auto s = std::min(image.getWidth(), image.getHeight());
+  pointRadius = s * POINT_RADIUS_PERCENT / 100.0;
+  thickness = s * THICKNESS_PERCENT / 100.0;
   adjustSize();
 }
 
@@ -93,11 +95,10 @@ void ATImageViewer::mouseReleaseEvent(QMouseEvent *event) {
     pointsPos.push_back(pos);
 
     // add ellipses
-    float lineWidth = pointRadius / 10.0;
     QPen pointSrcPen = POINT_SRC_PEN;
-    pointSrcPen.setWidthF(lineWidth);
+    pointSrcPen.setWidthF(thickness);
     QPen pointDstPen = POINT_DST_PEN;
-    pointDstPen.setWidthF(lineWidth);
+    pointDstPen.setWidthF(thickness);
 
     auto *ellipseSrc = drawPoint(QPoint(0, 0), pointRadius, pointSrcPen, POINT_SRC_BRUSH);
     ellipseSrc->setPos(ellipseSrc->mapFromItem(imageItem, pos));
@@ -110,8 +111,8 @@ void ATImageViewer::mouseReleaseEvent(QMouseEvent *event) {
 
     // add a line between origin of a point and its current location
     QPen linePen = LINE_PEN;
-    linePen.setWidthF(lineWidth);
-    auto *line = scene.addLine(QLineF(0, 0, 0, 0), LINE_PEN);
+    linePen.setWidthF(thickness);
+    auto *line = scene.addLine(QLineF(0, 0, 0, 0), linePen);
     line->setZValue(1);
     lines.push_back(line);
 
