@@ -2,6 +2,7 @@
 #include "imageWrapper.hpp"
 #include <QColorSpace>
 #include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
 #include <qimage.h>
 #include <stdexcept>
 #include <vector>
@@ -261,6 +262,83 @@ cv::Mat getAffineMatrix(std::vector<cv::Point2f> srcPoints, std::vector<cv::Poin
 
   return M;
 }
+// we want each pixel in the destination image to be moved according to the affine matrix, so:
+// dst(x,y) = src( M(0,0)x + M(0,1)y + M(0,2),
+//                 M(1,0)x + M(1,1)y + M(1,2) )
+// so for each point in DESTINATION image we must find corresponding point in the SOURCE image
+//
+// since
+// T = MX, then
+// X = M'T where
+//   M' is the inverse of an affine transformation given by M
+//
+// M' can be calculated using cv::invertAffineTransform
+//
+// then each point
+cv::Mat warpAffine(const cv::Mat &mat, const cv::Mat &affineMat) {
+  cv::Mat invAffine; // M'
+  cv::invertAffineTransform(affineMat, invAffine);
+
+  double a00 = invAffine.at<double>(0, 0);
+  double a01 = invAffine.at<double>(0, 1);
+  double b1 = invAffine.at<double>(0, 2);
+  double a10 = invAffine.at<double>(1, 0);
+  double a11 = invAffine.at<double>(1, 1);
+  double b2 = invAffine.at<double>(1, 2);
+
+  cv::Mat dst(mat.rows, mat.cols, mat.type());
+
+  for (int y = 0; y < dst.rows; ++y) {
+    for (int x = 0; x < dst.cols; ++x) {
+      float srcX = a00 * x + a01 * y + b1;
+      float srcY = a10 * x + a11 * y + b2;
+
+      int x0 = static_cast<int>(std::floor(srcX));
+      int y0 = static_cast<int>(std::floor(srcY));
+
+      float dx = srcX - x0;
+      float dy = srcY - y0;
+
+      // if not on a bottom or right border
+      if (x0 >= 0 && x0 + 1 < mat.cols && y0 >= 0 && y0 + 1 < mat.rows) {
+        switch (mat.channels()) {
+        case 1: {
+          // value of the current pixel is a bilinear interpolation of values of
+          // 4 neighboring pixels (with the current one being the top-left one)
+          float v00 = mat.at<uchar>(y0, x0);
+          float v01 = mat.at<uchar>(y0, x0 + 1);
+          float v10 = mat.at<uchar>(y0 + 1, x0);
+          float v11 = mat.at<uchar>(y0 + 1, x0 + 1);
+
+          // The actual value that will be put in place of this pixel is going to be
+          // interpolated based on the real distance from the closest pixel.
+          // The closer the neighboring point is the closer to it the value will be.
+          float val =
+              (1 - dx) * (1 - dy) * v00 + dx * (1 - dy) * v01 + (1 - dx) * dy * v10 + dx * dy * v11;
+
+          dst.at<uchar>(y, x) = cv::saturate_cast<uchar>(val);
+          break;
+        };
+        case 3: {
+          for (int c = 0; c < 3; ++c) {
+            float v00 = mat.at<cv::Vec3b>(y0, x0)[c];
+            float v01 = mat.at<cv::Vec3b>(y0, x0 + 1)[c];
+            float v10 = mat.at<cv::Vec3b>(y0 + 1, x0)[c];
+            float v11 = mat.at<cv::Vec3b>(y0 + 1, x0 + 1)[c];
+
+            float val = (1 - dx) * (1 - dy) * v00 + dx * (1 - dy) * v01 + (1 - dx) * dy * v10 +
+                        dx * dy * v11;
+
+            dst.at<cv::Vec3b>(y, x)[c] = cv::saturate_cast<uchar>(val);
+          }
+          break;
+        }
+        }
+      }
+    }
+  }
+  return dst;
+}
 } // namespace
 
 cv::Mat affineTransform(const cv::Mat &mat, std::vector<cv::Point2f> srcPoints,
@@ -268,10 +346,10 @@ cv::Mat affineTransform(const cv::Mat &mat, std::vector<cv::Point2f> srcPoints,
   // cv::Mat warpMat = cv::getAffineTransform(srcPoints, dstPoints);
   cv::Mat warpMat = getAffineMatrix(srcPoints, dstPoints);
 
-  // std::cout << warpMat << std::endl;
-  cv::Mat dst;
-  cv::warpAffine(mat, dst, warpMat, mat.size());
-  return dst;
+  // cv::Mat dst;
+  // cv::warpAffine(mat, dst, warpMat, mat.size());
+  // return dst;
+  return warpAffine(mat, warpMat);
 }
 
 } // namespace imageProcessor

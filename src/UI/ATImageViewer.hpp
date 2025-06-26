@@ -13,11 +13,11 @@ const int POINT_RADIUS_PERCENT = 5;
 
 // colors of the original position of a point
 const QBrush POINT_SRC_BRUSH = QBrush(QColorConstants::Transparent);
-const QPen POINT_SRC_PEN = QPen(QColor(200, 100, 100, 255), 5);
+const QPen POINT_SRC_PEN = QPen(QColor(200, 100, 100, 255), 1);
 
 // colors of the moved position of a point
 const QBrush POINT_DST_BRUSH = QBrush(QColorConstants::Transparent);
-const QPen POINT_DST_PEN = QPen(QColor(100, 100, 200, 255), 5);
+const QPen POINT_DST_PEN = QPen(QColor(100, 100, 200, 255), 1);
 
 // line between points color
 const QPen LINE_PEN = QPen(QColor(150, 100, 200, 255), 5);

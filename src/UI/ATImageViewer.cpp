@@ -94,20 +94,27 @@ void ATImageViewer::mouseReleaseEvent(QMouseEvent *event) {
     pointsPos.push_back(pos);
 
     // add ellipses
-    auto *ellipseSrc = drawPoint(QPoint(0, 0), pointRadius, POINT_SRC_PEN, POINT_SRC_BRUSH);
+    float lineWidth = pointRadius / 10.0;
+    QPen pointSrcPen = POINT_SRC_PEN;
+    pointSrcPen.setWidthF(lineWidth);
+    QPen pointDstPen = POINT_DST_PEN;
+    pointDstPen.setWidthF(lineWidth);
+
+    auto *ellipseSrc = drawPoint(QPoint(0, 0), pointRadius, pointSrcPen, POINT_SRC_BRUSH);
     ellipseSrc->setPos(ellipseSrc->mapFromItem(imageItem, pos));
     ellipsesOrigin.push_back(ellipseSrc);
 
     // ellipse dst is going to be the "movable" point
-    auto *ellipseDst = drawPoint(QPoint(0, 0), pointRadius, POINT_DST_PEN, POINT_DST_BRUSH);
+    auto *ellipseDst = drawPoint(QPoint(0, 0), pointRadius, pointDstPen, POINT_DST_BRUSH);
     ellipseDst->setPos(ellipseDst->mapFromItem(imageItem, pos));
     ellipsesPos.push_back(ellipseDst);
 
+    QPen linePen = LINE_PEN;
+    linePen.setWidthF(lineWidth);
     auto *line = scene.addLine(QLineF(0, 0, 0, 0), LINE_PEN);
     line->setZValue(1);
     lines.push_back(line);
 
-    qDebug() << "adding point" << pos;
     movingPoint = -1;
     return;
   } else if (event->button() == Qt::MiddleButton) {
