@@ -278,13 +278,15 @@ void MainWindow::openAboutWindow() {
 
   window.resize(320, 240);
   window.setWindowTitle("O programie");
-  QLabel *title = new QLabel("<h3>Aplikacja zbiorcza z ćwiczeń laboratoryjnych</h3>");
+  QLabel *title = new QLabel("<h3>Aplikacja zbiorcza z ćwiczeń laboratoryjnych i projektu</h3>");
+  QLabel *project = new QLabel("Tytuł projektu: Udoskonalenie oprogramowania przygotowanego na zajęciach przez przygotowanie funkcji <br>zmieniającej obraz według przekształcenia opisanego przemieszczeniem trzech niewspółliniowych punktów.");
   QLabel *author = new QLabel("Autor: Maksymilian Rawski");
   QLabel *instructor = new QLabel("Prowadzący: dr inż. Łukasz Roszkowiak");
   QLabel *className = new QLabel("Algorytmy Przetwarzania Obrazów 2024");
   QLabel *group = new QLabel("WIT grupa ID06IO1");
 
   layout->addWidget(title);
+  layout->addWidget(project);
   layout->addWidget(author);
   layout->addWidget(instructor);
   layout->addWidget(className);

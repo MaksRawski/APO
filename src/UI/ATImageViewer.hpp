@@ -30,7 +30,7 @@ class ATImageViewer : public ImageViewer {
 public:
   explicit ATImageViewer(const ImageWrapper &image, QWidget *parent = nullptr);
   void setImage(const ImageWrapper &image);
-  ImageWrapper getImageWrapper();
+  ImageWrapper getTransformedImage();
 
 protected:
   void mousePressEvent(QMouseEvent *event) override;
@@ -39,7 +39,7 @@ protected:
 
 private:
   void affineTransform();
-  ImageWrapper image;
+  ImageWrapper ogImage, transformedImage;
   // real value of a radius of a point as a POINT_RADIUS_PERCENT with respect to the current image
   float pointRadius;
   // -1 means no point is being moved, otherwise indicates index of a point being moved

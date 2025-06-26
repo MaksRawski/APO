@@ -274,7 +274,10 @@ cv::Mat getAffineMatrix(std::vector<cv::Point2f> srcPoints, std::vector<cv::Poin
 //
 // M' can be calculated using cv::invertAffineTransform
 //
-// then each point
+// then M' must simply be applied to each destination's point coordinates to find out the coordinates
+// of that point in source. As the result of the mapping will rarely be a whole number, the value of
+// a destination point will be a bilinear interpolation of 4 points in the source image that are neighbors of the
+// closest point.
 cv::Mat warpAffine(const cv::Mat &mat, const cv::Mat &affineMat) {
   cv::Mat invAffine; // M'
   cv::invertAffineTransform(affineMat, invAffine);
@@ -286,7 +289,7 @@ cv::Mat warpAffine(const cv::Mat &mat, const cv::Mat &affineMat) {
   double a11 = invAffine.at<double>(1, 1);
   double b2 = invAffine.at<double>(1, 2);
 
-  cv::Mat dst(mat.rows, mat.cols, mat.type());
+  cv::Mat dst = cv::Mat::zeros(mat.rows, mat.cols, mat.type());
 
   for (int y = 0; y < dst.rows; ++y) {
     for (int x = 0; x < dst.cols; ++x) {

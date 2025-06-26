@@ -1,7 +1,7 @@
 #include "mdiChild.hpp"
 #include "../imageProcessor.hpp"
-#include "ImageViewer.hpp"
 #include "ATImageViewer.hpp"
+#include "ImageViewer.hpp"
 #include "dialogs/DialogBuilder.hpp"
 #include "dialogs/utils.hpp"
 #include <QFormLayout>
@@ -80,11 +80,10 @@ void MdiChild::trySwapImage(const std::optional<ImageWrapper> &image) {
 
 void MdiChild::updateChannelNames() {
   auto imageFormat = imageWrapper.getFormat();
-  if (PixelFormatUtils::toCvType(imageFormat) == CV_8UC1) {
-    tabWidget->removeTab(3);
-    tabWidget->removeTab(2);
-    tabWidget->removeTab(1);
-  } else if (tabWidget->count() < 3) {
+  tabWidget->removeTab(3);
+  tabWidget->removeTab(2);
+  tabWidget->removeTab(1);
+  if (PixelFormatUtils::toCvType(imageFormat) == CV_8UC3) {
     auto names = PixelFormatUtils::channelNames(imageFormat);
     tabWidget->addTab(image1, QString::fromStdString(names[0]));
     tabWidget->addTab(image2, QString::fromStdString(names[1]));
@@ -537,13 +536,15 @@ void MdiChild::affineTransform() {
 
   QFormLayout *form = new QFormLayout(dialog);
   dialog->setLayout(form);
-  QLabel *help = new QLabel("<b>Left click</b> to move the image or point<br><b>Middle click</b> to delete a point<br><b>Right click</b> to add a point\n");
+  QLabel *help = new QLabel("<b>Left click</b> to move the image or point<br><b>Middle click</b> "
+                            "to delete a point<br><b>Right click</b> to add a point\n");
   form->addRow(help);
 
   ATImageViewer *imageViewer = new ATImageViewer(imageWrapper, dialog);
   form->addRow(imageViewer);
 
+  form->addRow(createDialogButtons(dialog));
   if (dialog->exec() != QDialog::Accepted)
     return;
-  swapImage(imageViewer->getImageWrapper());
+  swapImage(imageViewer->getTransformedImage());
 }

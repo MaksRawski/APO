@@ -15,12 +15,12 @@ void ATImageViewer::setImage(const ImageWrapper &image) {
   // TODO: the image should take up the entire area
   QPixmap pixmap = image.generateQPixmap();
   ImageViewer::setImage(pixmap);
-  this->image = image;
+  this->ogImage = image;
   pointRadius = std::min(image.getWidth(), image.getHeight()) * POINT_RADIUS_PERCENT / 100.0;
   adjustSize();
 }
 
-ImageWrapper ATImageViewer::getImageWrapper() { return image; }
+ImageWrapper ATImageViewer::getTransformedImage() { return transformedImage; }
 
 // returns index of a point in points if there was a point within tolerable manhatan length from the
 // pos otherwise returns -1 expects position to be in image coordinates
@@ -73,10 +73,9 @@ void ATImageViewer::affineTransform() {
   for (auto point : pointsPos)
     dstPoints.push_back(cv::Point2f(point.x(), point.y()));
 
-  cv::Mat dst = imageProcessor::affineTransform(image.getMat(), srcPoints, dstPoints);
-  scene.removeItem(imageItem);
-  imageItem = scene.addPixmap(ImageWrapper(dst).generateQPixmap());
-  imageItem->setZValue(0);
+  cv::Mat dst = imageProcessor::affineTransform(ogImage.getMat(), srcPoints, dstPoints);
+  transformedImage = ImageWrapper(dst);
+  imageItem->setPixmap(transformedImage.generateQPixmap());
 }
 
 void ATImageViewer::mouseReleaseEvent(QMouseEvent *event) {
@@ -109,6 +108,7 @@ void ATImageViewer::mouseReleaseEvent(QMouseEvent *event) {
     ellipseDst->setPos(ellipseDst->mapFromItem(imageItem, pos));
     ellipsesPos.push_back(ellipseDst);
 
+    // add a line between origin of a point and its current location
     QPen linePen = LINE_PEN;
     linePen.setWidthF(lineWidth);
     auto *line = scene.addLine(QLineF(0, 0, 0, 0), LINE_PEN);
@@ -137,9 +137,7 @@ void ATImageViewer::mouseReleaseEvent(QMouseEvent *event) {
       lines.erase(lines.begin() + i);
 
       // reset transformation
-      scene.removeItem(imageItem);
-      imageItem = scene.addPixmap(image.generateQPixmap());
-      imageItem->setZValue(0);
+      imageItem->setPixmap(ogImage.generateQPixmap());
     }
     movingPoint = -1;
     return;

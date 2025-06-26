@@ -53,8 +53,8 @@ std::vector<std::string> channelNames(const PixelFormat &format) {
     return {};
   case PixelFormat::BGR24:
     // we will always have to convert BGR to RGB for display,
-    // so it's fine to have theses channel names as R,G,B
-    return {"R", "G", "B"};
+    // so it's fine to have these channel names as R,G,B
+    return {"Red", "Green", "Blue"};
   case PixelFormat::HSV24:
     return {"Hue", "Saturation", "Value"};
   case PixelFormat::Lab24:
