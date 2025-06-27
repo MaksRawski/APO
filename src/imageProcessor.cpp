@@ -262,6 +262,33 @@ cv::Mat getAffineMatrix(std::vector<cv::Point2f> srcPoints, std::vector<cv::Poin
 
   return M;
 }
+
+// T = AX + B
+// AX = T - B
+// X = A^-1(T - B)
+//
+// X = A^-1T - A^-1B
+//     ^^^^  ^^^^^^^
+//      A'      B
+//
+// X = A'T + B'
+// M' = (A'|B')
+cv::Mat invertAffineMatrix(cv::Mat M) {
+  cv::Mat A = M(cv::Rect(0, 0, 2, 2));
+  cv::Mat B = M(cv::Rect(2, 0, 1, 2));
+
+  cv::Mat invA;
+  if (std::abs(cv::determinant(A)) < 1e-10) {
+    throw std::runtime_error("Affine matrix is non-invertible (det ≈ 0)");
+  }
+  cv::invert(A, invA);
+
+  cv::Mat Ap = invA;
+  cv::Mat Bp = -invA * B;
+  cv::Mat Mp;
+  cv::hconcat(Ap, Bp, Mp);
+  return Mp;
+}
 // we want each pixel in the destination image to be moved according to the affine matrix, so:
 // dst(x,y) = src( M(0,0)x + M(0,1)y + M(0,2),
 //                 M(1,0)x + M(1,1)y + M(1,2) )
@@ -272,15 +299,12 @@ cv::Mat getAffineMatrix(std::vector<cv::Point2f> srcPoints, std::vector<cv::Poin
 // X = M'T where
 //   M' is the inverse of an affine transformation given by M
 //
-// M' can be calculated using cv::invertAffineTransform
-//
-// then M' must simply be applied to each destination's point coordinates to find out the coordinates
-// of that point in source. As the result of the mapping will rarely be a whole number, the value of
-// a destination point will be a bilinear interpolation of 4 points in the source image that are neighbors of the
-// closest point.
+// then M' must simply be applied to each destination's point coordinates to find out the
+// coordinates of that point in source. As the result of the mapping will rarely be a whole number,
+// the value of a destination point will be a bilinear interpolation of 4 points in the source image
+// that are neighbors of the closest point.
 cv::Mat warpAffine(const cv::Mat &mat, const cv::Mat &affineMat) {
-  cv::Mat invAffine; // M'
-  cv::invertAffineTransform(affineMat, invAffine);
+  cv::Mat invAffine = invertAffineMatrix(affineMat); // M'
 
   double a00 = invAffine.at<double>(0, 0);
   double a01 = invAffine.at<double>(0, 1);
