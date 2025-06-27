@@ -158,6 +158,7 @@ ImageWrapper ImageWrapper::toRGB() const {
     out = ImageWrapper(res);
     break;
   }
+  case PixelFormat::Binary:
   case PixelFormat::Grayscale8: {
     cv::Mat res;
     cv::cvtColor(mat_, res, cv::COLOR_GRAY2BGR);
@@ -191,6 +192,7 @@ ImageWrapper ImageWrapper::toHSV() const {
     out = ImageWrapper(res);
     break;
   }
+  case PixelFormat::Binary:
   case PixelFormat::Grayscale8: {
     cv::Mat bgr, res;
     cv::cvtColor(mat_, bgr, cv::COLOR_GRAY2BGR);
@@ -225,6 +227,7 @@ ImageWrapper ImageWrapper::toLab() const {
     out = ImageWrapper(*this);
     break;
   }
+  case PixelFormat::Binary:
   case PixelFormat::Grayscale8: {
     cv::Mat bgr, res;
     cv::cvtColor(mat_, bgr, cv::COLOR_GRAY2BGR);
@@ -262,7 +265,9 @@ ImageWrapper ImageWrapper::toGrayscale() const {
     out = ImageWrapper(res);
     break;
   }
-  case PixelFormat::Grayscale8: {
+  case PixelFormat::Grayscale8:
+  case PixelFormat::Binary:
+  {
     out = ImageWrapper(*this);
     break;
   }

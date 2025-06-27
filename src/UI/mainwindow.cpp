@@ -74,13 +74,6 @@ void MainWindow::setupMenuBar() {
   customMaskAction = maskMenu->addAction("&Custom");
   custom2StageAction = maskMenu->addAction("2-&Stage filtering");
 
-  QMenu *morphMenu = preMenu->addMenu("M&orphology");
-  morphologyErosionAction = morphMenu->addAction("&Erosion");
-  morphologyDilationAction = morphMenu->addAction("&Dilation");
-  morphologyOpenAction = morphMenu->addAction("&Open");
-  morphologyCloseAction = morphMenu->addAction("&Close");
-  morphologySkeletonizeAction = morphMenu->addAction("&Skeletonize");
-
   affineTransformAction = preMenu->addAction("&Affine transform");
 
   /// SEGMENTATION
@@ -101,6 +94,13 @@ void MainWindow::setupMenuBar() {
 
   /// POST PROCESSING
   QMenu *postMenu = menuBar()->addMenu("P&ostprocessing");
+  QMenu *morphMenu = postMenu->addMenu("&Morphology");
+  morphologyErosionAction = morphMenu->addAction("&Erosion");
+  morphologyDilationAction = morphMenu->addAction("&Dilation");
+  morphologyOpenAction = morphMenu->addAction("&Open");
+  morphologyCloseAction = morphMenu->addAction("&Close");
+  morphologySkeletonizeAction = morphMenu->addAction("&Skeletonize");
+
   QMenu *combineMenu = postMenu->addMenu("&Combine");
   combineAddAction = combineMenu->addAction("&Add");
   combineSubAction = combineMenu->addAction("&Sub");
@@ -131,9 +131,8 @@ void MainWindow::setupMenuBar() {
   // always available actions
   connect(openAction, &QAction::triggered, this, &MainWindow::openImage);
   connect(aboutAction, &QAction::triggered, this, &MainWindow::openAboutWindow);
-  connect(toggleDockAction, &QAction::triggered, this, [this]() {
-    dock->setVisible(dock->isHidden());
-  });
+  connect(toggleDockAction, &QAction::triggered, this,
+          [this]() { dock->setVisible(dock->isHidden()); });
 }
 
 void MainWindow::setupUI() {
@@ -247,13 +246,18 @@ void MainWindow::splitChannels() {
 void MainWindow::toggleOptions(const ImageWrapper &image) {
   PixelFormat format = image.getFormat();
 
+  bool isBinary = format == PixelFormat::Binary;
+  morphologyErosionAction->setEnabled(isBinary);
+  morphologyDilationAction->setEnabled(isBinary);
+  morphologyOpenAction->setEnabled(isBinary);
+  morphologyCloseAction->setEnabled(isBinary);
+  morphologySkeletonizeAction->setEnabled(isBinary);
+
   bool isBGR24 = format == PixelFormat::BGR24;
   grabCutAction->setEnabled(isBGR24);
 
-  bool isGrayscale = format == PixelFormat::Grayscale8;
-  houghAction->setEnabled(isGrayscale);
-
   bool isSingleChannel = PixelFormatUtils::toCvType(format) == CV_8UC1;
+  houghAction->setEnabled(isSingleChannel);
   splitChannelsAction->setEnabled(!isSingleChannel);
   profileLineAction->setEnabled(isSingleChannel);
 }
@@ -279,7 +283,10 @@ void MainWindow::openAboutWindow() {
   window.resize(320, 240);
   window.setWindowTitle("O programie");
   QLabel *title = new QLabel("<h3>Aplikacja zbiorcza z ćwiczeń laboratoryjnych i projektu</h3>");
-  QLabel *project = new QLabel("Tytuł projektu: Udoskonalenie oprogramowania przygotowanego na zajęciach przez przygotowanie funkcji <br>zmieniającej obraz według przekształcenia opisanego przemieszczeniem trzech niewspółliniowych punktów.");
+  QLabel *project =
+      new QLabel("Tytuł projektu: Udoskonalenie oprogramowania przygotowanego na zajęciach przez "
+                 "przygotowanie funkcji <br>zmieniającej obraz według przekształcenia opisanego "
+                 "przemieszczeniem trzech niewspółliniowych punktów.");
   QLabel *author = new QLabel("Autor: Maksymilian Rawski");
   QLabel *instructor = new QLabel("Prowadzący: dr inż. Łukasz Roszkowiak");
   QLabel *className = new QLabel("Algorytmy Przetwarzania Obrazów 2024");
