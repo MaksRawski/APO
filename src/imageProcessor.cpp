@@ -244,7 +244,6 @@ namespace {
 cv::Mat getAffineMatrix(std::vector<cv::Point2f> srcPoints, std::vector<cv::Point2f> dstPoints) {
   assert(srcPoints.size() == 3 && "There must be exactly 3 points");
 
-  //
   cv::Mat X = (cv::Mat_<double>(3, 3) << srcPoints[0].x, srcPoints[1].x, srcPoints[2].x,
                srcPoints[0].y, srcPoints[1].y, srcPoints[2].y, 1, 1, 1);
   cv::Mat T = (cv::Mat_<double>(2, 3) << dstPoints[0].x, dstPoints[1].x, dstPoints[2].x,
@@ -326,7 +325,7 @@ cv::Mat warpAffine(const cv::Mat &mat, const cv::Mat &affineMat) {
       float dx = srcX - x0;
       float dy = srcY - y0;
 
-      // if not on a bottom or right border
+      // if not on a bottom or left border
       if (x0 >= 0 && x0 + 1 < mat.cols && y0 >= 0 && y0 + 1 < mat.rows) {
         switch (mat.channels()) {
         case 1: {
@@ -370,12 +369,7 @@ cv::Mat warpAffine(const cv::Mat &mat, const cv::Mat &affineMat) {
 
 cv::Mat affineTransform(const cv::Mat &mat, std::vector<cv::Point2f> srcPoints,
                         std::vector<cv::Point2f> dstPoints) {
-  // cv::Mat warpMat = cv::getAffineTransform(srcPoints, dstPoints);
   cv::Mat warpMat = getAffineMatrix(srcPoints, dstPoints);
-
-  // cv::Mat dst;
-  // cv::warpAffine(mat, dst, warpMat, mat.size());
-  // return dst;
   return warpAffine(mat, warpMat);
 }
 
